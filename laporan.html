@@ -1,5 +1,30 @@
 <!DOCTYPE html>
 <html lang="id">
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // PAKAI CONFIG ANDA
+    const firebaseConfig = {
+        apiKey: "KODE_API_ANDA_DI_SINI",
+        authDomain: "koperasipengayoman-xxx.firebaseapp.com",
+        projectId: "koperasipengayoman-xxx",
+        storageBucket: "koperasipengayoman-xxx.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdef"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Satpam: Cek apakah user sudah login
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            // Jika belum login, paksa pindah ke halaman login
+            window.location.href = "login.html";
+        }
+    });
+</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

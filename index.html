@@ -1,21 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-	<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    const firebaseConfig = { /* config Anda */ };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Cek apakah user sudah login
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // Jika belum login, tendang balik ke halaman login
-            window.location.href = "login.html";
-        }
-    });
-</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -150,5 +134,4 @@
         hitungAnggota();
         hitungTotalSimpanan();
         hitungTotalPinjaman();
-
     </script>

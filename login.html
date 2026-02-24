@@ -6,90 +6,46 @@
     <title>Masuk - Koperasi Pengayoman</title>
     <style>
         /* Pengaturan Dasar */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        /* Latar belakang layar penuh */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #2c3e50; 
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #2c3e50; }
 
         /* Kotak Login */
         .login-container {
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
+            background-color: white; padding: 40px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center;
         }
-
-        .login-container h2 {
-            color: #1abc9c;
-            margin-bottom: 10px;
-            font-size: 1.5rem;
-        }
-
-        .login-container p {
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
+        .login-container h2 { color: #1abc9c; margin-bottom: 10px; font-size: 1.5rem; }
+        .login-container p { color: #7f8c8d; margin-bottom: 30px; font-size: 0.9rem; }
 
         /* Grup Input Form */
-        .input-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; color: #2c3e50; font-weight: bold; font-size: 0.9rem; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        .input-group input:focus { outline: none; border-color: #1abc9c; }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #1abc9c;
-        }
-
-        /* Tombol Masuk */
+        /* Tombol Masuk Email */
         .btn-login {
-            width: 100%;
-            padding: 12px;
-            background-color: #1abc9c;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.3s;
-            font-weight: bold;
-            margin-top: 10px;
+            width: 100%; padding: 12px; background-color: #1abc9c; color: white;
+            border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;
+            transition: 0.3s; font-weight: bold; margin-top: 10px;
         }
+        .btn-login:hover { background-color: #16a085; }
 
-        .btn-login:hover {
-            background-color: #16a085;
+        /* Pemisah */
+        .divider { margin: 20px 0; color: #95a5a6; font-size: 0.9rem; position: relative; }
+        .divider::before, .divider::after {
+            content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background-color: #ddd;
         }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        /* Tombol Masuk Google */
+        .btn-google {
+            width: 100%; padding: 12px; background-color: #db4437; color: white;
+            border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;
+            transition: 0.3s; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-google:hover { background-color: #c23321; }
     </style>
 </head>
 <body>
@@ -109,31 +65,61 @@
                 <input type="password" id="password" placeholder="Masukkan kata sandi" required>
             </div>
             
-            <button type="submit" class="btn-login">Masuk</button>
+            <button type="submit" class="btn-login">Masuk dengan Email</button>
         </form>
+
+        <div class="divider">ATAU</div>
+
+        <button type="button" id="btnGoogle" class="btn-google">
+            Masuk dengan Google
+        </button>
     </div>
 
     <script type="module">
-        // 1. Impor fungsi login dari Firebase
+        // 1. Impor fungsi Google Login dari Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // 2. PAKAI CONFIG FIREBASE ANDA DI SINI
+        // CONFIG FIREBASE ANDA
         const firebaseConfig = {
-            apiKey: "KODE_API_ANDA_DI_SINI",
-            authDomain: "koperasipengayoman-xxx.firebaseapp.com",
-            projectId: "koperasipengayoman-xxx",
-            storageBucket: "koperasipengayoman-xxx.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef",
-            measurementId: "G-XXXXXXXXXX"
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb",
+            measurementId: "G-CVWCXTF3FX"
         };
 
-        // 3. Hidupkan Firebase Auth
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        
+        // Siapkan "Pintu" Google
+        const googleProvider = new GoogleAuthProvider();
 
-        // 4. Proses saat tombol login diklik
+        // ----------------------------------------------------
+        // LOGIKA LOGIN GOOGLE
+        // ----------------------------------------------------
+        const btnGoogle = document.getElementById('btnGoogle');
+        btnGoogle.addEventListener('click', () => {
+            // Membuka jendela pop-up Google
+            signInWithPopup(auth, googleProvider)
+                .then((result) => {
+                    // Jika sukses memilih akun Google
+                    const namaGoogle = result.user.displayName;
+                    alert("Berhasil! Selamat datang, " + namaGoogle);
+                    window.location.href = "index.html"; 
+                })
+                .catch((error) => {
+                    // Jika jendela ditutup atau error
+                    console.error("Error Google Login:", error);
+                    alert("Gagal masuk dengan Google: " + error.message);
+                });
+        });
+
+        // ----------------------------------------------------
+        // LOGIKA LOGIN EMAIL & PASSWORD (Tetap dipertahankan)
+        // ----------------------------------------------------
         const loginForm = document.getElementById('loginForm');
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -141,15 +127,12 @@
             const email = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            // Memeriksa email dan password ke Firebase Authentication
             signInWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
-                    // Jika sukses
-                    alert("Login Berhasil! Selamat Datang.");
+                    alert("Login Email Berhasil! Selamat Datang.");
                     window.location.href = "index.html"; 
                 })
                 .catch((error) => {
-                    // Jika gagal
                     console.error(error.message);
                     alert("Gagal Masuk: Periksa kembali Email dan Password Anda.");
                 });

@@ -1,37 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    // PAKAI CONFIG ANDA
-    const firebaseConfig = {
-        apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
-        authDomain: "koperasi-pengayoman.firebaseapp.com",
-        projectId: "koperasi-pengayoman",
-        storageBucket: "koperasi-pengayoman.firebasestorage.app",
-        messagingSenderId: "302370488338",
-        appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	measurementId: "G-CVWCXTF3FX"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Satpam: Cek apakah user sudah login
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // Jika belum login, paksa pindah ke halaman login
-            window.location.href = "login.html";
-        }
-    });
-</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pinjaman - Koperasi Pengayoman</title>
     <style>
-        /* CSS Sama seperti sebelumnya dengan aksen Oranye */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; height: 100vh; background-color: #f4f7f6; }
         .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
@@ -43,21 +16,32 @@
         .main-content { flex: 1; display: flex; flex-direction: column; }
         .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .content { padding: 20px; overflow-y: auto; }
-        .form-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; }
-        .form-container h3 { margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #e67e22; padding-bottom: 10px; display: inline-block; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        
+        /* Form & Tabel Container */
+        .card-container { background-color: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .card-container h3 { margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #e67e22; padding-bottom: 10px; display: inline-block; }
+        
+        /* CSS Form */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #e67e22; }
-        input[readonly] { background-color: #f1f2f6; cursor: not-allowed; }
-        .input-rupiah { display: flex; align-items: center; }
-        .input-rupiah span { background-color: #ecf0f1; padding: 12px; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; font-weight: bold; color: #7f8c8d; }
-        .input-rupiah input { border-radius: 0 4px 4px 0; flex: 1; }
-        .btn-group { margin-top: 30px; display: flex; gap: 15px; }
-        .btn { padding: 12px 25px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; color: white; }
-        .btn-save { background-color: #e67e22; }
+        .btn-save { background-color: #e67e22; color: white; padding: 12px 25px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
         .btn-save:hover { background-color: #d35400; }
-        .btn-cancel { background-color: #95a5a6; text-decoration: none; display: inline-block; text-align: center;}
+        
+        /* CSS Tabel */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        table th, table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        table th { background-color: #f8f9fa; color: #34495e; font-weight: bold; }
+        table tr:hover { background-color: #f1f2f6; }
+        
+        /* Status Badges & Buttons */
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .badge-aktif { background-color: #ffeaa7; color: #d35400; }
+        .badge-lunas { background-color: #55efc4; color: #00b894; }
+        .btn-lunas { background-color: #2ecc71; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.3s; }
+        .btn-lunas:hover { background-color: #27ae60; }
     </style>
 </head>
 <body>
@@ -70,55 +54,68 @@
             <li><a href="simpanan.html">Simpanan</a></li>
             <li><a href="#" class="active" style="background-color: #e67e22;">Pinjaman</a></li>
             <li><a href="angsuran.html">Angsuran</a></li>
-	    <a href="laporan.html">Laporan</a>
+            <li><a href="laporan.html">Laporan</a></li>
         </ul>
     </div>
 
     <div class="main-content">
-        <div class="header"><h2>Pengajuan Pinjaman</h2></div>
+        <div class="header"><h2>Kelola Pinjaman Anggota</h2></div>
         <div class="content">
-            <div class="form-container">
-                <h3>Formulir Pinjaman Anggota</h3>
+            
+            <div class="card-container">
+                <h3>Form Pencairan Pinjaman Baru</h3>
                 <form id="formPinjaman">
-                    <div class="form-group">
-                        <label for="tanggal">Tanggal Pengajuan</label>
-                        <input type="date" id="tanggal" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="anggota">Nama Anggota Pemohon</label>
-                        <select id="anggota" required>
-                            <option value="">-- Sedang memuat data anggota... --</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="jumlah">Plafon (Jumlah Pinjaman)</label>
-                        <div class="input-rupiah">
-                            <span>Rp</span>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="tanggal">Tanggal Pencairan</label>
+                            <input type="date" id="tanggal" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="id_anggota">Pilih Anggota</label>
+                            <select id="id_anggota" required>
+                                <option value="">-- Sedang memuat data anggota... --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="jumlah">Jumlah Pinjaman (Rp)</label>
                             <input type="number" id="jumlah" placeholder="Contoh: 5000000" required>
                         </div>
+                        <div class="form-group">
+                            <label for="keterangan">Keterangan / Tujuan</label>
+                            <input type="text" id="keterangan" placeholder="Contoh: Modal Usaha / Top-Up Pinjaman Lama" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="tenor">Jangka Waktu (Tenor)</label>
-                        <input type="text" id="tenor" value="10 Bulan" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="keterangan">Tujuan Pinjaman</label>
-                        <textarea id="keterangan" rows="3" placeholder="Contoh: Renovasi rumah"></textarea>
-                    </div>
-                    <div class="btn-group">
-                        <button type="submit" class="btn btn-save">Ajukan Pinjaman</button>
-                        <a href="index.html" class="btn btn-cancel">Batal</a>
-                    </div>
+                    <button type="submit" class="btn-save">Cairkan Pinjaman</button>
                 </form>
             </div>
+
+            <div class="card-container">
+                <h3>Daftar Riwayat Pinjaman</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Nama Anggota</th>
+                            <th>Keterangan</th>
+                            <th>Jumlah (Rp)</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelPinjaman">
+                        <tr><td colspan="6" style="text-align:center; font-style:italic;">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // GANTI DENGAN KODE FIREBASE CONFIG ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
@@ -126,50 +123,126 @@
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
             appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	    measurementId: "G-CVWCXTF3FX"
+            measurementId: "G-CVWCXTF3FX"
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Muat Dropdown Anggota
+        const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+
+        // 1. CEK LOGIN
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                muatDropdownAnggota();
+                muatTabelPinjaman();
+            }
+        });
+
+        // 2. MUAT DROPDOWN NAMA ANGGOTA
         async function muatDropdownAnggota() {
-            const dropdown = document.getElementById('anggota');
+            const dropdown = document.getElementById('id_anggota');
             try {
-                const querySnapshot = await getDocs(query(collection(db, "anggota"), orderBy("nama", "asc")));
+                const q = query(collection(db, "anggota"), orderBy("nama", "asc"));
+                const snapshot = await getDocs(q);
                 dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
-                querySnapshot.forEach((doc) => {
-                    dropdown.innerHTML += `<option value="${doc.id}">${doc.data().no_anggota} - ${doc.data().nama}</option>`;
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    dropdown.innerHTML += `<option value="${doc.id}">${d.no_anggota} - ${d.nama}</option>`;
                 });
-            } catch (error) {
-                dropdown.innerHTML = '<option value="">-- Gagal memuat data --</option>';
+            } catch (err) {
+                dropdown.innerHTML = '<option value="">Gagal memuat anggota</option>';
             }
         }
-        muatDropdownAnggota();
 
-        // Simpan Data Pinjaman
-        document.getElementById('formPinjaman').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const dropdown = document.getElementById('anggota');
+        // 3. MUAT TABEL PINJAMAN
+        async function muatTabelPinjaman() {
+            const tbody = document.getElementById('tabelPinjaman');
+            try {
+                const q = query(collection(db, "pinjaman"), orderBy("waktu_input", "desc"));
+                const snapshot = await getDocs(q);
+                tbody.innerHTML = '';
+
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Belum ada riwayat pinjaman.</td></tr>';
+                    return;
+                }
+
+                snapshot.forEach(dokumen => {
+                    const idDoc = dokumen.id;
+                    const d = dokumen.data();
+                    
+                    // Logika Status dan Tombol
+                    let statusBadge = d.status === "Aktif" ? `<span class="badge badge-aktif">Aktif</span>` : `<span class="badge badge-lunas">Lunas</span>`;
+                    
+                    let tombolAksi = d.status === "Aktif" 
+                        ? `<button class="btn-lunas" onclick="tandaiLunas('${idDoc}', '${d.info_anggota}')">✔ Tandai Lunas</button>` 
+                        : `<span style="color:#7f8c8d; font-size:0.8rem;"><i>Sudah Lunas</i></span>`;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${d.tanggal}</td>
+                            <td><strong>${d.info_anggota}</strong></td>
+                            <td>${d.keterangan || '-'}</td>
+                            <td>${formatRupiah(d.jumlah)}</td>
+                            <td>${statusBadge}</td>
+                            <td>${tombolAksi}</td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Gagal memuat data pinjaman.</td></tr>';
+            }
+        }
+
+        // 4. PROSES SIMPAN PINJAMAN BARU
+        document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dropdown = document.getElementById('id_anggota');
+            const teksAnggota = dropdown.options[dropdown.selectedIndex].text;
+
             const dataPinjaman = {
                 tanggal: document.getElementById('tanggal').value,
                 id_anggota: dropdown.value,
-                info_anggota: dropdown.options[dropdown.selectedIndex].text,
-                jumlah: parseInt(document.getElementById('jumlah').value),
-                tenor: "10 Bulan",
+                info_anggota: teksAnggota, // Menyimpan nama agar mudah ditampilkan di tabel
+                jumlah: Number(document.getElementById('jumlah').value),
                 keterangan: document.getElementById('keterangan').value,
-                waktu_input: new Date(),
-                status: "Aktif" // Otomatis status aktif saat baru diajukan
+                status: "Aktif", // Otomatis aktif saat pertama dibuat
+                waktu_input: new Date().toISOString()
             };
 
             try {
                 await addDoc(collection(db, "pinjaman"), dataPinjaman);
-                alert("Berhasil! Pinjaman sebesar Rp " + dataPinjaman.jumlah + " telah dicatat.");
+                alert("Pinjaman berhasil dicatat!");
                 document.getElementById('formPinjaman').reset();
-            } catch (e) {
-                alert("Gagal menyimpan data pinjaman.");
+                muatTabelPinjaman(); // Refresh tabel otomatis
+            } catch (err) {
+                alert("Gagal menyimpan data: " + err.message);
             }
         });
+
+        // 5. FITUR UBAH STATUS JADI LUNAS
+        window.tandaiLunas = async function(idDokumen, namaAnggota) {
+            const yakin = confirm(`Apakah Anda yakin pinjaman atas nama "${namaAnggota}" ini sudah LUNAS?\n\nJika di-Oke, pinjaman ini tidak akan muncul lagi di halaman pembayaran Angsuran.`);
+            
+            if (yakin) {
+                try {
+                    const refDokumen = doc(db, "pinjaman", idDokumen);
+                    // Perintah untuk mengubah kolom 'status' saja
+                    await updateDoc(refDokumen, {
+                        status: "Lunas"
+                    });
+                    
+                    alert("Status berhasil diubah menjadi Lunas!");
+                    muatTabelPinjaman(); // Refresh tabel agar tombol berubah jadi hijau
+                } catch (err) {
+                    alert("Gagal mengubah status: " + err.message);
+                }
+            }
+        };
     </script>
 </body>
 </html>

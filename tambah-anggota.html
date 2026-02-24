@@ -1,37 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    // PAKAI CONFIG ANDA
-    const firebaseConfig = {
-        apiKey: "KODE_API_ANDA_DI_SINI",
-        authDomain: "koperasipengayoman-xxx.firebaseapp.com",
-        projectId: "koperasipengayoman-xxx",
-        storageBucket: "koperasipengayoman-xxx.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456789:web:abcdef"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Satpam: Cek apakah user sudah login
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // Jika belum login, paksa pindah ke halaman login
-            window.location.href = "login.html";
-        }
-    });
-</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Anggota - Koperasi Pengayoman</title>
     <style>
-        /* [Masukkan semua CSS yang sama persis seperti sebelumnya di sini, saya persingkat agar rapi] */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: #f4f7f6; }
         .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
         .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
@@ -41,8 +15,8 @@
         .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
         .main-content { flex: 1; display: flex; flex-direction: column; }
         .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .content { padding: 20px; overflow-y: auto; }
-        .form-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; }
+        .content { padding: 30px; overflow-y: auto; }
+        .form-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; }
         .form-container h3 { margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #1abc9c; padding-bottom: 10px; display: inline-block; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
@@ -52,7 +26,7 @@
         .btn { padding: 12px 25px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; color: white; }
         .btn-save { background-color: #1abc9c; }
         .btn-save:hover { background-color: #16a085; }
-        .btn-cancel { background-color: #95a5a6; text-decoration: none; display: inline-block; text-align: center;}
+        .btn-cancel { background-color: #95a5a6; text-decoration: none; display: inline-block; text-align: center; }
     </style>
 </head>
 <body>
@@ -65,24 +39,23 @@
             <li><a href="simpanan.html">Simpanan</a></li>
             <li><a href="pinjaman.html">Pinjaman</a></li>
             <li><a href="angsuran.html">Angsuran</a></li>
-	    <a href="laporan.html">Laporan</a>
+            <li><a href="laporan.html">Laporan</a></li>
         </ul>
     </div>
 
     <div class="main-content">
-        <div class="header"><h2>Pendaftaran Anggota Baru</h2></div>
+        <div class="header"><h2>Tambah Anggota Baru</h2></div>
         <div class="content">
             <div class="form-container">
-                <h3>Formulir Data Anggota</h3>
-                
-                <form id="formAnggota">
+                <h3>Identitas Anggota</h3>
+                <form id="formTambah">
                     <div class="form-group">
-                        <label for="no_anggota">No. Anggota</label>
-                        <input type="text" id="no_anggota" placeholder="Masukkan nomor anggota" required>
+                        <label for="no_anggota">Nomor Anggota</label>
+                        <input type="text" id="no_anggota" placeholder="Contoh: 001" required>
                     </div>
                     <div class="form-group">
                         <label for="nama">Nama Lengkap</label>
-                        <input type="text" id="nama" placeholder="Masukkan nama lengkap" required>
+                        <input type="text" id="nama" placeholder="Masukkan nama sesuai KTP" required>
                     </div>
                     <div class="form-group">
                         <label for="tanggal_gabung">Tanggal Bergabung</label>
@@ -98,11 +71,11 @@
     </div>
 
     <script type="module">
-        // 1. Mengimpor fungsi Firebase dari internet
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 2. GANTI BAGIAN INI dengan kode konfigurasi proyek Firebase Anda!
+        // CONFIG ASLI MILIK ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
@@ -110,36 +83,38 @@
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
             appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	    measurementId: "G-CVWCXTF3FX"
+            measurementId: "G-CVWCXTF3FX"
         };
 
-        // 3. Menghidupkan Firebase & Database Firestore
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 4. Logika ketika tombol simpan ditekan
-        document.getElementById('formAnggota').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Mencegah halaman refresh (loading ulang)
+        // 1. CEK LOGIN (Agar tidak terlempar ke login.html)
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            }
+        });
 
-            // Mengambil nilai dari kotak input
-            const noAnggota = document.getElementById('no_anggota').value;
-            const namaLengkap = document.getElementById('nama').value;
-            const tanggalGabung = document.getElementById('tanggal_gabung').value;
+        // 2. SIMPAN DATA KE FIRESTORE
+        document.getElementById('formTambah').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const dataAnggota = {
+                no_anggota: document.getElementById('no_anggota').value,
+                nama: document.getElementById('nama').value,
+                tanggal_gabung: document.getElementById('tanggal_gabung').value,
+                waktu_input: new Date().toISOString()
+            };
 
             try {
-                // Menyimpan ke database Firebase di "folder" bernama "anggota"
-                const docRef = await addDoc(collection(db, "anggota"), {
-                    no_anggota: noAnggota,
-                    nama: namaLengkap,
-                    tanggal_gabung: tanggalGabung,
-                    waktu_input: new Date() // Menyimpan waktu saat data diinput
-                });
-                
-                alert("Berhasil! Data Anggota tersimpan dengan ID: " + docRef.id);
-                document.getElementById('formAnggota').reset(); // Mengosongkan form
-            } catch (e) {
-                console.error("Error menambahkan data: ", e);
-                alert("Gagal menyimpan data. Cek koneksi internet Anda.");
+                await addDoc(collection(db, "anggota"), dataAnggota);
+                alert("Anggota baru berhasil ditambahkan!");
+                window.location.href = "daftar-anggota.html";
+            } catch (err) {
+                console.error(err);
+                alert("Gagal menyimpan data.");
             }
         });
     </script>

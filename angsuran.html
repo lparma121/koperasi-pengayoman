@@ -1,30 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    // PAKAI CONFIG ANDA
-    const firebaseConfig = {
-        apiKey: "KODE_API_ANDA_DI_SINI",
-        authDomain: "koperasipengayoman-xxx.firebaseapp.com",
-        projectId: "koperasipengayoman-xxx",
-        storageBucket: "koperasipengayoman-xxx.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456789:web:abcdef"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Satpam: Cek apakah user sudah login
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // Jika belum login, paksa pindah ke halaman login
-            window.location.href = "login.html";
-        }
-    });
-</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,7 +26,7 @@
         .input-group-flex { display: flex; align-items: center; }
         .input-group-flex span { background-color: #ecf0f1; padding: 12px; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; font-weight: bold; color: #7f8c8d; }
         .input-group-flex span.suffix { border-right: 1px solid #ccc; border-left: none; border-radius: 0 4px 4px 0; }
-        .input-group-flex input { flex: 1; border-radius: 0 4px 4px 0; }
+        .input-group-flex input { flex: 1; border-radius: 0; }
         .btn-group { margin-top: 30px; display: flex; gap: 15px; }
         .btn { padding: 12px 25px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; color: white; }
         .btn-save { background-color: #8e44ad; }
@@ -69,7 +44,7 @@
             <li><a href="simpanan.html">Simpanan</a></li>
             <li><a href="pinjaman.html">Pinjaman</a></li>
             <li><a href="#" class="active" style="background-color: #8e44ad;">Angsuran</a></li>
-	    <a href="laporan.html">Laporan</a>
+            <li><a href="laporan.html">Laporan</a></li>
         </ul>
     </div>
 
@@ -114,9 +89,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // GANTI DENGAN KODE FIREBASE CONFIG ANDA
+        // CONFIG ASLI MILIK ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
@@ -124,13 +100,24 @@
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
             appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	    measurementId: "G-CVWCXTF3FX"
+            measurementId: "G-CVWCXTF3FX"
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Hanya memuat data dari koleksi "pinjaman" yang statusnya "Aktif"
+        // 1. CEK LOGIN (Satpam)
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                // Jika sudah login, baru muat data pinjaman
+                muatPinjamanAktif();
+            }
+        });
+
+        // 2. FUNGSI MUAT PINJAMAN
         async function muatPinjamanAktif() {
             const dropdown = document.getElementById('pinjaman');
             try {
@@ -152,18 +139,21 @@
                 dropdown.innerHTML = '<option value="">Gagal memuat data</option>';
             }
         }
-        muatPinjamanAktif();
 
+        // 3. FUNGSI SIMPAN ANGSURAN
         document.getElementById('formAngsuran').addEventListener('submit', async function(event) {
             event.preventDefault();
             const dropdown = document.getElementById('pinjaman');
+            
+            // Perbaikan kecil: Ambil id_anggota jika ada dari tabel pinjaman
+            // Saat ini kita pakai data dari form
             const dataAngsuran = {
                 tanggal: document.getElementById('tanggal').value,
                 id_pinjaman: dropdown.value,
                 info_pinjaman: dropdown.options[dropdown.selectedIndex].text,
                 angsuran_ke: document.getElementById('angsuran_ke').value,
                 jumlah: parseInt(document.getElementById('jumlah').value),
-                waktu_input: new Date()
+                waktu_input: new Date().toISOString() // Format waktu yang lebih stabil untuk database
             };
 
             try {
@@ -171,7 +161,8 @@
                 alert("Pembayaran angsuran berhasil dicatat!");
                 document.getElementById('formAngsuran').reset();
             } catch (e) {
-                alert("Gagal mencatat pembayaran.");
+                console.error("Gagal simpan:", e);
+                alert("Gagal mencatat pembayaran: " + e.message);
             }
         });
     </script>

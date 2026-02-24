@@ -1,32 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-        // CONFIG FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
-            authDomain: "koperasi-pengayoman.firebaseapp.com",
-            projectId: "koperasi-pengayoman",
-            storageBucket: "koperasi-pengayoman.firebasestorage.app",
-            messagingSenderId: "302370488338",
-            appId: "1:302370488338:web:52cecadea899bcaba998cb",
-            measurementId: "G-CVWCXTF3FX"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // Satpam: Cek login
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-            }
-        });
-    </script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Anggota - Koperasi Pengayoman</title>
@@ -110,7 +84,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // Tambahan doc dan deleteDoc untuk fitur hapus
+        import { getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
@@ -123,8 +99,19 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // 1. Cek Login Terlebih Dahulu
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                tampilkanDataAnggota();
+            }
+        });
+
+        // 2. Fungsi Menampilkan Data
         async function tampilkanDataAnggota() {
             const tabelBody = document.getElementById('tabelDataAnggota');
 
@@ -140,19 +127,19 @@
                 }
 
                 let nomorUrut = 1;
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
+                querySnapshot.forEach((dokumen) => {
+                    const data = dokumen.data();
+                    const idDoc = dokumen.id;
                     
-                    // MODIFIKASI: Kolom nama sekarang memiliki link ke detail-anggota.html
                     const barisHTML = `
                         <tr>
                             <td>${nomorUrut}</td>
                             <td>${data.no_anggota}</td>
-                            <td><a href="detail-anggota.html?id=${doc.id}" class="nama-link">${data.nama}</a></td>
+                            <td><a href="detail-anggota.html?id=${idDoc}" class="nama-link">${data.nama}</a></td>
                             <td>${data.tanggal_gabung}</td>
                             <td>
                                 <button class="btn-action btn-edit" onclick="alert('Fitur edit menyusul!')">Edit</button>
-                                <button class="btn-action btn-delete" onclick="alert('Fitur hapus menyusul!')">Hapus</button>
+                                <button class="btn-action btn-delete" onclick="hapusAnggota('${idDoc}', '${data.nama}')">Hapus</button>
                             </td>
                         </tr>
                     `;
@@ -167,7 +154,25 @@
             }
         }
 
-        tampilkanDataAnggota();
+        // 3. Fungsi Menghapus Data Anggota
+        window.hapusAnggota = async function(idDokumen, namaAnggota) {
+            // Memunculkan kotak peringatan
+            const yakin = confirm(`Peringatan: Apakah Anda yakin ingin menghapus data anggota bernama "${namaAnggota}"?`);
+            
+            if (yakin) {
+                try {
+                    // Perintah menghapus ke Firebase
+                    await deleteDoc(doc(db, "anggota", idDokumen));
+                    alert("Data berhasil dihapus dari database!");
+                    
+                    // Muat ulang tabel agar data yang dihapus langsung hilang dari layar
+                    tampilkanDataAnggota();
+                } catch (error) {
+                    console.error("Gagal hapus:", error);
+                    alert("Terjadi kesalahan saat menghapus data.");
+                }
+            }
+        };
     </script>
 </body>
 </html>

@@ -1,37 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    // PAKAI CONFIG ANDA
-    const firebaseConfig = {
-        apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
-        authDomain: "koperasi-pengayoman.firebaseapp.com",
-        projectId: "koperasi-pengayoman",
-        storageBucket: "koperasi-pengayoman.firebasestorage.app",
-        messagingSenderId: "302370488338",
-        appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	measurementId: "G-CVWCXTF3FX"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Satpam: Cek apakah user sudah login
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // Jika belum login, paksa pindah ke halaman login
-            window.location.href = "login.html";
-        }
-    });
-</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Koperasi Pengayoman</title>
     <style>
-        /* CSS Sama Persis */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; height: 100vh; background-color: #f4f7f6; }
         .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
@@ -47,6 +20,8 @@
         .card { background-color: white; flex: 1; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 5px solid #1abc9c; }
         .card h3 { color: #7f8c8d; font-size: 1rem; margin-bottom: 10px; }
         .card p { font-size: 1.5rem; font-weight: bold; color: #2c3e50; }
+        .btn-logout { padding: 10px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-logout:hover { background: #c0392b; }
     </style>
 </head>
 <body>
@@ -61,15 +36,14 @@
             <li><a href="simpanan.html">Simpanan</a></li>
             <li><a href="pinjaman.html">Pinjaman</a></li>
             <li><a href="angsuran.html">Angsuran</a></li>
-            <li><a href="#">Pengaturan</a></li>
-	    <a href="laporan.html">Laporan</a>
+            <li><a href="laporan.html">Laporan</a></li>
         </ul>
     </div>
 
     <div class="main-content">
         <div class="header">
             <h2>Selamat Datang, Pengurus!</h2>
-            <button style="padding: 10px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">Keluar</button>
+            <button id="btnKeluar" class="btn-logout">Keluar</button>
         </div>
 
         <div class="content">
@@ -77,16 +51,16 @@
             
             <div class="card-container">
                 <div class="card">
-                    <h3>Total Anggota</h3>
+                    <h3>Total Anggota Terdaftar</h3>
                     <p id="angkaTotalAnggota">Menghitung...</p>
                 </div>
                 <div class="card" style="border-left-color: #3498db;">
-                    <h3>Total Simpanan</h3>
+                    <h3>Total Simpanan Masuk</h3>
                     <p id="angkaTotalSimpanan">Menghitung...</p>
                 </div>
                 <div class="card" style="border-left-color: #e67e22;">
-                    <h3>Total Pinjaman Aktif</h3>
-                    <p id="angkaTotalPinjaman">Rp 0</p>
+                    <h3>Sisa Uang Beredar (Pinjaman)</h3>
+                    <p id="angkaTotalPinjaman">Menghitung...</p>
                 </div>
             </div>
         </div>
@@ -94,9 +68,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getCountFromServer, getAggregateFromServer, sum } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // GANTI DENGAN KODE FIREBASE CONFIG ANDA
+        // CONFIG ASLI MILIK ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
@@ -104,60 +79,69 @@
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
             appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	    measurementId: "G-CVWCXTF3FX"
+            measurementId: "G-CVWCXTF3FX"
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Fungsi Format Rupiah agar rapi
-        const formatKeRupiah = (angka) => {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(angka);
-        };
+        // Fungsi Format Rupiah
+        const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 
-        // 1. Menghitung Total Anggota
-        async function hitungAnggota() {
-            const teksAngka = document.getElementById('angkaTotalAnggota');
-            try {
-                const snapshot = await getCountFromServer(collection(db, "anggota"));
-                teksAngka.innerText = snapshot.data().count + " Orang";
-            } catch (error) {
-                teksAngka.innerText = "Gagal memuat";
+        // 1. CEK LOGIN
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                // Jalankan fungsi hitung hanya jika sudah aman
+                hitungDashboard();
             }
-        }
+        });
 
-        // 2. Menghitung Total Uang Simpanan
-        async function hitungTotalSimpanan() {
-            const teksSimpanan = document.getElementById('angkaTotalSimpanan');
+        // 2. LOGIKA KELUAR
+        document.getElementById('btnKeluar').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = "login.html";
+            });
+        });
+
+        // 3. FUNGSI HITUNG SUPER AMAN (TAHAN ERROR TIPE DATA)
+        async function hitungDashboard() {
             try {
-                const snapshot = await getAggregateFromServer(collection(db, "simpanan"), {
-                    totalUang: sum('jumlah')
+                // Hitung Anggota
+                const snapAnggota = await getDocs(collection(db, "anggota"));
+                document.getElementById('angkaTotalAnggota').innerText = snapAnggota.size + " Orang";
+
+                // Hitung Total Simpanan
+                let totalS = 0;
+                const snapSimpanan = await getDocs(collection(db, "simpanan"));
+                snapSimpanan.forEach(doc => {
+                    totalS += Number(doc.data().jumlah) || 0; // Memaksa jadi angka
                 });
-                teksSimpanan.innerText = formatKeRupiah(snapshot.data().totalUang || 0);
-            } catch (error) {
-                teksSimpanan.innerText = "Gagal memuat";
-            }
-        }
+                document.getElementById('angkaTotalSimpanan').innerText = formatRupiah(totalS);
 
-        // 3. Menghitung Total Pinjaman Aktif
-        async function hitungTotalPinjaman() {
-            const teksPinjaman = document.getElementById('angkaTotalPinjaman');
-            try {
-                const snapshot = await getAggregateFromServer(collection(db, "pinjaman"), {
-                    totalPinjam: sum('jumlah')
+                // Hitung Pinjaman (Dikurangi Angsuran)
+                let totalP = 0;
+                const snapPinjaman = await getDocs(collection(db, "pinjaman"));
+                snapPinjaman.forEach(doc => {
+                    totalP += Number(doc.data().jumlah) || 0;
                 });
-                teksPinjaman.innerText = formatKeRupiah(snapshot.data().totalPinjam || 0);
+
+                const snapAngsuran = await getDocs(collection(db, "angsuran"));
+                snapAngsuran.forEach(doc => {
+                    totalP -= Number(doc.data().jumlah) || 0; // Mengurangi sisa pinjaman
+                });
+                
+                document.getElementById('angkaTotalPinjaman').innerText = formatRupiah(totalP);
+
             } catch (error) {
-                teksPinjaman.innerText = "Gagal memuat";
+                console.error("Gagal memuat dashboard:", error);
+                document.getElementById('angkaTotalAnggota').innerText = "Gagal memuat";
+                document.getElementById('angkaTotalSimpanan').innerText = "Gagal memuat";
+                document.getElementById('angkaTotalPinjaman').innerText = "Gagal memuat";
             }
         }
-
-        // Jalankan semua fungsi perhitungan
-        hitungAnggota();
-        hitungTotalSimpanan();
-        hitungTotalPinjaman();
     </script>
+</body>
+</html>

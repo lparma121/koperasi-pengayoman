@@ -21,12 +21,10 @@
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
         .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-        .form-group input:focus { outline: none; border-color: #1abc9c; }
         .btn-group { margin-top: 30px; display: flex; gap: 15px; }
         .btn { padding: 12px 25px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; color: white; }
         .btn-save { background-color: #1abc9c; }
-        .btn-save:hover { background-color: #16a085; }
-        .btn-cancel { background-color: #95a5a6; text-decoration: none; display: inline-block; text-align: center; }
+        .btn-cancel { background-color: #95a5a6; text-decoration: none; display: inline-block; text-align: center; line-height: 20px; }
     </style>
 </head>
 <body>
@@ -46,7 +44,8 @@
     <div class="main-content">
         <div class="header"><h2>Tambah Anggota Baru</h2></div>
         <div class="content">
-            <div class="form-container">
+            <div id="loader" style="text-align: center; padding: 50px; display: none;">Verifikasi akses...</div>
+            <div class="form-container" id="mainForm" style="display: none;">
                 <h3>Identitas Anggota</h3>
                 <form id="formTambah">
                     <div class="form-group">
@@ -75,7 +74,6 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CONFIG ASLI MILIK ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
@@ -90,17 +88,22 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 1. CEK LOGIN (Agar tidak terlempar ke login.html)
+        // Satpam dengan pengecekan visual
+        const mainForm = document.getElementById('mainForm');
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+
         onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "login.html";
+            if (user) {
+                loader.style.display = 'none';
+                mainForm.style.display = 'block';
+            } else {
+                window.location.replace("login.html");
             }
         });
 
-        // 2. SIMPAN DATA KE FIRESTORE
         document.getElementById('formTambah').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const dataAnggota = {
                 no_anggota: document.getElementById('no_anggota').value,
                 nama: document.getElementById('nama').value,
@@ -113,8 +116,7 @@
                 alert("Anggota baru berhasil ditambahkan!");
                 window.location.href = "daftar-anggota.html";
             } catch (err) {
-                console.error(err);
-                alert("Gagal menyimpan data.");
+                alert("Gagal menyimpan: " + err.message);
             }
         });
     </script>

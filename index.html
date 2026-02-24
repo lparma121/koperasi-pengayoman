@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Koperasi Pengayoman</title>
+    <style>
+        /* CSS Sama Persis */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f4f7f6; }
+        .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
+        .sidebar-header h2 { font-size: 1.2rem; color: #1abc9c; }
+        .menu { list-style: none; padding: 20px 0; }
+        .menu li a { color: white; text-decoration: none; display: block; padding: 15px 20px; transition: 0.3s; }
+        .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 20px; overflow-y: auto; }
+        .card-container { display: flex; gap: 20px; margin-top: 20px; }
+        .card { background-color: white; flex: 1; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 5px solid #1abc9c; }
+        .card h3 { color: #7f8c8d; font-size: 1rem; margin-bottom: 10px; }
+        .card p { font-size: 1.5rem; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>KOPERASI PENGAYOMAN</h2>
+        </div>
+        <ul class="menu">
+            <li><a href="#" class="active" style="background-color: #1abc9c;">Beranda (Dashboard)</a></li>
+            <li><a href="daftar-anggota.html">Data Anggota</a></li>
+            <li><a href="simpanan.html">Simpanan</a></li>
+            <li><a href="pinjaman.html">Pinjaman</a></li>
+            <li><a href="angsuran.html">Angsuran</a></li>
+            <li><a href="#">Pengaturan</a></li>
+	    <a href="laporan.html">Laporan</a>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2>Selamat Datang, Pengurus!</h2>
+            <button style="padding: 10px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">Keluar</button>
+        </div>
+
+        <div class="content">
+            <p>Ini adalah ringkasan data Koperasi Pengayoman saat ini.</p>
+            
+            <div class="card-container">
+                <div class="card">
+                    <h3>Total Anggota</h3>
+                    <p id="angkaTotalAnggota">Menghitung...</p>
+                </div>
+                <div class="card" style="border-left-color: #3498db;">
+                    <h3>Total Simpanan</h3>
+                    <p id="angkaTotalSimpanan">Menghitung...</p>
+                </div>
+                <div class="card" style="border-left-color: #e67e22;">
+                    <h3>Total Pinjaman Aktif</h3>
+                    <p id="angkaTotalPinjaman">Rp 0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getCountFromServer, getAggregateFromServer, sum } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // GANTI DENGAN KODE FIREBASE CONFIG ANDA
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb",
+	    measurementId: "G-CVWCXTF3FX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fungsi Format Rupiah agar rapi
+        const formatKeRupiah = (angka) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(angka);
+        };
+
+        // 1. Menghitung Total Anggota
+        async function hitungAnggota() {
+            const teksAngka = document.getElementById('angkaTotalAnggota');
+            try {
+                const snapshot = await getCountFromServer(collection(db, "anggota"));
+                teksAngka.innerText = snapshot.data().count + " Orang";
+            } catch (error) {
+                teksAngka.innerText = "Gagal memuat";
+            }
+        }
+
+        // 2. Menghitung Total Uang Simpanan
+        async function hitungTotalSimpanan() {
+            const teksSimpanan = document.getElementById('angkaTotalSimpanan');
+            try {
+                const snapshot = await getAggregateFromServer(collection(db, "simpanan"), {
+                    totalUang: sum('jumlah')
+                });
+                teksSimpanan.innerText = formatKeRupiah(snapshot.data().totalUang || 0);
+            } catch (error) {
+                teksSimpanan.innerText = "Gagal memuat";
+            }
+        }
+
+        // 3. Menghitung Total Pinjaman Aktif
+        async function hitungTotalPinjaman() {
+            const teksPinjaman = document.getElementById('angkaTotalPinjaman');
+            try {
+                const snapshot = await getAggregateFromServer(collection(db, "pinjaman"), {
+                    totalPinjam: sum('jumlah')
+                });
+                teksPinjaman.innerText = formatKeRupiah(snapshot.data().totalPinjam || 0);
+            } catch (error) {
+                teksPinjaman.innerText = "Gagal memuat";
+            }
+        }
+
+        // Jalankan semua fungsi perhitungan
+        hitungAnggota();
+        hitungTotalSimpanan();
+        hitungTotalPinjaman();
+    </script>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan - Koperasi Pengayoman</title>
+    <style>
+        /* CSS Utama */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f4f7f6; }
+        .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
+        .sidebar-header h2 { font-size: 1.2rem; color: #1abc9c; }
+        .menu { list-style: none; padding: 20px 0; }
+        .menu li a { color: white; text-decoration: none; display: block; padding: 15px 20px; transition: 0.3s; }
+        .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 20px; overflow-y: auto; }
+        
+        /* Desain Tabel Laporan */
+        .report-section { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .report-section h3 { margin-bottom: 15px; color: #2c3e50; border-left: 5px solid #1abc9c; padding-left: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        table th, table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        table th { background-color: #f8f9fa; color: #34495e; }
+        
+        /* Tombol Cetak */
+        .btn-print { background-color: #2ecc71; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-print:hover { background-color: #27ae60; }
+
+        @media print {
+            .sidebar, .btn-print { display: none; }
+            .main-content { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
+        <ul class="menu">
+            <li><a href="index.html">Beranda (Dashboard)</a></li>
+            <li><a href="daftar-anggota.html">Data Anggota</a></li>
+            <li><a href="simpanan.html">Simpanan</a></li>
+            <li><a href="pinjaman.html">Pinjaman</a></li>
+            <li><a href="angsuran.html">Angsuran</a></li>
+            <li><a href="#" class="active">Laporan</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2>Laporan Transaksi Koperasi</h2>
+            <button class="btn-print" onclick="window.print()">Cetak Laporan</button>
+        </div>
+
+        <div class="content">
+            <div class="report-section">
+                <h3>Rekap Simpanan</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Anggota</th>
+                            <th>Jenis</th>
+                            <th>Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelSimpanan"></tbody>
+                </table>
+            </div>
+
+            <div class="report-section">
+                <h3>Rekap Pinjaman</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Anggota</th>
+                            <th>Jumlah Pinjaman</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelPinjaman"></tbody>
+                </table>
+            </div>
+
+            <div class="report-section">
+                <h3>Rekap Angsuran</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Info Pinjaman</th>
+                            <th>Angsuran Ke</th>
+                            <th>Jumlah Bayar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelAngsuran"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb",
+	    measurementId: "G-CVWCXTF3FX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+
+        async function muatLaporan() {
+            // Muat Simpanan
+            const snapSimpanan = await getDocs(query(collection(db, "simpanan"), orderBy("tanggal_transaksi", "desc")));
+            const tSimpanan = document.getElementById('tabelSimpanan');
+            snapSimpanan.forEach(doc => {
+                const d = doc.data();
+                tSimpanan.innerHTML += `<tr><td>${d.tanggal_transaksi}</td><td>${d.info_anggota}</td><td>${d.jenis_simpanan}</td><td>${formatRupiah(d.jumlah)}</td></tr>`;
+            });
+
+            // Muat Pinjaman
+            const snapPinjaman = await getDocs(query(collection(db, "pinjaman"), orderBy("tanggal", "desc")));
+            const tPinjaman = document.getElementById('tabelPinjaman');
+            snapPinjaman.forEach(doc => {
+                const d = doc.data();
+                tPinjaman.innerHTML += `<tr><td>${d.tanggal}</td><td>${d.info_anggota}</td><td>${formatRupiah(d.jumlah)}</td><td>${d.status}</td></tr>`;
+            });
+
+            // Muat Angsuran
+            const snapAngsuran = await getDocs(query(collection(db, "angsuran"), orderBy("tanggal", "desc")));
+            const tAngsuran = document.getElementById('tabelAngsuran');
+            snapAngsuran.forEach(doc => {
+                const d = doc.data();
+                tAngsuran.innerHTML += `<tr><td>${d.tanggal}</td><td>${d.info_pinjaman}</td><td>${d.angsuran_ke}</td><td>${formatRupiah(d.jumlah)}</td></tr>`;
+            });
+        }
+
+        muatLaporan();
+    </script>
+</body>
+</html>

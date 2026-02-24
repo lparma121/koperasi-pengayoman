@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Anggota - Koperasi Pengayoman</title>
+    <style>
+        /* Pengaturan CSS sama persis seperti sebelumnya */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f4f7f6; }
+        .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
+        .sidebar-header h2 { font-size: 1.2rem; color: #1abc9c; }
+        .menu { list-style: none; padding: 20px 0; }
+        .menu li a { color: white; text-decoration: none; display: block; padding: 15px 20px; transition: 0.3s; }
+        .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 20px; overflow-y: auto; }
+        .table-container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-add { background-color: #1abc9c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; transition: 0.3s; }
+        .btn-add:hover { background-color: #16a085; }
+        table { width: 100%; border-collapse: collapse; }
+        table th, table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        table th { background-color: #f8f9fa; color: #34495e; font-weight: bold; }
+        table tr:hover { background-color: #f1f2f6; }
+        .btn-action { padding: 6px 10px; border: none; border-radius: 3px; cursor: pointer; color: white; font-size: 0.85rem; text-decoration: none; margin-right: 5px; }
+        .btn-edit { background-color: #3498db; }
+        .btn-delete { background-color: #e74c3c; }
+        
+        /* Tambahan untuk teks loading */
+        .loading-text { text-align: center; font-style: italic; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>KOPERASI PENGAYOMAN</h2>
+        </div>
+        <ul class="menu">
+            <li><a href="index.html">Beranda (Dashboard)</a></li>
+            <li><a href="#" class="active">Data Anggota</a></li>
+            <li><a href="simpanan.html">Simpanan</a></li>
+            <li><a href="pinjaman.html">Pinjaman</a></li>
+            <li><a href="angsuran.html">Angsuran</a></li>
+	    <a href="laporan.html">Laporan</a>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2>Kelola Data Anggota</h2>
+        </div>
+
+        <div class="content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>Daftar Seluruh Anggota</h3>
+                    <a href="tambah-anggota.html" class="btn-add">+ Tambah Anggota Baru</a>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>No. Anggota</th>
+                            <th>Nama Lengkap</th>
+                            <th>Tanggal Bergabung</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelDataAnggota">
+                        <tr>
+                            <td colspan="5" class="loading-text">Sedang memuat data dari database...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 1. Mengimpor fungsi Firebase untuk membaca data (getDocs)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 2. GANTI DENGAN KODE FIREBASE CONFIG ANDA YANG LENGKAP (Termasuk measurementId)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb",
+	    measurementId: "G-CVWCXTF3FX"
+        };
+
+        // 3. Menghidupkan Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 4. Fungsi utama untuk menarik data dan menampilkan ke tabel
+        async function tampilkanDataAnggota() {
+            const tabelBody = document.getElementById('tabelDataAnggota');
+
+            try {
+                // Mengambil data dari koleksi "anggota", diurutkan dari yang terbaru (opsional)
+                const q = query(collection(db, "anggota"), orderBy("waktu_input", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                // Kosongkan tulisan "Sedang memuat data..."
+                tabelBody.innerHTML = '';
+
+                // Cek jika database masih kosong
+                if (querySnapshot.empty) {
+                    tabelBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada data anggota terdaftar.</td></tr>';
+                    return;
+                }
+
+                // Jika ada data, buat baris tabel satu per satu
+                let nomorUrut = 1;
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    // Membuat elemen baris HTML (<tr>)
+                    const barisHTML = `
+                        <tr>
+                            <td>${nomorUrut}</td>
+                            <td>${data.no_anggota}</td>
+                            <td>${data.nama}</td>
+                            <td>${data.tanggal_gabung}</td>
+                            <td>
+                                <button class="btn-action btn-edit" onclick="alert('Fitur edit menyusul!')">Edit</button>
+                                <button class="btn-action btn-delete" onclick="alert('Fitur hapus menyusul!')">Hapus</button>
+                            </td>
+                        </tr>
+                    `;
+                    
+                    // Masukkan baris tersebut ke dalam tabel
+                    tabelBody.innerHTML += barisHTML;
+                    nomorUrut++;
+                });
+
+            } catch (error) {
+                console.error("Gagal mengambil data: ", error);
+                tabelBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Gagal terhubung ke database. Periksa koneksi internet Anda atau aturan akses Firebase.</td></tr>';
+            }
+        }
+
+        // 5. Jalankan fungsi di atas secara otomatis saat halaman web selesai dimuat
+        tampilkanDataAnggota();
+    </script>
+</body>
+</html>

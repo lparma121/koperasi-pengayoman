@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Saldo - Koperasi Pengayoman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #2c3e50; padding: 20px; }
+        
+        .portal-container {
+            background-color: white; padding: 30px; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center;
+        }
+        .portal-container h2 { color: #1abc9c; margin-bottom: 5px; font-size: 1.5rem; }
+        .portal-container p { color: #7f8c8d; margin-bottom: 25px; font-size: 0.9rem; }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: bold; font-size: 0.9rem; }
+        .input-group input { width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 8px; font-size: 1.1rem; text-align: center; font-weight: bold; transition: 0.3s; }
+        .input-group input:focus { outline: none; border-color: #1abc9c; }
+        .catatan-input { font-size: 0.75rem; color: #e74c3c; margin-top: 5px; display: block; text-align: center; }
+
+        .btn-cari {
+            width: 100%; padding: 14px; background-color: #1abc9c; color: white;
+            border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer;
+            transition: 0.3s; font-weight: bold; margin-top: 10px;
+        }
+        .btn-cari:hover { background-color: #16a085; }
+
+        /* Area Hasil Pencarian */
+        #areaHasil { margin-top: 25px; display: none; text-align: left; padding-top: 20px; border-top: 2px dashed #ecf0f1; }
+        #areaHasil h3 { color: #2c3e50; margin-bottom: 15px; text-align: center; font-size: 1.2rem; }
+        
+        .saldo-box { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #1abc9c; }
+        .saldo-box p { margin: 0; color: #7f8c8d; font-size: 0.85rem; text-transform: uppercase; font-weight: bold; }
+        .saldo-box h4 { margin: 5px 0 0 0; color: #2c3e50; font-size: 1.4rem; }
+        
+        .saldo-box.hutang { border-left-color: #e74c3c; }
+        .saldo-box.hutang h4 { color: #e74c3c; }
+        
+        .loading { color: #f39c12; font-weight: bold; margin-top: 15px; display: none; }
+        .error-msg { color: #e74c3c; font-weight: bold; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="portal-container">
+        <h2>PORTAL ANGGOTA</h2>
+        <p>Koperasi Pengayoman</p>
+        
+        <form id="formCekSaldo">
+            <div class="input-group">
+                <label for="namaAnggota">Masukkan Nama Lengkap Anda</label>
+                <input type="text" id="namaAnggota" placeholder="Contoh: Budi Santoso" required autocomplete="off">
+                <span class="catatan-input">*Huruf besar/kecil harus sama persis dengan yang terdaftar.</span>
+            </div>
+            <button type="submit" class="btn-cari">Cek Saldo Saya</button>
+        </form>
+
+        <div id="pesanLoading" class="loading">Mencari data ke database...</div>
+        <div id="pesanError" class="error-msg">Nama tidak ditemukan! Pastikan ejaan & huruf besar/kecil sudah benar.</div>
+
+        <div id="areaHasil">
+            <h3 id="namaAnggotaTampil">Halo, Nama!</h3>
+            
+            <div class="saldo-box">
+                <p>Total Tabungan / Simpanan</p>
+                <h4 id="simpananTampil">Rp 0</h4>
+            </div>
+
+            <div class="saldo-box hutang">
+                <p>Sisa Pinjaman Berjalan</p>
+                <h4 id="pinjamanTampil">Rp 0</h4>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #95a5a6;">
+                <i>*Data diperbarui secara real-time oleh sistem admin.</i>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // CONFIG FIREBASE ANDA
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb",
+            measurementId: "G-CVWCXTF3FX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+
+        document.getElementById('formCekSaldo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Mengambil input Nama (trim untuk menghapus spasi ekstra di awal/akhir)
+            const inputNama = document.getElementById('namaAnggota').value.trim();
+            const areaHasil = document.getElementById('areaHasil');
+            const pesanLoading = document.getElementById('pesanLoading');
+            const pesanError = document.getElementById('pesanError');
+
+            // Reset tampilan
+            areaHasil.style.display = 'none';
+            pesanError.style.display = 'none';
+            pesanLoading.style.display = 'block';
+
+            try {
+                // 1. CARI DATA ANGGOTA BERDASARKAN NAMA
+                const qAnggota = query(collection(db, "anggota"), where("nama", "==", inputNama));
+                const snapAnggota = await getDocs(qAnggota);
+
+                if (snapAnggota.empty) {
+                    pesanLoading.style.display = 'none';
+                    pesanError.style.display = 'block';
+                    return;
+                }
+
+                // Jika ketemu, ambil ID unik dan Namanya
+                const docAnggota = snapAnggota.docs[0];
+                const idUnikAnggota = docAnggota.id;
+                const namaAsli = docAnggota.data().nama;
+
+                // 2. HITUNG TOTAL SIMPANAN
+                let totalSimpanan = 0;
+                const qSimpanan = query(collection(db, "simpanan"), where("id_anggota", "==", idUnikAnggota));
+                const snapSimpanan = await getDocs(qSimpanan);
+                snapSimpanan.forEach(doc => {
+                    totalSimpanan += Number(doc.data().jumlah) || 0;
+                });
+
+                // 3. HITUNG SISA PINJAMAN (Pinjaman - Angsuran)
+                let sisaPinjaman = 0;
+                const qPinjaman = query(collection(db, "pinjaman"), where("id_anggota", "==", idUnikAnggota));
+                const snapPinjaman = await getDocs(qPinjaman);
+
+                for (const docP of snapPinjaman.docs) {
+                    sisaPinjaman += Number(docP.data().jumlah) || 0;
+
+                    // Cari angsuran untuk pinjaman ini
+                    const qAngsuran = query(collection(db, "angsuran"), where("id_pinjaman", "==", docP.id));
+                    const snapAngsuran = await getDocs(qAngsuran);
+                    snapAngsuran.forEach(docA => {
+                        sisaPinjaman -= Number(docA.data().jumlah) || 0;
+                    });
+                }
+
+                // 4. TAMPILKAN KE LAYAR
+                pesanLoading.style.display = 'none';
+                document.getElementById('namaAnggotaTampil').innerText = "Halo, " + namaAsli + "!";
+                document.getElementById('simpananTampil').innerText = formatRupiah(totalSimpanan);
+                document.getElementById('pinjamanTampil').innerText = formatRupiah(sisaPinjaman);
+                areaHasil.style.display = 'block';
+
+            } catch (error) {
+                console.error("Error:", error);
+                pesanLoading.style.display = 'none';
+                pesanError.innerText = "Terjadi kesalahan jaringan. Coba lagi nanti.";
+                pesanError.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb",
+            measurementId: "G-CVWCXTF3FX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) { window.location.href = "login.html"; }
+        });
+    </script>
+    <meta charset="UTF-8">
+    <title>Detail Anggota - Koperasi Pengayoman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; background-color: #f4f7f6; }
+        .sidebar { width: 250px; background-color: #2c3e50; color: white; min-height: 100vh; }
+        .main-content { flex: 1; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2, h3 { color: #2c3e50; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; }
+        .btn-back { background: #95a5a6; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div style="padding:20px; background:#1a252f; text-align:center;"><h2>KOPERASI</h2></div>
+    </div>
+    <div class="main-content">
+        <div class="header-info">
+            <h2 id="namaAnggota">Memuat Nama...</h2>
+            <a href="daftar-anggota.html" class="btn-back">Kembali</a>
+        </div>
+
+        <div class="card">
+            <h3>Riwayat Simpanan</h3>
+            <table>
+                <thead><tr><th>Tanggal</th><th>Jenis</th><th>Jumlah</th></tr></thead>
+                <tbody id="listSimpanan"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Riwayat Pinjaman & Angsuran</h3>
+            <table>
+                <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Jumlah</th></tr></thead>
+                <tbody id="listPinjaman"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Ambil ID dari URL (contoh: detail-anggota.html?id=ABC123)
+        const urlParams = new URLSearchParams(window.location.search);
+        const idAnggota = urlParams.get('id');
+
+        const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+
+        async function muatData() {
+            if (!idAnggota) return;
+
+            // 1. Ambil Profil Anggota
+            const docRef = doc(db, "anggota", idAnggota);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                document.getElementById('namaAnggota').innerText = docSnap.data().nama;
+            }
+
+            // 2. Ambil Simpanan
+            const qSimpanan = query(collection(db, "simpanan"), where("id_anggota", "==", idAnggota));
+            const snapSimpanan = await getDocs(qSimpanan);
+            snapSimpanan.forEach(d => {
+                document.getElementById('listSimpanan').innerHTML += `<tr><td>${d.data().tanggal_transaksi}</td><td>${d.data().jenis_simpanan}</td><td>${formatRupiah(d.data().jumlah)}</td></tr>`;
+            });
+
+            // 3. Ambil Pinjaman
+            const qPinjaman = query(collection(db, "pinjaman"), where("id_anggota", "==", idAnggota));
+            const snapPinjaman = await getDocs(qPinjaman);
+            snapPinjaman.forEach(d => {
+                document.getElementById('listPinjaman').innerHTML += `<tr style="background:#fff3e0"><td>${d.data().tanggal}</td><td>PINJAMAN: ${d.data().keterangan}</td><td>${formatRupiah(d.data().jumlah)}</td></tr>`;
+            });
+            
+            // 4. Ambil Angsuran
+            const qAngsuran = query(collection(db, "angsuran"), where("id_pinjaman", "==", idAnggota)); // Sederhananya kita filter by member ID atau link ID
+            // (Catatan: Untuk angsuran lebih akurat jika difilter berdasarkan ID Pinjaman)
+        }
+
+        muatData();
+    </script>
+</body>
+</html>

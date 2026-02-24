@@ -25,9 +25,9 @@
         <h2>Pusat Import Data Massal</h2>
         
         <div class="tab-selector">
-            <button class="tab-btn active" onclick="setMode('anggota')">Data Anggota</button>
-            <button class="tab-btn" onclick="setMode('simpanan')">Saldo Simpanan</button>
-            <button class="tab-btn" onclick="setMode('pinjaman')">Data Pinjaman</button>
+            <button class="tab-btn active" id="btn-anggota" onclick="setMode('anggota')">Data Anggota</button>
+            <button class="tab-btn" id="btn-simpanan" onclick="setMode('simpanan')">Saldo Simpanan</button>
+            <button class="tab-btn" id="btn-pinjaman" onclick="setMode('pinjaman')">Data Pinjaman</button>
         </div>
 
         <div class="format-info" id="formatInfo">
@@ -66,11 +66,10 @@
 
         let currentMode = 'anggota';
 
-        // Fungsi Ganti Tab
         window.setMode = function(mode) {
             currentMode = mode;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            document.getElementById('btn-' + mode).classList.add('active');
             
             const info = document.getElementById('formatInfo');
             if(mode === 'anggota') info.innerHTML = "<strong>Format Kolom CSV Anggota:</strong><br>no_anggota, nama, tanggal_gabung";
@@ -86,59 +85,74 @@
 
             const reader = new FileReader();
             reader.onload = async function(e) {
-                const rows = e.target.result.split("\n").slice(1);
+                const text = e.target.result;
+                const rows = text.split("\n").map(row => row.trim()).filter(row => row !== "");
+                const dataRows = rows.slice(1); // Skip header
+                
                 document.getElementById('progressCont').style.display = 'block';
+                const bar = document.getElementById('progressFill');
+                const statusElt = document.getElementById('status');
+                
                 let sukses = 0;
+                let gagal = 0;
 
-                for (let i = 0; i < rows.length; i++) {
-                    const col = rows[i].split(",").map(c => c.trim());
+                for (let i = 0; i < dataRows.length; i++) {
+                    const col = dataRows[i].split(",").map(c => c.trim());
                     if (col.length < 2) continue;
 
                     try {
-                        // Cari ID Dokumen Anggota berdasarkan no_anggota
-                        const q = query(collection(db, "anggota"), where("no_anggota", "==", col[0]));
-                        const snap = await getDocs(q);
-                        
-                        if (!snap.empty) {
-                            const idAnggota = snap.docs[0].id;
-                            const namaAnggota = snap.docs[0].data().nama;
-                            const infoAnggota = `${col[0]} - ${namaAsli}`;
-
-                            if (currentMode === 'simpanan') {
-                                await addDoc(collection(db, "simpanan"), {
-                                    id_anggota: idAnggota,
-                                    info_anggota: `${col[0]} - ${namaAnggota}`,
-                                    jenis_simpanan: col[1],
-                                    jumlah: Number(col[2]),
-                                    tanggal_transaksi: col[3],
-                                    waktu_input: new Date().toISOString()
-                                });
-                            } else if (currentMode === 'pinjaman') {
-                                await addDoc(collection(db, "pinjaman"), {
-                                    id_anggota: idAnggota,
-                                    info_anggota: `${col[0]} - ${namaAnggota}`,
-                                    jumlah: Number(col[1]),
-                                    keterangan: col[2],
-                                    tanggal: col[3],
-                                    status: col[4] || "Aktif",
-                                    waktu_input: new Date().toISOString()
-                                });
-                            } else {
-                                // Import Anggota Biasa
-                                await addDoc(collection(db, "anggota"), {
-                                    no_anggota: col[0],
-                                    nama: col[1],
-                                    tanggal_gabung: col[2],
-                                    waktu_input: new Date().toISOString()
-                                });
-                            }
+                        if (currentMode === 'anggota') {
+                            await addDoc(collection(db, "anggota"), {
+                                no_anggota: col[0],
+                                nama: col[1],
+                                tanggal_gabung: col[2],
+                                waktu_input: new Date().toISOString()
+                            });
                             sukses++;
+                        } else {
+                            // Mode Simpanan atau Pinjaman: Cari ID Anggota dulu
+                            const q = query(collection(db, "anggota"), where("no_anggota", "==", col[0]));
+                            const snap = await getDocs(q);
+                            
+                            if (!snap.empty) {
+                                const idAnggota = snap.docs[0].id;
+                                const namaAnggota = snap.docs[0].data().nama;
+
+                                if (currentMode === 'simpanan') {
+                                    await addDoc(collection(db, "simpanan"), {
+                                        id_anggota: idAnggota,
+                                        info_anggota: `${col[0]} - ${namaAnggota}`,
+                                        jenis_simpanan: col[1],
+                                        jumlah: Number(col[2]),
+                                        tanggal_transaksi: col[3],
+                                        waktu_input: new Date().toISOString()
+                                    });
+                                } else if (currentMode === 'pinjaman') {
+                                    await addDoc(collection(db, "pinjaman"), {
+                                        id_anggota: idAnggota,
+                                        info_anggota: `${col[0]} - ${namaAnggota}`,
+                                        jumlah: Number(col[1]),
+                                        keterangan: col[2],
+                                        tanggal: col[3],
+                                        status: col[4] || "Aktif",
+                                        waktu_input: new Date().toISOString()
+                                    });
+                                }
+                                sukses++;
+                            } else {
+                                console.warn("No Anggota tidak ditemukan: " + col[0]);
+                                gagal++;
+                            }
                         }
-                    } catch (err) { console.error(err); }
+                    } catch (err) { 
+                        console.error("Error baris " + i + ":", err);
+                        gagal++;
+                    }
                     
-                    document.getElementById('progressFill').style.width = Math.round(((i+1)/rows.length)*100) + "%";
+                    bar.style.width = Math.round(((i+1)/dataRows.length)*100) + "%";
                 }
-                document.getElementById('status').innerText = sukses + " data " + currentMode + " berhasil diimport!";
+                statusElt.innerText = `Selesai! ${sukses} data berhasil, ${gagal} data gagal/tidak ditemukan.`;
+                statusElt.style.color = sukses > 0 ? "green" : "red";
             };
             reader.readAsText(fileInput.files[0]);
         });

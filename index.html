@@ -4,71 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Koperasi Pengayoman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { display: flex; height: 100vh; background-color: #f4f7f6; }
-        .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
-        .sidebar-header h2 { font-size: 1.2rem; color: #1abc9c; }
-        .menu { list-style: none; padding: 20px 0; }
-        .menu li a { color: white; text-decoration: none; display: block; padding: 15px 20px; transition: 0.3s; }
-        .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
-        .main-content { flex: 1; display: flex; flex-direction: column; }
-        .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .content { padding: 20px; overflow-y: auto; }
-        .card-container { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
-        .card { background-color: white; flex: 1; min-width: 250px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 5px solid #1abc9c; }
-        .card h3 { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 10px; text-transform: uppercase; }
-        .card p { font-size: 1.5rem; font-weight: bold; color: #2c3e50; }
-        .btn-logout { padding: 10px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-logout:hover { background: #c0392b; }
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --warning: #f1c40f; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--light); }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; letter-spacing: 1px; }
+        .menu { list-style: none; padding: 20px 0; flex: 1; }
+        .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; border-left: 4px solid transparent; }
+        .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
+        .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left-color: var(--primary); }
+        
+        /* Main */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 30px; overflow-y: auto; }
+        
+        /* Cards */
+        .card-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; position: relative; overflow: hidden; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .card h3 { color: #95a5a6; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; }
+        .card p { font-size: 1.6rem; font-weight: bold; color: var(--dark); }
+        .card i { position: absolute; right: 20px; bottom: 20px; font-size: 2.5rem; color: rgba(0,0,0,0.03); }
+        
+        .btn-logout { padding: 10px 20px; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-logout:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>KOPERASI PENGAYOMAN</h2>
-        </div>
+        <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
         <ul class="menu">
-            <li><a href="#" class="active" style="background-color: #1abc9c;">Beranda (Dashboard)</a></li>
-            <li><a href="daftar-anggota.html">Data Anggota</a></li>
-            <li><a href="simpanan.html">Simpanan</a></li>
-            <li><a href="pinjaman.html">Pinjaman</a></li>
-            <li><a href="angsuran.html">Angsuran</a></li>
-            <li><a href="setor-massal.html">Setor Massal</a></li>
-            <li><a href="shu.html">Laporan & SHU</a></li>
+            <li><a href="index.html" class="active"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="daftar-anggota.html"><i class="fa fa-users"></i> Data Anggota</a></li>
+            <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
+            <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
+            <li><a href="pinjaman.html"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
+            <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+            <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
         </ul>
     </div>
 
     <div class="main-content">
         <div class="header">
-            <h2>Selamat Datang, Pengurus!</h2>
-            <button id="btnKeluar" class="btn-logout">Keluar</button>
+            <h2 style="color: var(--dark)">Selamat Datang, Pengurus!</h2>
+            <button id="btnKeluar" class="btn-logout">Logout</button>
         </div>
 
         <div class="content">
-            <p>Ini adalah ringkasan data Koperasi Pengayoman saat ini.</p>
-            
             <div class="card-container">
                 <div class="card">
-                    <h3>Total Anggota Terdaftar</h3>
-                    <p id="angkaTotalAnggota">Menghitung...</p>
+                    <h3>Total Anggota</h3>
+                    <p id="txtAnggota">...</p>
+                    <i class="fa fa-users"></i>
                 </div>
-
-                <div class="card" style="border-left-color: #3498db;">
-                    <h3>Total Simpanan Masuk</h3>
-                    <p id="angkaTotalSimpanan">Menghitung...</p>
+                <div class="card" style="border-left: 5px solid #3498db;">
+                    <h3>Total Simpanan</h3>
+                    <p id="txtSimpanan">...</p>
+                    <i class="fa fa-piggy-bank"></i>
                 </div>
-
-                <div class="card" style="border-left-color: #e67e22;">
-                    <h3>Sisa Uang Beredar (Piutang)</h3>
-                    <p id="angkaTotalPinjaman">Menghitung...</p>
+                <div class="card" style="border-left: 5px solid #e67e22;">
+                    <h3>Piutang Berjalan</h3>
+                    <p id="txtPiutang">...</p>
+                    <i class="fa fa-clock-rotate-left"></i>
                 </div>
-
-                <div class="card" style="border-left-color: #f1c40f;">
-                    <h3>Total Pendapatan Bunga (Laba)</h3>
-                    <p id="angkaTotalBunga">Menghitung...</p>
+                <div class="card" style="border-left: 5px solid var(--warning);">
+                    <h3>Laba Pendapatan Bunga</h3>
+                    <p id="txtLaba" style="color: #27ae60">...</p>
+                    <i class="fa fa-chart-line"></i>
                 </div>
             </div>
         </div>
@@ -85,77 +94,41 @@
             projectId: "koperasi-pengayoman",
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
-            appId: "1:302370488338:web:52cecadea899bcaba998cb",
-            measurementId: "G-CVWCXTF3FX"
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-        const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
-
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-            } else {
-                hitungDashboard();
-            }
-        });
-
-        document.getElementById('btnKeluar').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = "login.html";
-            });
-        });
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "login.html"; else hitungDashboard(); });
+        document.getElementById('btnKeluar').addEventListener('click', () => signOut(auth).then(() => window.location.href = "login.html"));
 
         async function hitungDashboard() {
             try {
-                // 1. Ambil Semua Data dari Firebase
-                const [snapAnggota, snapSimpanan, snapPinjaman, snapAngsuran] = await Promise.all([
+                const [sAng, sSim, sPin, sAns] = await Promise.all([
                     getDocs(collection(db, "anggota")),
                     getDocs(collection(db, "simpanan")),
                     getDocs(collection(db, "pinjaman")),
                     getDocs(collection(db, "angsuran"))
                 ]);
 
-                // Tampilkan Jumlah Anggota
-                document.getElementById('angkaTotalAnggota').innerText = snapAnggota.size + " Orang";
+                document.getElementById('txtAnggota').innerText = sAng.size + " Orang";
 
-                // 2. Hitung Total Simpanan
-                let totalSimpanan = 0;
-                snapSimpanan.forEach(doc => {
-                    totalSimpanan += Number(doc.data().jumlah) || 0;
-                });
-                document.getElementById('angkaTotalSimpanan').innerText = formatRupiah(totalSimpanan);
+                let tS = 0; sSim.forEach(d => tS += Number(d.data().jumlah) || 0);
+                document.getElementById('txtSimpanan').innerText = formatR(tS);
 
-                // 3. Hitung Piutang (Pinjaman - Angsuran Pokok) & Pendapatan Bunga
-                let totalPinjaman = 0;
-                let totalAngsuranPokok = 0;
-                let totalLabaBunga = 0;
-
-                snapPinjaman.forEach(doc => {
-                    totalPinjaman += Number(doc.data().jumlah) || 0;
+                let tP = 0; sPin.forEach(d => tP += Number(d.data().jumlah) || 0);
+                let tAP = 0, tB = 0; 
+                sAns.forEach(d => {
+                    tAP += Number(d.data().jumlah) || 0; // Pokok
+                    tB += Number(d.data().bunga) || 0;   // Bunga
                 });
 
-                snapAngsuran.forEach(doc => {
-                    totalAngsuranPokok += Number(doc.data().jumlah) || 0; // Mengurangi saldo pinjaman
-                    totalLabaBunga += Number(doc.data().bunga) || 0;    // Masuk ke laba koperasi
-                });
-
-                const sisaPiutang = totalPinjaman - totalAngsuranPokok;
-
-                document.getElementById('angkaTotalPinjaman').innerText = formatRupiah(sisaPiutang);
-                document.getElementById('angkaTotalBunga').innerText = formatRupiah(totalLabaBunga);
-
-            } catch (error) {
-                console.error("Gagal memuat dashboard:", error);
-                const msg = "Gagal memuat";
-                document.getElementById('angkaTotalAnggota').innerText = msg;
-                document.getElementById('angkaTotalSimpanan').innerText = msg;
-                document.getElementById('angkaTotalPinjaman').innerText = msg;
-                document.getElementById('angkaTotalBunga').innerText = msg;
-            }
+                document.getElementById('txtPiutang').innerText = formatR(tP - tAP);
+                document.getElementById('txtLaba').innerText = formatR(tB);
+            } catch (e) { console.error(e); }
         }
     </script>
 </body>

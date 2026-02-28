@@ -1,205 +1,24 @@
-<!DOCTYPE html>
-<html lang="id">
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    // PAKAI CONFIG ANDA
-    const firebaseConfig = {
-        apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
-        authDomain: "koperasi-pengayoman.firebaseapp.com",
-        projectId: "koperasi-pengayoman",
-        storageBucket: "koperasi-pengayoman.firebasestorage.app",
-        messagingSenderId: "302370488338",
-        appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	measurementId: "G-CVWCXTF3FX"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Satpam: Cek apakah user sudah login
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // Jika belum login, paksa pindah ke halaman login
-            window.location.href = "login.html";
-        }
-    });
-</script>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simpanan - Koperasi Pengayoman</title>
-    <style>
-        /* Pengaturan Dasar (Sama persis dengan sebelumnya) */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { display: flex; height: 100vh; background-color: #f4f7f6; }
-        .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
-        .sidebar-header h2 { font-size: 1.2rem; color: #1abc9c; }
-        .menu { list-style: none; padding: 20px 0; }
-        .menu li a { color: white; text-decoration: none; display: block; padding: 15px 20px; transition: 0.3s; }
-        .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
-        .main-content { flex: 1; display: flex; flex-direction: column; }
-        .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .content { padding: 20px; overflow-y: auto; }
-        .form-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin-bottom: 20px; }
-        .form-container h3 { margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; display: inline-block; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #3498db; }
-        .input-rupiah { display: flex; align-items: center; }
-        .input-rupiah span { background-color: #ecf0f1; padding: 12px; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; font-weight: bold; color: #7f8c8d; }
-        .input-rupiah input { border-radius: 0 4px 4px 0; flex: 1; }
-        .btn-group { margin-top: 30px; display: flex; gap: 15px; }
-        .btn { padding: 12px 25px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; color: white; }
-        .btn-save { background-color: #3498db; }
-        .btn-save:hover { background-color: #2980b9; }
-        .btn-cancel { background-color: #95a5a6; text-decoration: none; display: inline-block; text-align: center;}
-    </style>
-</head>
-<body>
-
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>KOPERASI PENGAYOMAN</h2>
-        </div>
-        <ul class="menu">
-            <li><a href="index.html">Beranda (Dashboard)</a></li>
-            <li><a href="daftar-anggota.html">Data Anggota</a></li>
-            <li><a href="#" class="active" style="background-color: #3498db;">Simpanan</a></li>
-            <li><a href="pinjaman.html">Pinjaman</a></li>
-            <li><a href="angsuran.html">Angsuran</a></li>
-            <li><a href="laporan.html">Laporan</a>
-        </ul>
-    </div>
-
-    <div class="main-content">
-        <div class="header">
-            <h2>Transaksi Simpanan</h2>
-        </div>
-
-        <div class="content">
-            <div class="form-container">
-                <h3>Form Setoran Simpanan</h3>
-                
-                <form id="formSimpanan">
-                    
-                    <div class="form-group">
-                        <label for="tanggal">Tanggal Transaksi</label>
-                        <input type="date" id="tanggal" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="anggota">Nama Anggota</label>
-                        <select id="anggota" required>
-                            <option value="">-- Sedang memuat data anggota... --</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="jenis_simpanan">Jenis Simpanan</label>
-                        <select id="jenis_simpanan" required>
-                            <option value="">-- Pilih Jenis Simpanan --</option>
-                            <option value="Simpanan Pokok">Simpanan Pokok</option>
-                            <option value="Simpanan Wajib">Simpanan Wajib</option>
-                            <option value="Simpanan Sukarela">Simpanan Sukarela</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="jumlah">Jumlah Setoran</label>
-                        <div class="input-rupiah">
-                            <span>Rp</span>
-                            <input type="number" id="jumlah" placeholder="Contoh: 150000" min="0" required>
-                        </div>
-                    </div>
-
-                    <div class="btn-group">
-                        <button type="submit" class="btn btn-save">Simpan Transaksi</button>
-                        <a href="index.html" class="btn btn-cancel">Batal</a>
-                    </div>
-                    
-                </form>
+<div class="content">
+    <div class="form-card" style="background:white; padding:30px; border-radius:12px; max-width:600px; margin:auto; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
+        <h3 style="margin-bottom:20px;">Input Simpanan Manual</h3>
+        <form id="formSimpanan">
+            <div class="form-group">
+                <label>Pilih Anggota</label>
+                <select id="selectAnggota" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required></select>
             </div>
-        </div>
+            <div class="form-group">
+                <label>Jenis Simpanan</label>
+                <select id="jenisSimpanan" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required>
+                    <option value="Simpanan Sukarela">Simpanan Sukarela</option>
+                    <option value="Simpanan Pokok">Simpanan Pokok (Anggota Baru)</option>
+                    <option value="Penarikan">Penarikan Saldo (-)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Jumlah (Rp)</label>
+                <input type="number" id="jumlah" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required>
+            </div>
+            <button type="submit" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:10px;">SIMPAN TRANSAKSI</button>
+        </form>
     </div>
-
-    <script type="module">
-        // 1. Impor fungsi Firebase yang dibutuhkan (gabungan baca dan tulis data)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // 2. GANTI DENGAN KODE FIREBASE CONFIG ANDA
-        const firebaseConfig = {
-            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
-            authDomain: "koperasi-pengayoman.firebaseapp.com",
-            projectId: "koperasi-pengayoman",
-            storageBucket: "koperasi-pengayoman.firebasestorage.app",
-            messagingSenderId: "302370488338",
-            appId: "1:302370488338:web:52cecadea899bcaba998cb",
-	    measurementId: "G-CVWCXTF3FX"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 3. Fungsi untuk mengambil data anggota dan menampilkannya di Dropdown
-        async function muatDropdownAnggota() {
-            const dropdown = document.getElementById('anggota');
-            try {
-                const q = query(collection(db, "anggota"), orderBy("nama", "asc"));
-                const querySnapshot = await getDocs(q);
-
-                dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>'; // Kosongkan saat berhasil dimuat
-
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    // Membuat pilihan baru: Value = ID dokumen, Teks = No Anggota - Nama
-                    dropdown.innerHTML += `<option value="${doc.id}">${data.no_anggota} - ${data.nama}</option>`;
-                });
-            } catch (error) {
-                console.error("Gagal memuat anggota: ", error);
-                dropdown.innerHTML = '<option value="">-- Gagal memuat data, periksa koneksi --</option>';
-            }
-        }
-
-        // Panggil fungsi muat anggota saat halaman dibuka
-        muatDropdownAnggota();
-
-        // 4. Logika ketika tombol "Simpan Transaksi" ditekan
-        document.getElementById('formSimpanan').addEventListener('submit', async function(event) {
-            event.preventDefault();
-
-            const tanggal = document.getElementById('tanggal').value;
-            const dropdownPilihan = document.getElementById('anggota');
-            const idAnggota = dropdownPilihan.value; // ID rahasia dari Firebase
-            const namaAnggotaTeks = dropdownPilihan.options[dropdownPilihan.selectedIndex].text; // Teks "001 - Budi"
-            const jenis = document.getElementById('jenis_simpanan').value;
-            
-            // Mengubah jumlah yang diketik menjadi format angka bulat (Integer)
-            const jumlahUang = parseInt(document.getElementById('jumlah').value);
-
-            try {
-                // Menyimpan ke LACI BARU bernama "simpanan"
-                await addDoc(collection(db, "simpanan"), {
-                    tanggal_transaksi: tanggal,
-                    id_anggota: idAnggota,
-                    info_anggota: namaAnggotaTeks,
-                    jenis_simpanan: jenis,
-                    jumlah: jumlahUang,
-                    waktu_input: new Date()
-                });
-                
-                alert("Berhasil! Transaksi Simpanan sebesar Rp " + jumlahUang + " berhasil dicatat.");
-                document.getElementById('formSimpanan').reset(); // Mengosongkan form
-            } catch (e) {
-                console.error("Error menambahkan data: ", e);
-                alert("Gagal menyimpan data transaksi.");
-            }
-        });
-    </script>
-</body>
-
-</html>
+</div>

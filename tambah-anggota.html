@@ -4,27 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Anggota - Koperasi Pengayoman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { display: flex; height: 100vh; background-color: #f4f7f6; }
-        .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
-        .sidebar-header h2 { font-size: 1.2rem; color: #1abc9c; }
-        .menu { list-style: none; padding: 20px 0; }
-        .menu li a { color: white; text-decoration: none; display: block; padding: 15px 20px; transition: 0.3s; }
-        .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
-        .main-content { flex: 1; display: flex; flex-direction: column; }
-        .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --blue: #3498db; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--light); }
+        
+        .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; letter-spacing: 1px; }
+        .menu { list-style: none; padding: 20px 0; flex: 1; }
+        .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; }
+        .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
+        .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left: 4px solid var(--primary); }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
         .content { padding: 30px; overflow-y: auto; }
-        .form-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; }
-        .form-container h3 { margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #1abc9c; padding-bottom: 10px; display: inline-block; }
+
+        .btn-back { background: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        .btn-back:hover { background: #7f8c8d; }
+
+        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto; border-top: 4px solid var(--primary); }
+        .form-card h3 { margin-bottom: 20px; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
-        .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-        .btn-group { margin-top: 30px; display: flex; gap: 15px; }
-        .btn { padding: 12px 25px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: bold; color: white; }
-        .btn-save { background-color: #1abc9c; }
-        .btn-cancel { background-color: #95a5a6; text-decoration: none; display: inline-block; text-align: center; line-height: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.9rem; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; }
+        
+        .btn-submit { background-color: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem; transition: 0.3s; margin-top: 10px; }
+        .btn-submit:hover { background-color: #16a085; }
     </style>
 </head>
 <body>
@@ -32,38 +42,50 @@
     <div class="sidebar">
         <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
         <ul class="menu">
-            <li><a href="index.html">Beranda (Dashboard)</a></li>
-            <li><a href="daftar-anggota.html" class="active">Data Anggota</a></li>
-            <li><a href="simpanan.html">Simpanan</a></li>
-            <li><a href="pinjaman.html">Pinjaman</a></li>
-            <li><a href="angsuran.html">Angsuran</a></li>
-            <li><a href="laporan.html">Laporan</a></li>
+            <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="daftar-anggota.html" class="active"><i class="fa fa-users"></i> Data Anggota</a></li>
+            <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
+            <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
+            <li><a href="pinjaman.html"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
+            <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+            <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
         </ul>
     </div>
 
     <div class="main-content">
-        <div class="header"><h2>Tambah Anggota Baru</h2></div>
+        <div class="header">
+            <h2 style="color: var(--dark)"><i class="fa fa-user-plus"></i> Registrasi Anggota Baru</h2>
+            <a href="daftar-anggota.html" class="btn-back"><i class="fa fa-arrow-left"></i> Kembali</a>
+        </div>
+
         <div class="content">
-            <div id="loader" style="text-align: center; padding: 50px; display: none;">Verifikasi akses...</div>
-            <div class="form-container" id="mainForm" style="display: none;">
-                <h3>Identitas Anggota</h3>
-                <form id="formTambah">
+            <div class="form-card">
+                <h3>Form Data Anggota Koperasi</h3>
+                <form id="formTambahAnggota">
                     <div class="form-group">
-                        <label for="no_anggota">Nomor Anggota</label>
-                        <input type="text" id="no_anggota" placeholder="Contoh: 001" required>
+                        <label>Nomor Anggota / NIK / NIP</label>
+                        <input type="text" id="no_anggota" placeholder="Contoh: 101 / NIP Pegawai" required>
                     </div>
+
                     <div class="form-group">
-                        <label for="nama">Nama Lengkap</label>
-                        <input type="text" id="nama" placeholder="Masukkan nama sesuai KTP" required>
+                        <label>Nama Lengkap</label>
+                        <input type="text" id="nama" placeholder="Masukkan nama lengkap" required>
                     </div>
+
                     <div class="form-group">
-                        <label for="tanggal_gabung">Tanggal Bergabung</label>
+                        <label>Tanggal Bergabung</label>
                         <input type="date" id="tanggal_gabung" required>
                     </div>
-                    <div class="btn-group">
-                        <button type="submit" class="btn btn-save">Simpan Data</button>
-                        <a href="daftar-anggota.html" class="btn btn-cancel">Batal</a>
+
+                    <div class="form-group">
+                        <label>Status Keanggotaan</label>
+                        <select id="status">
+                            <option value="Aktif">Aktif</option>
+                            <option value="Nonaktif">Nonaktif</option>
+                        </select>
                     </div>
+
+                    <button type="submit" class="btn-submit" id="btnSimpan"><i class="fa fa-save"></i> SIMPAN DATA ANGGOTA</button>
                 </form>
             </div>
         </div>
@@ -80,43 +102,45 @@
             projectId: "koperasi-pengayoman",
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
-            appId: "1:302370488338:web:52cecadea899bcaba998cb",
-            measurementId: "G-CVWCXTF3FX"
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Satpam dengan pengecekan visual
-        const mainForm = document.getElementById('mainForm');
-        const loader = document.getElementById('loader');
-        loader.style.display = 'block';
+        // Set otomatis tanggal gabung hari ini
+        document.getElementById('tanggal_gabung').valueAsDate = new Date();
 
+        // Cek Login
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loader.style.display = 'none';
-                mainForm.style.display = 'block';
-            } else {
-                window.location.replace("login.html");
+            if (!user) {
+                window.location.href = "login.html";
             }
         });
 
-        document.getElementById('formTambah').addEventListener('submit', async (e) => {
+        // Simpan Data
+        document.getElementById('formTambahAnggota').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const dataAnggota = {
-                no_anggota: document.getElementById('no_anggota').value,
-                nama: document.getElementById('nama').value,
-                tanggal_gabung: document.getElementById('tanggal_gabung').value,
-                waktu_input: new Date().toISOString()
-            };
+            const btn = document.getElementById('btnSimpan');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menyimpan...';
 
             try {
-                await addDoc(collection(db, "anggota"), dataAnggota);
-                alert("Anggota baru berhasil ditambahkan!");
-                window.location.href = "daftar-anggota.html";
+                await addDoc(collection(db, "anggota"), {
+                    no_anggota: document.getElementById('no_anggota').value,
+                    nama: document.getElementById('nama').value,
+                    tanggal_gabung: document.getElementById('tanggal_gabung').value,
+                    status: document.getElementById('status').value,
+                    waktu_input: new Date().toISOString()
+                });
+
+                alert("Anggota berhasil ditambahkan!");
+                window.location.href = "daftar-anggota.html"; // Balik ke daftar setelah sukses
             } catch (err) {
-                alert("Gagal menyimpan: " + err.message);
+                alert("Gagal menambahkan anggota: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-save"></i> SIMPAN DATA ANGGOTA';
             }
         });
     </script>

@@ -6,9 +6,11 @@
     <title>Daftar Anggota - Koperasi Pengayoman</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; }
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--light); }
+        
+        /* Sidebar */
         .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
         .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
         .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; }
@@ -16,15 +18,28 @@
         .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; border-left: 4px solid transparent; }
         .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
         .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left-color: var(--primary); }
+        
+        /* Main Content */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
         .content { padding: 30px; overflow-y: auto; }
+        
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .search-box { margin-bottom: 20px; width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        .btn-add { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; }
+        .search-box { margin-bottom: 20px; width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .search-box:focus { outline: none; border-color: var(--primary); }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        th { background: #f8f9fa; padding: 15px; text-align: left; border-bottom: 2px solid #eee; color: var(--dark); }
+        td { padding: 15px; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #fcfdfe; }
+        
+        .btn-add { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; transition: 0.3s; }
+        .btn-add:hover { background: #16a085; }
+
+        .link-nama { color: var(--dark); text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .link-nama i { color: var(--primary); opacity: 0; transition: 0.2s; }
+        .link-nama:hover { color: var(--primary); }
+        .link-nama:hover i { opacity: 1; transform: translateX(3px); }
     </style>
 </head>
 <body>
@@ -40,25 +55,26 @@
             <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
         </ul>
     </div>
+    
     <div class="main-content">
         <div class="header">
-            <h2>Manajemen Anggota</h2>
-            <button onclick="alert('Gunakan halaman import untuk menambah massal')" class="btn-add">+ Anggota Baru</button>
+            <h2><i class="fa fa-users" style="color:var(--primary); margin-right:10px;"></i> Manajemen Anggota</h2>
+            <button onclick="alert('Gunakan halaman import untuk menambah anggota massal')" class="btn-add"><i class="fa fa-user-plus"></i> Anggota Baru</button>
         </div>
         <div class="content">
             <div class="card">
-                <input type="text" id="inputCari" class="search-box" placeholder="Cari nama atau nomor anggota...">
+                <input type="text" id="inputCari" class="search-box" placeholder="Cari nama atau nomor anggota disini...">
                 <table>
                     <thead>
                         <tr>
                             <th>No. Anggota</th>
-                            <th>Nama Lengkap</th>
+                            <th>Nama Lengkap (Klik untuk Detail)</th>
                             <th>Tanggal Gabung</th>
                             <th style="text-align: right;">Total Simpanan</th>
                         </tr>
                     </thead>
                     <tbody id="tabelAnggota">
-                        <tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>
+                        <tr><td colspan="4" style="text-align:center; padding:20px;"><i class="fa fa-spinner fa-spin"></i> Memuat data anggota...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -67,6 +83,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -79,45 +96,67 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
         const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
+        // Pastikan pengguna sudah login
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                muatData();
+            }
+        });
+
         async function muatData() {
-            const [sAng, sSim] = await Promise.all([
-                getDocs(query(collection(db, "anggota"), orderBy("no_anggota", "asc"))),
-                getDocs(collection(db, "simpanan"))
-            ]);
+            try {
+                const [sAng, sSim] = await Promise.all([
+                    getDocs(query(collection(db, "anggota"), orderBy("no_anggota", "asc"))),
+                    getDocs(collection(db, "simpanan"))
+                ]);
 
-            const rekapSimpanan = {};
-            sSim.forEach(doc => {
-                const d = doc.data();
-                rekapSimpanan[d.id_anggota] = (rekapSimpanan[d.id_anggota] || 0) + (Number(d.jumlah) || 0);
-            });
-
-            const tbody = document.getElementById('tabelAnggota');
-            tbody.innerHTML = '';
-            sAng.forEach(doc => {
-                const a = doc.data();
-                const total = rekapSimpanan[doc.id] || 0;
-                tbody.innerHTML += `
-                    <tr class="baris-anggota">
-                        <td>${a.no_anggota}</td>
-                        <td><strong>${a.nama}</strong></td>
-                        <td>${a.tanggal_gabung || '-'}</td>
-                        <td style="text-align: right; color: #27ae60; font-weight: bold;">${formatR(total)}</td>
-                    </tr>
-                `;
-            });
-
-            // Fitur Cari
-            document.getElementById('inputCari').addEventListener('keyup', function() {
-                const val = this.value.toLowerCase();
-                document.querySelectorAll('.baris-anggota').forEach(tr => {
-                    tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
+                const rekapSimpanan = {};
+                sSim.forEach(doc => {
+                    const d = doc.data();
+                    rekapSimpanan[d.id_anggota] = (rekapSimpanan[d.id_anggota] || 0) + (Number(d.jumlah) || 0);
                 });
-            });
+
+                const tbody = document.getElementById('tabelAnggota');
+                tbody.innerHTML = '';
+                
+                sAng.forEach(doc => {
+                    const a = doc.data();
+                    const total = rekapSimpanan[doc.id] || 0;
+                    
+                    // NAMA ANGGOTA DIBUAT MENJADI LINK KE DETAIL
+                    tbody.innerHTML += `
+                        <tr class="baris-anggota">
+                            <td>${a.no_anggota}</td>
+                            <td>
+                                <a href="detail-anggota.html?id=${doc.id}" class="link-nama">
+                                    ${a.nama} <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </td>
+                            <td>${a.tanggal_gabung || '-'}</td>
+                            <td style="text-align: right; color: var(--success); font-weight: bold;">${formatR(total)}</td>
+                        </tr>
+                    `;
+                });
+
+                // Fitur Cari
+                document.getElementById('inputCari').addEventListener('keyup', function() {
+                    const val = this.value.toLowerCase();
+                    document.querySelectorAll('.baris-anggota').forEach(tr => {
+                        tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+                document.getElementById('tabelAnggota').innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Gagal memuat data anggota.</td></tr>';
+            }
         }
-        muatData();
     </script>
 </body>
 </html>

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Pinjaman - Koperasi Pengayoman</title>
+    <title>Angsuran Otomatis - Koperasi Pengayoman</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --orange: #e67e22; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--light); }
         
         /* Sidebar */
@@ -24,276 +24,180 @@
         .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
         .content { padding: 30px; overflow-y: auto; }
 
-        /* Card Container */
-        .card-container { background-color: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .card-container h3 { margin-bottom: 20px; color: var(--dark); border-bottom: 3px solid var(--orange); padding-bottom: 10px; display: inline-block; }
+        /* Form Card */
+        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 700px; margin: auto; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.9rem; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; transition: 0.3s; background-color: white; }
         
-        /* Form Design */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--dark); font-size: 0.9rem; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
-        .btn-save { background-color: var(--orange); color: white; padding: 12px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; margin-top: 10px; }
-        .btn-save:hover { background-color: #d35400; }
-
-        /* Table Design */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
-        th { background: #f8f9fa; color: var(--dark); font-weight: bold; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        .txt-right { text-align: right; }
+        .grid-input { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
-        .status-aktif { background: rgba(243, 156, 18, 0.1); color: #d35400; }
-        .status-lunas { background: rgba(39, 174, 96, 0.1); color: var(--success); }
-        .saldo-minus { color: var(--danger); font-weight: bold; }
+        .info-pinjaman { background: #e8f8f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; border-left: 4px solid var(--primary); }
+        .info-pinjaman p { font-size: 0.85rem; color: #16a085; margin: 2px 0; }
 
-        .btn-lunas-manual { background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
-        .btn-lunas-manual:hover { background: #219653; }
+        .total-box { background: var(--dark); padding: 20px; border-radius: 8px; text-align: center; margin-top: 10px; color: white; }
+        .total-box p { font-size: 0.8rem; color: #bdc3c7; text-transform: uppercase; margin-bottom: 5px; }
+        .total-box h2 { color: var(--primary); font-size: 1.8rem; }
+
+        .btn-submit { background-color: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem; margin-top: 20px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-submit:hover { background-color: #16a085; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
-    <ul class="menu">
-        <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
-        <li><a href="daftar-anggota.html"><i class="fa fa-users"></i> Data Anggota</a></li>
-        <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
-        <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
-        <li><a href="pinjaman.html" class="active"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
-        <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
-        <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
-    </ul>
-</div>
-
-<div class="main-content">
-    <div class="header">
-        <h2>Kelola Pinjaman & Monitoring Saldo</h2>
+    <div class="sidebar">
+        <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
+        <ul class="menu">
+            <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="daftar-anggota.html"><i class="fa fa-users"></i> Data Anggota</a></li>
+            <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
+            <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
+            <li><a href="pinjaman.html"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
+            <li><a href="angsuran.html" class="active"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+            <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
+        </ul>
     </div>
-    <div class="content">
-        
-        <div class="card-container">
-            <h3><i class="fa fa-plus-circle"></i> Form Pencairan Pinjaman Baru (Otomatis Top-Up)</h3>
-            <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 15px;">
-                Jika anggota yang dipilih masih memiliki pinjaman aktif, sistem akan otomatis melunasi pinjaman lamanya.
-            </p>
-            <form id="formPinjaman">
-                <div class="form-grid">
+
+    <div class="main-content">
+        <div class="header">
+            <h2 style="color: var(--dark)">Input Angsuran Otomatis</h2>
+            <span style="background: var(--primary); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">TENOR 10 BLN | JASA 1%</span>
+        </div>
+
+        <div class="content">
+            <div class="form-card">
+                <form id="formAngsuran">
                     <div class="form-group">
-                        <label>Tanggal Pencairan</label>
-                        <input type="date" id="tanggal" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Pilih Anggota</label>
-                        <select id="id_anggota" required>
-                            <option value="">-- Memuat data anggota... --</option>
+                        <label>Pilih Nama Anggota</label>
+                        <select id="idPilihPinjaman" required>
+                            <option value="">-- Memuat data pinjaman aktif... --</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Jumlah Pinjaman Baru (Plafon Rp)</label>
-                        <input type="number" id="jumlah" placeholder="Contoh: 10000000" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Keterangan / Tujuan</label>
-                        <input type="text" id="keterangan" placeholder="Contoh: Top-Up / Modal Usaha" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn-save" id="btnSubmitForm">CAIRKAN PINJAMAN SEKARANG</button>
-            </form>
-        </div>
 
-        <div class="card-container">
-            <h3><i class="fa fa-list"></i> Riwayat & Saldo Pinjaman Anggota</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Anggota</th>
-                        <th>Keterangan</th>
-                        <th class="txt-right">Plafon</th>
-                        <th class="txt-right">Total Angsuran</th>
-                        <th class="txt-right">Sisa Saldo</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelPinjaman">
-                    <tr><td colspan="8" style="text-align:center; padding:20px;">Memuat data...</td></tr>
-                </tbody>
-            </table>
-        </div>
+                    <div id="boxInfo" class="info-pinjaman">
+                        <p id="infoPlafon">Plafon Pinjaman Asli: Rp 0</p>
+                        <p>Sistem otomatis mengisi Angsuran 1/10 & Jasa 1%</p>
+                    </div>
 
+                    <div class="form-group">
+                        <label>Tanggal Pembayaran</label>
+                        <input type="date" id="tglBayar" required>
+                    </div>
+
+                    <div class="grid-input">
+                        <div class="form-group">
+                            <label>Angsuran Pokok (Rp)</label>
+                            <input type="number" id="inputPokok" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bunga / Jasa (Rp)</label>
+                            <input type="number" id="inputBunga" placeholder="0" required>
+                        </div>
+                    </div>
+
+                    <div class="total-box">
+                        <p>Total Diterima Kasir Bulan Ini</p>
+                        <h2 id="txtTotal">Rp 0</h2>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="btnSimpan">
+                        <i class="fa fa-check-circle"></i> SIMPAN PEMBAYARAN
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
-</div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
-        authDomain: "koperasi-pengayoman.firebaseapp.com",
-        projectId: "koperasi-pengayoman",
-        storageBucket: "koperasi-pengayoman.firebasestorage.app",
-        messagingSenderId: "302370488338",
-        appId: "1:302370488338:web:52cecadea899bcaba998cb"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    // Set tanggal hari ini
-    document.getElementById('tanggal').valueAsDate = new Date();
+        const inPokok = document.getElementById('inputPokok');
+        const inBunga = document.getElementById('inputBunga');
+        const txtTotal = document.getElementById('txtTotal');
+        const boxInfo = document.getElementById('boxInfo');
+        const infoPlafon = document.getElementById('infoPlafon');
 
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            window.location.href = "login.html";
-        } else {
-            muatDropdownAnggota();
-            muatDataSinkron();
-        }
-    });
+        document.getElementById('tglBayar').valueAsDate = new Date();
 
-    // 1. Muat Data Anggota ke Dropdown
-    async function muatDropdownAnggota() {
-        const dropdown = document.getElementById('id_anggota');
-        try {
-            const q = query(collection(db, "anggota"), orderBy("nama", "asc"));
-            const snap = await getDocs(q);
-            dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
-            snap.forEach(document => {
-                dropdown.innerHTML += `<option value="${document.id}" data-nama="${document.data().nama}">${document.data().no_anggota} - ${document.data().nama}</option>`;
-            });
-        } catch (e) { console.error(e); }
-    }
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = "login.html";
+            else muatPinjamanAktif();
+        });
 
-    // 2. Tampilkan Tabel Monitoring Sinkron
-    async function muatDataSinkron() {
-        const tbody = document.getElementById('tabelPinjaman');
-        try {
-            const [snapPinjaman, snapAngsuran] = await Promise.all([
-                getDocs(query(collection(db, "pinjaman"), orderBy("waktu_input", "desc"))),
-                getDocs(collection(db, "angsuran"))
-            ]);
-
-            // Hitung total bayar per pinjaman
-            const rekapAngsuran = {};
-            snapAngsuran.forEach(doc => {
-                const d = doc.data();
-                rekapAngsuran[d.id_pinjaman] = (rekapAngsuran[d.id_pinjaman] || 0) + (Number(d.jumlah) || 0);
-            });
-
-            tbody.innerHTML = '';
-            if (snapPinjaman.empty) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Tidak ada data pinjaman.</td></tr>';
-                return;
-            }
-
-            snapPinjaman.forEach(documentSnapshot => {
-                const p = documentSnapshot.data();
-                const idDoc = documentSnapshot.id;
-                const plafon = Number(p.jumlah) || 0;
-                const totalPokok = rekapAngsuran[idDoc] || 0;
-                
-                // Saldo
-                const sisa = plafon - totalPokok;
-                
-                // Tentukan Status (Kalau di DB sudah Lunas, pakai Lunas. Kalau saldo 0, Lunas)
-                let statusAktual = p.status || 'Aktif';
-                if (sisa <= 0) statusAktual = 'Lunas';
-                
-                const badgeClass = (statusAktual === 'Aktif') ? 'status-aktif' : 'status-lunas';
-                const tombolAksi = (statusAktual === 'Aktif') 
-                    ? `<button class="btn-lunas-manual" onclick="tandaiLunasManual('${idDoc}', '${p.info_anggota}')">✔ Set Lunas</button>` 
-                    : `-`;
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${p.tanggal || '-'}</td>
-                        <td><strong>${p.info_anggota}</strong></td>
-                        <td>${p.keterangan || '-'}</td>
-                        <td class="txt-right">${formatR(plafon)}</td>
-                        <td class="txt-right" style="color:var(--success);">${formatR(totalPokok)}</td>
-                        <td class="txt-right ${sisa > 0 && statusAktual === 'Aktif' ? 'saldo-minus' : ''}">
-                            ${formatR(sisa <= 0 ? 0 : sisa)}
-                        </td>
-                        <td><span class="status-badge ${badgeClass}">${statusAktual}</span></td>
-                        <td>${tombolAksi}</td>
-                    </tr>`;
-            });
-        } catch (e) { 
-            console.error(e);
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Gagal memuat data.</td></tr>';
-        }
-    }
-
-    // 3. Proses Input Pinjaman Baru (DENGAN LOGIKA AUTO-LUNAS)
-    document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('btnSubmitForm');
-        btn.disabled = true;
-        btn.innerText = "Memproses...";
-
-        const sel = document.getElementById('id_anggota');
-        const idAnggota = sel.value;
-        const namaFull = sel.options[sel.selectedIndex].text;
-
-        try {
-            // LANGKAH A: Cari pinjaman lama yang masih Aktif untuk orang ini, lalu jadikan Lunas
-            const qLama = query(collection(db, "pinjaman"), 
-                                where("id_anggota", "==", idAnggota), 
-                                where("status", "==", "Aktif"));
-            const snapLama = await getDocs(qLama);
-            
-            const janjiUpdate = [];
-            snapLama.forEach((docLama) => {
-                const refDokumen = doc(db, "pinjaman", docLama.id);
-                // Ubah status di database jadi Lunas (Top Up)
-                janjiUpdate.push(updateDoc(refDokumen, { status: "Lunas (Top Up)" }));
-            });
-            await Promise.all(janjiUpdate); // Tunggu sampai pinjaman lama selesai di-update
-
-            // LANGKAH B: Buat Pinjaman Baru
-            const dataBaru = {
-                tanggal: document.getElementById('tanggal').value,
-                id_anggota: idAnggota,
-                info_anggota: namaFull,
-                jumlah: Number(document.getElementById('jumlah').value),
-                keterangan: document.getElementById('keterangan').value,
-                status: "Aktif",
-                waktu_input: new Date().toISOString()
-            };
-
-            await addDoc(collection(db, "pinjaman"), dataBaru);
-            
-            alert("Pinjaman Berhasil Dicairkan!\nPinjaman lama anggota ini (jika ada) telah otomatis dilunaskan.");
-            document.getElementById('formPinjaman').reset();
-            document.getElementById('tanggal').valueAsDate = new Date();
-            muatDataSinkron(); // Refresh tabel bawah
-
-        } catch (err) { 
-            alert("Error: " + err.message); 
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "CAIRKAN PINJAMAN SEKARANG";
-        }
-    });
-
-    // 4. Fitur Manual Tandai Lunas (Jika butuh diklik manual dari tabel)
-    window.tandaiLunasManual = async function(idDokumen, nama) {
-        if(confirm(`Yakin tandai pinjaman ${nama} ini sebagai Lunas?`)) {
+        async function muatPinjamanAktif() {
+            const dropdown = document.getElementById('idPilihPinjaman');
             try {
-                const refDokumen = doc(db, "pinjaman", idDokumen);
-                await updateDoc(refDokumen, { status: "Lunas (Manual)" });
-                muatDataSinkron();
-            } catch (err) {
-                alert("Gagal update status: " + err.message);
-            }
+                const q = query(collection(db, "pinjaman"), where("status", "==", "Aktif"));
+                const snap = await getDocs(q);
+                dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    dropdown.innerHTML += `<option value="${doc.id}" data-nama="${d.info_anggota}" data-plafon="${d.jumlah}">${d.info_anggota}</option>`;
+                });
+            } catch (e) { console.error(e); }
         }
-    }
-</script>
+
+        // LOGIKA OTOMATIS + MASIH BISA DIEDIT MANUAL
+        document.getElementById('idPilihPinjaman').addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const plafon = Number(selected.dataset.plafon) || 0;
+
+            if (plafon > 0) {
+                inPokok.value = plafon / 10;
+                inBunga.value = plafon * 0.01;
+                boxInfo.style.display = 'block';
+                infoPlafon.innerText = "Plafon Pinjaman Asli: " + new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(plafon);
+                updateTotalText();
+            } else {
+                boxInfo.style.display = 'none';
+                inPokok.value = '';
+                inBunga.value = '';
+                updateTotalText();
+            }
+        });
+
+        function updateTotalText() {
+            const total = (Number(inPokok.value) || 0) + (Number(inBunga.value) || 0);
+            txtTotal.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total);
+        }
+
+        inPokok.addEventListener('input', updateTotalText);
+        inBunga.addEventListener('input', updateTotalText);
+
+        document.getElementById('formAngsuran').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const select = document.getElementById('idPilihPinjaman');
+            const idPinjam = select.value;
+            const namaAnggota = select.options[select.selectedIndex].dataset.nama;
+
+            try {
+                await addDoc(collection(db, "angsuran"), {
+                    id_pinjaman: idPinjam,
+                    info_anggota: namaAnggota,
+                    jumlah: Number(inPokok.value),
+                    bunga: Number(inBunga.value),
+                    tanggal: document.getElementById('tglBayar').value,
+                    waktu_input: new Date().toISOString()
+                });
+                alert("Angsuran Berhasil Dicatat!");
+                window.location.reload();
+            } catch (err) { alert("Error: " + err.message); }
+        });
+    </script>
 </body>
 </html>

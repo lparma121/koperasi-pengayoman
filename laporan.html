@@ -9,8 +9,6 @@
         :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --orange: #e67e22; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--light); }
-        
-        /* Sidebar */
         .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
         .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
         .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; }
@@ -18,16 +16,12 @@
         .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; }
         .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
         .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left: 4px solid var(--primary); }
-        
-        /* Main Content */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .content { padding: 30px; overflow-y: auto; }
-
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; }
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
@@ -35,7 +29,6 @@
     </style>
 </head>
 <body>
-
     <div class="sidebar">
         <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
         <ul class="menu">
@@ -53,26 +46,28 @@
         <div class="header"><h2>Laporan & Simulasi SHU</h2></div>
         <div class="content">
             <div class="card">
-                <h3>Pembagian SHU Berdasarkan Laba Bunga</h3>
+                <h3>Pembagian SHU Berdasarkan Kontribusi Jasa</h3>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:15px;">
                     <div class="form-group">
-                        <label>Total Laba Bunga Tersedia</label>
+                        <label>Total Laba Jasa (Terkumpul di Sistem)</label>
                         <input type="text" id="labaTersedia" readonly style="background:#f8f9fa; color:var(--success); font-weight:bold;">
                     </div>
                     <div class="form-group">
-                        <label>Porsi yang Dibagikan (%)</label>
-                        <input type="number" id="porsiSHU" value="100">
+                        <label>Porsi yang Ingin Dibagikan (%)</label>
+                        <input type="number" id="porsiSHU" value="100" min="1" max="100">
                     </div>
                 </div>
-                <button id="btnHitungSHU" style="margin-top:20px; width:100%; padding:15px; background:var(--dark); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SIMULASI PEMBAGIAN SHU</button>
+                <button id="btnHitungSHU" style="margin-top:20px; width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
+                    <i class="fa fa-calculator"></i> HITUNG PEMBAGIAN SHU
+                </button>
             </div>
 
             <div id="hasilSHU" style="display:none;" class="card">
-                <table>
+                <table id="tabelSHU">
                     <thead>
                         <tr>
                             <th>Nama Anggota</th>
-                            <th class="txt-right">Kontribusi Bunga</th>
+                            <th class="txt-right">Total Jasa Dibayar</th>
                             <th class="txt-right">Porsi (%)</th>
                             <th class="txt-right">SHU Diterima</th>
                         </tr>
@@ -100,35 +95,51 @@
         const db = getFirestore(app);
         const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-        let totalLaba = 0;
-        let dataBunga = {};
+        let totalLabaSistem = 0;
+        let dataPerAnggota = {};
 
-        async function ambilData() {
+        async function muatData() {
             const snap = await getDocs(collection(db, "angsuran"));
-            totalLaba = 0; dataBunga = {};
+            totalLabaSistem = 0;
+            dataPerAnggota = {};
+            
             snap.forEach(doc => {
                 const d = doc.data();
                 const bunga = Number(d.bunga) || 0;
-                totalLaba += bunga;
-                dataBunga[d.info_anggota] = (dataBunga[d.info_anggota] || 0) + bunga;
+                const nama = d.info_anggota || "Tanpa Nama";
+                
+                totalLabaSistem += bunga;
+                dataPerAnggota[nama] = (dataPerAnggota[nama] || 0) + bunga;
             });
-            document.getElementById('labaTersedia').value = formatR(totalLaba);
+            
+            document.getElementById('labaTersedia').value = formatR(totalLabaSistem);
         }
 
         document.getElementById('btnHitungSHU').addEventListener('click', () => {
-            const porsi = document.getElementById('porsiSHU').value / 100;
+            const porsiPersen = document.getElementById('porsiSHU').value / 100;
+            const labaYangDibagi = totalLabaSistem * porsiPersen;
             const tbody = document.getElementById('bodySHU');
+            
             tbody.innerHTML = '';
-            for (let nama in dataBunga) {
-                const kontribusi = dataBunga[nama];
-                const persen = (kontribusi / totalLaba) * 100;
-                const shu = (kontribusi / totalLaba) * (totalLaba * porsi);
-                tbody.innerHTML += `<tr><td>${nama}</td><td class="txt-right">${formatR(kontribusi)}</td><td class="txt-right">${persen.toFixed(2)}%</td><td class="txt-right"><b>${formatR(shu)}</b></td></tr>`;
+            
+            for (let nama in dataPerAnggota) {
+                const kontribusi = dataPerAnggota[nama];
+                const persenKontribusi = (kontribusi / totalLabaSistem) * 100;
+                const nilaiSHU = (kontribusi / totalLabaSistem) * labaYangDibagi;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${nama}</strong></td>
+                        <td class="txt-right">${formatR(kontribusi)}</td>
+                        <td class="txt-right">${persenKontribusi.toFixed(2)}%</td>
+                        <td class="txt-right"><b style="color:var(--dark)">${formatR(nilaiSHU)}</b></td>
+                    </tr>
+                `;
             }
             document.getElementById('hasilSHU').style.display = 'block';
         });
 
-        ambilData();
+        muatData();
     </script>
 </body>
 </html>

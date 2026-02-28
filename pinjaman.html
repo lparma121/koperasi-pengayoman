@@ -3,76 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Pinjaman - Koperasi Pengayoman</title>
+    <title>Monitoring Pinjaman - Koperasi Pengayoman</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--light); }
-        
-        /* Sidebar */
         .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
         .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
-        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; letter-spacing: 1px; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; }
         .menu { list-style: none; padding: 20px 0; flex: 1; }
         .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; border-left: 4px solid transparent; }
         .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
         .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left-color: var(--primary); }
-        
-        /* Main Content */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
         .content { padding: 30px; overflow-y: auto; }
-
-        .table-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .btn-new { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-        th { background: #f8f9fa; color: var(--dark); font-weight: 600; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
-        
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .status-aktif { background: rgba(39, 174, 96, 0.1); color: var(--success); }
-        .status-lunas { background: rgba(52, 152, 219, 0.1); color: #3498db; }
-        
-        .txt-right { text-align: right; }
-        .saldo-minus { color: var(--danger); font-weight: bold; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; }
+        .status-aktif { background: #e8f8f5; color: var(--success); }
+        .status-lunas { background: #ebf5fb; color: #3498db; }
     </style>
 </head>
 <body>
-
     <div class="sidebar">
         <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
         <ul class="menu">
             <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
             <li><a href="daftar-anggota.html"><i class="fa fa-users"></i> Data Anggota</a></li>
             <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
-            <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
             <li><a href="pinjaman.html" class="active"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
             <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
-            <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
         </ul>
     </div>
 
     <div class="main-content">
         <div class="header">
-            <h2 style="color: var(--dark)">Monitoring Pinjaman & Saldo</h2>
-            <button onclick="window.location.href='input-pinjaman.html'" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;">+ Pinjaman Baru</button>
+            <h2>Monitoring Pinjaman</h2>
+            <a href="input-pinjaman.html" class="btn-new"><i class="fa fa-plus"></i> Pinjaman / Top Up Baru</a>
         </div>
-
         <div class="content">
-            <div class="table-container">
+            <div class="card">
                 <table>
                     <thead>
                         <tr>
-                            <th>Anggota</th>
+                            <th>Nama Anggota</th>
                             <th>Tgl Pinjam</th>
-                            <th class="txt-right">Plafon</th>
-                            <th class="txt-right">Total Angsuran (Pokok)</th>
-                            <th class="txt-right">Sisa Saldo Pinjaman</th>
+                            <th>Plafon</th>
+                            <th>Sisa Saldo</th>
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelPinjaman">
-                        <tr><td colspan="6" style="text-align:center; padding:20px;">Memuat dan menyinkronkan data...</td></tr>
+                    <tbody id="listPinjaman">
+                        <tr><td colspan="5" style="text-align:center;">Menyinkronkan data saldo...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -81,7 +68,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -94,71 +80,41 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
         const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-        onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = "login.html";
-            else muatDataSinkron();
-        });
+        async function muatData() {
+            const [sPin, sAns] = await Promise.all([
+                getDocs(collection(db, "pinjaman")),
+                getDocs(collection(db, "angsuran"))
+            ]);
 
-        async function muatDataSinkron() {
-            try {
-                // 1. Ambil semua data pinjaman
-                const snapPinjaman = await getDocs(collection(db, "pinjaman"));
-                // 2. Ambil semua data angsuran
-                const snapAngsuran = await getDocs(collection(db, "angsuran"));
+            const rekapBayar = {};
+            sAns.forEach(doc => {
+                const d = doc.data();
+                rekapBayar[d.id_pinjaman] = (rekapBayar[d.id_pinjaman] || 0) + (Number(d.jumlah) || 0);
+            });
 
-                // 3. Petakan total angsuran pokok per ID Pinjaman
-                const rekapAngsuran = {};
-                snapAngsuran.forEach(doc => {
-                    const d = doc.data();
-                    const idPinjam = d.id_pinjaman;
-                    const nominalPokok = Number(d.jumlah) || 0;
-                    
-                    if(!rekapAngsuran[idPinjam]) rekapAngsuran[idPinjam] = 0;
-                    rekapAngsuran[idPinjam] += nominalPokok;
-                });
+            const tbody = document.getElementById('listPinjaman');
+            tbody.innerHTML = '';
+            sPin.forEach(doc => {
+                const p = doc.data();
+                const bayar = rekapBayar[doc.id] || 0;
+                const sisa = p.jumlah - bayar;
+                const status = sisa <= 0 ? 'LUNAS' : (p.status || 'AKTIF');
 
-                const tbody = document.getElementById('tabelPinjaman');
-                tbody.innerHTML = '';
-
-                if(snapPinjaman.empty) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data pinjaman.</td></tr>';
-                    return;
-                }
-
-                snapPinjaman.forEach(doc => {
-                    const p = doc.data();
-                    const idDoc = doc.id;
-                    const plafon = Number(p.jumlah) || 0;
-                    const totalBayarPokok = rekapAngsuran[idDoc] || 0;
-                    const sisaSaldo = plafon - totalBayarPokok;
-
-                    // Tentukan status otomatis berdasarkan saldo
-                    const status = sisaSaldo <= 0 ? 'Lunas' : (p.status || 'Aktif');
-                    const statusClass = sisaSaldo <= 0 ? 'status-lunas' : 'status-aktif';
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${p.info_anggota}</strong></td>
-                            <td>${p.tanggal || '-'}</td>
-                            <td class="txt-right">${formatR(plafon)}</td>
-                            <td class="txt-right" style="color:#27ae60;">${formatR(totalBayarPokok)}</td>
-                            <td class="txt-right ${sisaSaldo > 0 ? 'saldo-minus' : ''}">
-                                ${formatR(sisaSaldo)}
-                            </td>
-                            <td><span class="status-badge ${statusClass}">${status.toUpperCase()}</span></td>
-                        </tr>
-                    `;
-                });
-
-            } catch (e) {
-                console.error(e);
-                alert("Gagal memuat sinkronisasi data.");
-            }
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.info_anggota}</strong></td>
+                        <td>${p.tanggal}</td>
+                        <td>${formatR(p.jumlah)}</td>
+                        <td style="color:${sisa > 0 ? 'red' : 'green'}; font-weight:bold;">${formatR(sisa)}</td>
+                        <td><span class="status-badge ${sisa <= 0 ? 'status-lunas' : 'status-aktif'}">${status}</span></td>
+                    </tr>
+                `;
+            });
         }
+        muatData();
     </script>
 </body>
 </html>

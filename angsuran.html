@@ -29,7 +29,6 @@
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.9rem; }
         input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; transition: 0.3s; background-color: white; }
-        input[readonly] { background-color: #f8f9fa; cursor: not-allowed; color: #7f8c8d; }
         
         .grid-input { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
@@ -71,13 +70,13 @@
                     <div class="form-group">
                         <label>Pilih Nama Anggota</label>
                         <select id="idPilihPinjaman" required>
-                            <option value="">-- Memuat data pinjaman... --</option>
+                            <option value="">-- Memuat data pinjaman aktif... --</option>
                         </select>
                     </div>
 
                     <div id="boxInfo" class="info-pinjaman">
-                        <p id="infoPlafon">Plafon Pinjaman: Rp 0</p>
-                        <p>Ketentuan: Angsuran Pokok 1/10 & Jasa 1% dari Plafon</p>
+                        <p id="infoPlafon">Plafon Pinjaman Asli: Rp 0</p>
+                        <p>Sistem otomatis mengisi Angsuran 1/10 & Jasa 1%</p>
                     </div>
 
                     <div class="form-group">
@@ -87,17 +86,17 @@
 
                     <div class="grid-input">
                         <div class="form-group">
-                            <label>Angsuran Pokok (1/10)</label>
-                            <input type="number" id="inputPokok" readonly required title="Dihitung otomatis dari plafon">
+                            <label>Angsuran Pokok (Rp)</label>
+                            <input type="number" id="inputPokok" placeholder="0" required>
                         </div>
                         <div class="form-group">
-                            <label>Bunga / Jasa (1%)</label>
-                            <input type="number" id="inputBunga" readonly required title="Dihitung otomatis (1% dari plafon)">
+                            <label>Bunga / Jasa (Rp)</label>
+                            <input type="number" id="inputBunga" placeholder="0" required>
                         </div>
                     </div>
 
                     <div class="total-box">
-                        <p>Total Wajib Bayar Bulan Ini</p>
+                        <p>Total Diterima Kasir Bulan Ini</p>
                         <h2 id="txtTotal">Rp 0</h2>
                     </div>
 
@@ -148,38 +147,37 @@
                 dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
                 snap.forEach(doc => {
                     const d = doc.data();
-                    // Simpan jumlah plafon di atribut data-plafon
                     dropdown.innerHTML += `<option value="${doc.id}" data-nama="${d.info_anggota}" data-plafon="${d.jumlah}">${d.info_anggota}</option>`;
                 });
             } catch (e) { console.error(e); }
         }
 
-        // LOGIKA OTOMATIS SAAT PILIH ANGGOTA
+        // LOGIKA OTOMATIS + MASIH BISA DIEDIT MANUAL
         document.getElementById('idPilihPinjaman').addEventListener('change', function() {
             const selected = this.options[this.selectedIndex];
             const plafon = Number(selected.dataset.plafon) || 0;
 
             if (plafon > 0) {
-                // Hitung otomatis
-                const pokokBulanan = plafon / 10;
-                const bungaBulanan = plafon * 0.01;
-                const total = pokokBulanan + bungaBulanan;
-
-                // Isi input secara otomatis
-                inPokok.value = pokokBulanan;
-                inBunga.value = bungaBulanan;
-                
-                // Tampilkan info & total
+                inPokok.value = plafon / 10;
+                inBunga.value = plafon * 0.01;
                 boxInfo.style.display = 'block';
                 infoPlafon.innerText = "Plafon Pinjaman Asli: " + new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(plafon);
-                txtTotal.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total);
+                updateTotalText();
             } else {
                 boxInfo.style.display = 'none';
                 inPokok.value = '';
                 inBunga.value = '';
-                txtTotal.innerText = 'Rp 0';
+                updateTotalText();
             }
         });
+
+        function updateTotalText() {
+            const total = (Number(inPokok.value) || 0) + (Number(inBunga.value) || 0);
+            txtTotal.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total);
+        }
+
+        inPokok.addEventListener('input', updateTotalText);
+        inBunga.addEventListener('input', updateTotalText);
 
         document.getElementById('formAngsuran').addEventListener('submit', async (e) => {
             e.preventDefault();

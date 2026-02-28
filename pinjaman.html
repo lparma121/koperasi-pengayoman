@@ -41,10 +41,14 @@
         th { background: #f8f9fa; color: var(--dark); font-weight: bold; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
         .txt-right { text-align: right; }
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
         .status-aktif { background: rgba(243, 156, 18, 0.1); color: #d35400; }
         .status-lunas { background: rgba(39, 174, 96, 0.1); color: var(--success); }
         .saldo-minus { color: var(--danger); font-weight: bold; }
+
+        .btn-lunas-manual { background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .btn-lunas-manual:hover { background: #219653; }
     </style>
 </head>
 <body>
@@ -69,7 +73,10 @@
     <div class="content">
         
         <div class="card-container">
-            <h3><i class="fa fa-plus-circle"></i> Form Pencairan Pinjaman Baru</h3>
+            <h3><i class="fa fa-plus-circle"></i> Form Pencairan Pinjaman Baru (Otomatis Top-Up)</h3>
+            <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 15px;">
+                Jika anggota yang dipilih masih memiliki pinjaman aktif, sistem akan otomatis melunasi pinjaman lamanya.
+            </p>
             <form id="formPinjaman">
                 <div class="form-grid">
                     <div class="form-group">
@@ -83,20 +90,20 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Jumlah Pinjaman (Rp)</label>
-                        <input type="number" id="jumlah" placeholder="Contoh: 5000000" required>
+                        <label>Jumlah Pinjaman Baru (Plafon Rp)</label>
+                        <input type="number" id="jumlah" placeholder="Contoh: 10000000" required>
                     </div>
                     <div class="form-group">
                         <label>Keterangan / Tujuan</label>
-                        <input type="text" id="keterangan" placeholder="Contoh: Modal Usaha / Top-Up" required>
+                        <input type="text" id="keterangan" placeholder="Contoh: Top-Up / Modal Usaha" required>
                     </div>
                 </div>
-                <button type="submit" class="btn-save">CAIRKAN PINJAMAN SEKARANG</button>
+                <button type="submit" class="btn-save" id="btnSubmitForm">CAIRKAN PINJAMAN SEKARANG</button>
             </form>
         </div>
 
         <div class="card-container">
-            <h3><i class="fa fa-list"></i> Monitoring Pinjaman & Saldo Sinkron</h3>
+            <h3><i class="fa fa-list"></i> Riwayat & Saldo Pinjaman Anggota</h3>
             <table>
                 <thead>
                     <tr>
@@ -107,10 +114,11 @@
                         <th class="txt-right">Total Angsuran</th>
                         <th class="txt-right">Sisa Saldo</th>
                         <th>Status</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="tabelPinjaman">
-                    <tr><td colspan="7" style="text-align:center; padding:20px;">Memuat data...</td></tr>
+                    <tr><td colspan="8" style="text-align:center; padding:20px;">Memuat data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -121,7 +129,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
@@ -149,18 +157,20 @@
         }
     });
 
+    // 1. Muat Data Anggota ke Dropdown
     async function muatDropdownAnggota() {
         const dropdown = document.getElementById('id_anggota');
         try {
             const q = query(collection(db, "anggota"), orderBy("nama", "asc"));
             const snap = await getDocs(q);
             dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
-            snap.forEach(doc => {
-                dropdown.innerHTML += `<option value="${doc.id}" data-nama="${doc.data().nama}">${doc.data().no_anggota} - ${doc.data().nama}</option>`;
+            snap.forEach(document => {
+                dropdown.innerHTML += `<option value="${document.id}" data-nama="${document.data().nama}">${document.data().no_anggota} - ${document.data().nama}</option>`;
             });
         } catch (e) { console.error(e); }
     }
 
+    // 2. Tampilkan Tabel Monitoring Sinkron
     async function muatDataSinkron() {
         const tbody = document.getElementById('tabelPinjaman');
         try {
@@ -169,6 +179,7 @@
                 getDocs(collection(db, "angsuran"))
             ]);
 
+            // Hitung total bayar per pinjaman
             const rekapAngsuran = {};
             snapAngsuran.forEach(doc => {
                 const d = doc.data();
@@ -177,18 +188,27 @@
 
             tbody.innerHTML = '';
             if (snapPinjaman.empty) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Tidak ada data pinjaman.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Tidak ada data pinjaman.</td></tr>';
                 return;
             }
 
-            snapPinjaman.forEach(doc => {
-                const p = doc.data();
-                const idDoc = doc.id;
+            snapPinjaman.forEach(documentSnapshot => {
+                const p = documentSnapshot.data();
+                const idDoc = documentSnapshot.id;
                 const plafon = Number(p.jumlah) || 0;
                 const totalPokok = rekapAngsuran[idDoc] || 0;
+                
+                // Saldo
                 const sisa = plafon - totalPokok;
-                const status = sisa <= 0 ? 'LUNAS' : (p.status || 'AKTIF');
-                const badgeClass = sisa <= 0 ? 'status-lunas' : 'status-aktif';
+                
+                // Tentukan Status (Kalau di DB sudah Lunas, pakai Lunas. Kalau saldo 0, Lunas)
+                let statusAktual = p.status || 'Aktif';
+                if (sisa <= 0) statusAktual = 'Lunas';
+                
+                const badgeClass = (statusAktual === 'Aktif') ? 'status-aktif' : 'status-lunas';
+                const tombolAksi = (statusAktual === 'Aktif') 
+                    ? `<button class="btn-lunas-manual" onclick="tandaiLunasManual('${idDoc}', '${p.info_anggota}')">✔ Set Lunas</button>` 
+                    : `-`;
 
                 tbody.innerHTML += `
                     <tr>
@@ -197,39 +217,83 @@
                         <td>${p.keterangan || '-'}</td>
                         <td class="txt-right">${formatR(plafon)}</td>
                         <td class="txt-right" style="color:var(--success);">${formatR(totalPokok)}</td>
-                        <td class="txt-right ${sisa > 0 ? 'saldo-minus' : ''}">${formatR(sisa)}</td>
-                        <td><span class="status-badge ${badgeClass}">${status}</span></td>
+                        <td class="txt-right ${sisa > 0 && statusAktual === 'Aktif' ? 'saldo-minus' : ''}">
+                            ${formatR(sisa <= 0 ? 0 : sisa)}
+                        </td>
+                        <td><span class="status-badge ${badgeClass}">${statusAktual}</span></td>
+                        <td>${tombolAksi}</td>
                     </tr>`;
             });
         } catch (e) { 
             console.error(e);
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Gagal memuat data.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Gagal memuat data.</td></tr>';
         }
     }
 
+    // 3. Proses Input Pinjaman Baru (DENGAN LOGIKA AUTO-LUNAS)
     document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = document.getElementById('btnSubmitForm');
+        btn.disabled = true;
+        btn.innerText = "Memproses...";
+
         const sel = document.getElementById('id_anggota');
+        const idAnggota = sel.value;
         const namaFull = sel.options[sel.selectedIndex].text;
 
-        const data = {
-            tanggal: document.getElementById('tanggal').value,
-            id_anggota: sel.value,
-            info_anggota: namaFull,
-            jumlah: Number(document.getElementById('jumlah').value),
-            keterangan: document.getElementById('keterangan').value,
-            status: "Aktif",
-            waktu_input: new Date().toISOString()
-        };
-
         try {
-            await addDoc(collection(db, "pinjaman"), data);
-            alert("Pinjaman Berhasil Dicairkan!");
+            // LANGKAH A: Cari pinjaman lama yang masih Aktif untuk orang ini, lalu jadikan Lunas
+            const qLama = query(collection(db, "pinjaman"), 
+                                where("id_anggota", "==", idAnggota), 
+                                where("status", "==", "Aktif"));
+            const snapLama = await getDocs(qLama);
+            
+            const janjiUpdate = [];
+            snapLama.forEach((docLama) => {
+                const refDokumen = doc(db, "pinjaman", docLama.id);
+                // Ubah status di database jadi Lunas (Top Up)
+                janjiUpdate.push(updateDoc(refDokumen, { status: "Lunas (Top Up)" }));
+            });
+            await Promise.all(janjiUpdate); // Tunggu sampai pinjaman lama selesai di-update
+
+            // LANGKAH B: Buat Pinjaman Baru
+            const dataBaru = {
+                tanggal: document.getElementById('tanggal').value,
+                id_anggota: idAnggota,
+                info_anggota: namaFull,
+                jumlah: Number(document.getElementById('jumlah').value),
+                keterangan: document.getElementById('keterangan').value,
+                status: "Aktif",
+                waktu_input: new Date().toISOString()
+            };
+
+            await addDoc(collection(db, "pinjaman"), dataBaru);
+            
+            alert("Pinjaman Berhasil Dicairkan!\nPinjaman lama anggota ini (jika ada) telah otomatis dilunaskan.");
             document.getElementById('formPinjaman').reset();
             document.getElementById('tanggal').valueAsDate = new Date();
-            muatDataSinkron();
-        } catch (err) { alert("Error: " + err.message); }
+            muatDataSinkron(); // Refresh tabel bawah
+
+        } catch (err) { 
+            alert("Error: " + err.message); 
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "CAIRKAN PINJAMAN SEKARANG";
+        }
     });
+
+    // 4. Fitur Manual Tandai Lunas (Jika butuh diklik manual dari tabel)
+    window.tandaiLunasManual = async function(idDokumen, nama) {
+        if(confirm(`Yakin tandai pinjaman ${nama} ini sebagai Lunas?`)) {
+            try {
+                const refDokumen = doc(db, "pinjaman", idDokumen);
+                await updateDoc(refDokumen, { status: "Lunas (Manual)" });
+                muatDataSinkron();
+            } catch (err) {
+                alert("Gagal update status: " + err.message);
+            }
+        }
+    }
 </script>
 </body>
 </html>

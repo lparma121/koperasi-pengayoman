@@ -6,7 +6,7 @@
     <title>Kelola Pinjaman - Koperasi Pengayoman</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --orange: #e67e22; }
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --orange: #e67e22; --blue: #2980b9; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--light); }
         
@@ -37,13 +37,13 @@
         /* Tabel Styling */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
         th { background: #f8f9fa; color: var(--dark); font-weight: bold; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
         .txt-right { text-align: right; }
         
         .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
         .status-aktif { background: rgba(243, 156, 18, 0.1); color: #d35400; }
         .status-lunas { background: rgba(39, 174, 96, 0.1); color: var(--success); }
-        .text-jasa { color: #2980b9; font-weight: bold; }
+        .text-jasa { color: var(--blue); font-weight: bold; }
         .saldo-minus { color: var(--danger); font-weight: bold; }
 
         .btn-lunas-manual { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
@@ -66,7 +66,7 @@
 
 <div class="main-content">
     <div class="header">
-        <h2>Kelola Pinjaman & Monitoring Jasa</h2>
+        <h2>Kelola Pinjaman & Monitoring Saldo</h2>
     </div>
     <div class="content">
         
@@ -98,22 +98,22 @@
         </div>
 
         <div class="card-container">
-            <h3><i class="fa fa-list"></i> Monitoring Pinjaman & Jasa (1%)</h3>
+            <h3><i class="fa fa-list"></i> Monitoring Pinjaman & Jasa (Database)</h3>
             <table>
                 <thead>
                     <tr>
                         <th>Tanggal</th>
                         <th>Anggota</th>
                         <th class="txt-right">Plafon</th>
-                        <th class="txt-right">Jasa Pinjaman (1%)</th>
-                        <th class="txt-right">Total Angsuran</th>
+                        <th class="txt-right">Jasa Terbayar</th>
+                        <th class="txt-right">Total Angsuran (Pokok)</th>
                         <th class="txt-right">Sisa Saldo</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="tabelPinjaman">
-                    <tr><td colspan="8" style="text-align:center; padding:20px;">Memuat data...</td></tr>
+                    <tr><td colspan="8" style="text-align:center; padding:20px;">Memuat data dan menyinkronkan jasa...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -151,8 +151,11 @@
         try {
             const snap = await getDocs(query(collection(db, "anggota"), orderBy("nama", "asc")));
             dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
-            snap.forEach(document => {
-                dropdown.innerHTML += `<option value="${document.id}" data-nama="${document.data().nama}">${document.data().no_anggota} - ${document.data().nama}</option>`;
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                if(data.status !== "Keluar") {
+                    dropdown.innerHTML += `<option value="${docSnap.id}">${data.no_anggota} - ${data.nama}</option>`;
+                }
             });
         } catch (e) { console.error(e); }
     }
@@ -165,10 +168,15 @@
                 getDocs(collection(db, "angsuran"))
             ]);
 
-            const rekapAngsuran = {};
-            snapAngsuran.forEach(document => {
-                const d = document.data();
-                rekapAngsuran[d.id_pinjaman] = (rekapAngsuran[d.id_pinjaman] || 0) + (Number(d.jumlah) || 0);
+            const rekapData = {};
+            snapAngsuran.forEach(docSnap => {
+                const d = docSnap.data();
+                const idPinjaman = d.id_pinjaman;
+                if (!rekapData[idPinjaman]) rekapData[idPinjaman] = { pokok: 0, jasa: 0 };
+                
+                // Mengambil nilai bunga asli dari database
+                rekapData[idPinjaman].pokok += (Number(d.jumlah) || 0);
+                rekapData[idPinjaman].jasa += (Number(d.bunga) || 0);
             });
 
             tbody.innerHTML = '';
@@ -182,38 +190,35 @@
                 const idDoc = docSnap.id;
                 const plafon = Number(p.jumlah) || 0;
                 
-                // HITUNG JASA PINJAMAN (1% dari Plafon)
-                const jasa = plafon * 0.01;
+                const totalJasaTerbayar = rekapData[idDoc] ? rekapData[idDoc].jasa : 0;
+                const totalPokokTerbayar = rekapData[idDoc] ? rekapData[idDoc].pokok : 0;
                 
-                const totalPokok = rekapAngsuran[idDoc] || 0;
-                const sisa = plafon - totalPokok;
+                const sisaPokok = plafon - totalPokokTerbayar;
                 const statusDatabase = p.status || 'Aktif';
-                
-                // Status berdasarkan sisa saldo
-                const statusLayar = (sisa <= 0) ? 'Lunas' : statusDatabase;
+                const statusLayar = (sisaPokok <= 0) ? 'Lunas' : statusDatabase;
                 const badgeClass = (statusLayar === 'Aktif') ? 'status-aktif' : 'status-lunas';
-                
-                const tombolAksi = (statusDatabase === 'Aktif') 
-                    ? `<button class="btn-lunas-manual" onclick="tandaiLunasManual('${idDoc}', '${p.info_anggota}')">✔ Set Lunas</button>` 
-                    : `<span style="color:#7f8c8d; font-size:0.8rem;">Selesai</span>`;
 
                 tbody.innerHTML += `
                     <tr>
                         <td>${p.tanggal || '-'}</td>
                         <td><strong>${p.info_anggota}</strong></td>
                         <td class="txt-right">${formatR(plafon)}</td>
-                        <td class="txt-right text-jasa">${formatR(jasa)}</td>
-                        <td class="txt-right" style="color:var(--success);">${formatR(totalPokok)}</td>
-                        <td class="txt-right ${sisa > 0 && statusDatabase === 'Aktif' ? 'saldo-minus' : ''}">
-                            ${formatR(sisa <= 0 ? 0 : sisa)}
+                        <td class="txt-right text-jasa">${formatR(totalJasaTerbayar)}</td>
+                        <td class="txt-right" style="color:var(--success);">${formatR(totalPokokTerbayar)}</td>
+                        <td class="txt-right ${sisaPokok > 0 && statusDatabase === 'Aktif' ? 'saldo-minus' : ''}">
+                            ${formatR(sisaPokok <= 0 ? 0 : sisaPokok)}
                         </td>
                         <td><span class="status-badge ${badgeClass}">${statusLayar}</span></td>
-                        <td>${tombolAksi}</td>
+                        <td>
+                            ${statusDatabase === 'Aktif' 
+                              ? `<button class="btn-lunas-manual" onclick="tandaiLunasManual('${idDoc}', '${p.info_anggota}')">✔ Set Lunas</button>` 
+                              : `<span style="color:#7f8c8d; font-size:0.8rem;">Selesai</span>`}
+                        </td>
                     </tr>`;
             });
         } catch (e) { 
             console.error(e);
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Gagal memuat data.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Gagal memuat data database.</td></tr>';
         }
     }
 
@@ -228,7 +233,6 @@
         const namaFull = sel.options[sel.selectedIndex].text;
 
         try {
-            // Melunasi pinjaman aktif sebelumnya (Top Up)
             const qLama = query(collection(db, "pinjaman"), where("id_anggota", "==", idAnggota), where("status", "==", "Aktif"));
             const snapLama = await getDocs(qLama);
             const janjiUpdate = [];

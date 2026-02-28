@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angsuran - Koperasi Pengayoman</title>
+    <title>Angsuran Otomatis - Koperasi Pengayoman</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; }
@@ -28,19 +28,20 @@
         .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 700px; margin: auto; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.9rem; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; transition: 0.3s; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1); }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; transition: 0.3s; background-color: white; }
+        input[readonly] { background-color: #f8f9fa; cursor: not-allowed; color: #7f8c8d; }
         
         .grid-input { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
-        .total-box { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin-top: 10px; border: 1px dashed #ddd; }
-        .total-box p { font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
-        .total-box h2 { color: var(--dark); font-size: 1.8rem; }
+        .info-pinjaman { background: #e8f8f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; border-left: 4px solid var(--primary); }
+        .info-pinjaman p { font-size: 0.85rem; color: #16a085; margin: 2px 0; }
 
-        .btn-submit { background-color: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem; margin-top: 20px; transition: 0.3s; }
+        .total-box { background: var(--dark); padding: 20px; border-radius: 8px; text-align: center; margin-top: 10px; color: white; }
+        .total-box p { font-size: 0.8rem; color: #bdc3c7; text-transform: uppercase; margin-bottom: 5px; }
+        .total-box h2 { color: var(--primary); font-size: 1.8rem; }
+
+        .btn-submit { background-color: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem; margin-top: 20px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-submit:hover { background-color: #16a085; transform: translateY(-2px); }
-        
-        .loading-overlay { display: none; text-align: center; color: var(--primary); font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -60,18 +61,23 @@
 
     <div class="main-content">
         <div class="header">
-            <h2 style="color: var(--dark)">Input Pembayaran Angsuran</h2>
-            <i class="fa fa-calculator" style="color: var(--primary); font-size: 1.5rem;"></i>
+            <h2 style="color: var(--dark)">Input Angsuran Otomatis</h2>
+            <span style="background: var(--primary); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">TENOR 10 BLN | JASA 1%</span>
         </div>
 
         <div class="content">
             <div class="form-card">
                 <form id="formAngsuran">
                     <div class="form-group">
-                        <label>Cari Anggota (Pinjaman Aktif)</label>
+                        <label>Pilih Nama Anggota</label>
                         <select id="idPilihPinjaman" required>
                             <option value="">-- Memuat data pinjaman... --</option>
                         </select>
+                    </div>
+
+                    <div id="boxInfo" class="info-pinjaman">
+                        <p id="infoPlafon">Plafon Pinjaman: Rp 0</p>
+                        <p>Ketentuan: Angsuran Pokok 1/10 & Jasa 1% dari Plafon</p>
                     </div>
 
                     <div class="form-group">
@@ -81,24 +87,23 @@
 
                     <div class="grid-input">
                         <div class="form-group">
-                            <label>Angsuran Pokok (Rp)</label>
-                            <input type="number" id="inputPokok" placeholder="Contoh: 500000" required>
+                            <label>Angsuran Pokok (1/10)</label>
+                            <input type="number" id="inputPokok" readonly required title="Dihitung otomatis dari plafon">
                         </div>
                         <div class="form-group">
-                            <label>Bunga / Jasa (Rp)</label>
-                            <input type="number" id="inputBunga" placeholder="Contoh: 50000" required>
+                            <label>Bunga / Jasa (1%)</label>
+                            <input type="number" id="inputBunga" readonly required title="Dihitung otomatis (1% dari plafon)">
                         </div>
                     </div>
 
                     <div class="total-box">
-                        <p>Total Uang Diterima</p>
+                        <p>Total Wajib Bayar Bulan Ini</p>
                         <h2 id="txtTotal">Rp 0</h2>
                     </div>
 
                     <button type="submit" class="btn-submit" id="btnSimpan">
-                        <i class="fa fa-save"></i> SIMPAN TRANSAKSI
+                        <i class="fa fa-check-circle"></i> SIMPAN PEMBAYARAN
                     </button>
-                    <div id="loading" class="loading-overlay">Memproses Transaksi...</div>
                 </form>
             </div>
         </div>
@@ -109,7 +114,6 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CONFIG ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
@@ -123,73 +127,78 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Set Tanggal Hari Ini secara otomatis
+        const inPokok = document.getElementById('inputPokok');
+        const inBunga = document.getElementById('inputBunga');
+        const txtTotal = document.getElementById('txtTotal');
+        const boxInfo = document.getElementById('boxInfo');
+        const infoPlafon = document.getElementById('infoPlafon');
+
         document.getElementById('tglBayar').valueAsDate = new Date();
 
-        // 1. Cek Login
         onAuthStateChanged(auth, (user) => {
             if (!user) window.location.href = "login.html";
             else muatPinjamanAktif();
         });
 
-        // 2. Muat Data Pinjaman Aktif ke Dropdown
         async function muatPinjamanAktif() {
             const dropdown = document.getElementById('idPilihPinjaman');
             try {
                 const q = query(collection(db, "pinjaman"), where("status", "==", "Aktif"));
                 const snap = await getDocs(q);
-                
                 dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
                 snap.forEach(doc => {
                     const d = doc.data();
-                    dropdown.innerHTML += `<option value="${doc.id}" data-nama="${d.info_anggota}">${d.info_anggota}</option>`;
+                    // Simpan jumlah plafon di atribut data-plafon
+                    dropdown.innerHTML += `<option value="${doc.id}" data-nama="${d.info_anggota}" data-plafon="${d.jumlah}">${d.info_anggota}</option>`;
                 });
             } catch (e) { console.error(e); }
         }
 
-        // 3. Hitung Total Otomatis
-        const inPokok = document.getElementById('inputPokok');
-        const inBunga = document.getElementById('inputBunga');
-        const txtTotal = document.getElementById('txtTotal');
+        // LOGIKA OTOMATIS SAAT PILIH ANGGOTA
+        document.getElementById('idPilihPinjaman').addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const plafon = Number(selected.dataset.plafon) || 0;
 
-        function updateTotal() {
-            const total = (Number(inPokok.value) || 0) + (Number(inBunga.value) || 0);
-            txtTotal.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total);
-        }
+            if (plafon > 0) {
+                // Hitung otomatis
+                const pokokBulanan = plafon / 10;
+                const bungaBulanan = plafon * 0.01;
+                const total = pokokBulanan + bungaBulanan;
 
-        inPokok.addEventListener('input', updateTotal);
-        inBunga.addEventListener('input', updateTotal);
+                // Isi input secara otomatis
+                inPokok.value = pokokBulanan;
+                inBunga.value = bungaBulanan;
+                
+                // Tampilkan info & total
+                boxInfo.style.display = 'block';
+                infoPlafon.innerText = "Plafon Pinjaman Asli: " + new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(plafon);
+                txtTotal.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total);
+            } else {
+                boxInfo.style.display = 'none';
+                inPokok.value = '';
+                inBunga.value = '';
+                txtTotal.innerText = 'Rp 0';
+            }
+        });
 
-        // 4. Simpan Transaksi
         document.getElementById('formAngsuran').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const btn = document.getElementById('btnSimpan');
-            const loader = document.getElementById('loading');
             const select = document.getElementById('idPilihPinjaman');
             const idPinjam = select.value;
             const namaAnggota = select.options[select.selectedIndex].dataset.nama;
-
-            btn.style.display = 'none';
-            loader.style.display = 'block';
 
             try {
                 await addDoc(collection(db, "angsuran"), {
                     id_pinjaman: idPinjam,
                     info_anggota: namaAnggota,
-                    jumlah: Number(inPokok.value), // Masuk sebagai pengurang hutang (Pokok)
-                    bunga: Number(inBunga.value),   // Masuk sebagai Pendapatan/Laba (Bunga)
+                    jumlah: Number(inPokok.value),
+                    bunga: Number(inBunga.value),
                     tanggal: document.getElementById('tglBayar').value,
                     waktu_input: new Date().toISOString()
                 });
-
-                alert("Transaksi Angsuran Berhasil Disimpan!");
+                alert("Angsuran Berhasil Dicatat!");
                 window.location.reload();
-            } catch (err) {
-                alert("Gagal menyimpan: " + err.message);
-                btn.style.display = 'block';
-                loader.style.display = 'none';
-            }
+            } catch (err) { alert("Error: " + err.message); }
         });
     </script>
 </body>

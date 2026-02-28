@@ -39,7 +39,7 @@
         /* Table Design */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
         th { background: #f8f9fa; color: var(--dark); font-weight: bold; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
         .txt-right { text-align: right; }
         
         .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
@@ -47,8 +47,8 @@
         .status-lunas { background: rgba(39, 174, 96, 0.1); color: var(--success); }
         .saldo-minus { color: var(--danger); font-weight: bold; }
 
-        .btn-lunas-manual { background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
-        .btn-lunas-manual:hover { background: #219653; }
+        .btn-lunas-manual { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; }
+        .btn-lunas-manual:hover { background: #219653; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -75,7 +75,7 @@
         <div class="card-container">
             <h3><i class="fa fa-plus-circle"></i> Form Pencairan Pinjaman Baru (Otomatis Top-Up)</h3>
             <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 15px;">
-                Jika anggota yang dipilih masih memiliki pinjaman aktif, sistem akan otomatis melunasi pinjaman lamanya.
+                Jika anggota yang dipilih masih memiliki pinjaman aktif, sistem akan otomatis melunasi pinjaman lamanya di database.
             </p>
             <form id="formPinjaman">
                 <div class="form-grid">
@@ -113,8 +113,8 @@
                         <th class="txt-right">Plafon</th>
                         <th class="txt-right">Total Angsuran</th>
                         <th class="txt-right">Sisa Saldo</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
+                        <th>Status Layar</th>
+                        <th>Aksi Perbaikan</th>
                     </tr>
                 </thead>
                 <tbody id="tabelPinjaman">
@@ -181,8 +181,8 @@
 
             // Hitung total bayar per pinjaman
             const rekapAngsuran = {};
-            snapAngsuran.forEach(doc => {
-                const d = doc.data();
+            snapAngsuran.forEach(document => {
+                const d = document.data();
                 rekapAngsuran[d.id_pinjaman] = (rekapAngsuran[d.id_pinjaman] || 0) + (Number(d.jumlah) || 0);
             });
 
@@ -201,14 +201,16 @@
                 // Saldo
                 const sisa = plafon - totalPokok;
                 
-                // Tentukan Status (Kalau di DB sudah Lunas, pakai Lunas. Kalau saldo 0, Lunas)
-                let statusAktual = p.status || 'Aktif';
-                if (sisa <= 0) statusAktual = 'Lunas';
+                // Cek status di database vs tampilan
+                const statusDatabase = p.status || 'Aktif';
+                const statusLayar = (sisa <= 0) ? 'Lunas' : statusDatabase;
                 
-                const badgeClass = (statusAktual === 'Aktif') ? 'status-aktif' : 'status-lunas';
-                const tombolAksi = (statusAktual === 'Aktif') 
+                const badgeClass = (statusLayar === 'Aktif') ? 'status-aktif' : 'status-lunas';
+                
+                // Tombol "Set Lunas" WAJIB MUNCUL jika di database masih "Aktif", meskipun saldonya 0
+                const tombolAksi = (statusDatabase === 'Aktif') 
                     ? `<button class="btn-lunas-manual" onclick="tandaiLunasManual('${idDoc}', '${p.info_anggota}')">✔ Set Lunas</button>` 
-                    : `-`;
+                    : `<span style="color:#7f8c8d; font-size:0.8rem;"><i>Selesai</i></span>`;
 
                 tbody.innerHTML += `
                     <tr>
@@ -217,10 +219,10 @@
                         <td>${p.keterangan || '-'}</td>
                         <td class="txt-right">${formatR(plafon)}</td>
                         <td class="txt-right" style="color:var(--success);">${formatR(totalPokok)}</td>
-                        <td class="txt-right ${sisa > 0 && statusAktual === 'Aktif' ? 'saldo-minus' : ''}">
+                        <td class="txt-right ${sisa > 0 && statusDatabase === 'Aktif' ? 'saldo-minus' : ''}">
                             ${formatR(sisa <= 0 ? 0 : sisa)}
                         </td>
-                        <td><span class="status-badge ${badgeClass}">${statusAktual}</span></td>
+                        <td><span class="status-badge ${badgeClass}">${statusLayar}</span></td>
                         <td>${tombolAksi}</td>
                     </tr>`;
             });
@@ -251,10 +253,9 @@
             const janjiUpdate = [];
             snapLama.forEach((docLama) => {
                 const refDokumen = doc(db, "pinjaman", docLama.id);
-                // Ubah status di database jadi Lunas (Top Up)
                 janjiUpdate.push(updateDoc(refDokumen, { status: "Lunas (Top Up)" }));
             });
-            await Promise.all(janjiUpdate); // Tunggu sampai pinjaman lama selesai di-update
+            await Promise.all(janjiUpdate); 
 
             // LANGKAH B: Buat Pinjaman Baru
             const dataBaru = {
@@ -269,10 +270,10 @@
 
             await addDoc(collection(db, "pinjaman"), dataBaru);
             
-            alert("Pinjaman Berhasil Dicairkan!\nPinjaman lama anggota ini (jika ada) telah otomatis dilunaskan.");
+            alert("Pinjaman Berhasil Dicairkan!\nPinjaman lama anggota ini (jika ada) telah otomatis dilunaskan di database.");
             document.getElementById('formPinjaman').reset();
             document.getElementById('tanggal').valueAsDate = new Date();
-            muatDataSinkron(); // Refresh tabel bawah
+            muatDataSinkron(); 
 
         } catch (err) { 
             alert("Error: " + err.message); 
@@ -282,13 +283,15 @@
         }
     });
 
-    // 4. Fitur Manual Tandai Lunas (Jika butuh diklik manual dari tabel)
+    // 4. Fitur Manual Tandai Lunas
+    // Harus dideklarasikan di window agar bisa dipanggil dari inline HTML onclick
     window.tandaiLunasManual = async function(idDokumen, nama) {
-        if(confirm(`Yakin tandai pinjaman ${nama} ini sebagai Lunas?`)) {
+        if(confirm(`Yakin tandai pinjaman ${nama} ini sebagai Lunas di database? \n\nIni akan menghilangkan namanya dari daftar tagihan Angsuran jika dia tidak punya pinjaman aktif lain.`)) {
             try {
                 const refDokumen = doc(db, "pinjaman", idDokumen);
                 await updateDoc(refDokumen, { status: "Lunas (Manual)" });
-                muatDataSinkron();
+                muatDataSinkron(); // Refresh tabel
+                alert("Berhasil! Status di database sudah menjadi Lunas.");
             } catch (err) {
                 alert("Gagal update status: " + err.message);
             }

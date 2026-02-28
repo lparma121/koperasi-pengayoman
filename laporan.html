@@ -1,29 +1,125 @@
 <div class="content">
-    <div class="card" style="margin-bottom:20px;">
-        <h3>Pembagian SHU Berdasarkan Laba Bunga</h3>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:15px;">
+    <div class="card" style="margin-bottom:20px; border-top: 4px solid var(--orange);">
+        <h3><i class="fa fa-chart-pie"></i> Simulasi Pembagian SHU (Jasa Pinjaman)</h3>
+        <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 15px;">
+            Sistem menghitung laba bersih dari total bunga angsuran yang terkumpul secara real-time.
+        </p>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-top:15px;">
             <div class="form-group">
-                <label>Total Laba Bunga Tersedia (Dari Dashboard)</label>
-                <input type="number" id="labaTersedia" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" placeholder="Masukkan angka laba...">
+                <label>Total Laba Jasa Terkumpul</label>
+                <input type="text" id="labaTersedia" style="background:#f8f9fa; font-weight:bold; color:var(--success);" readonly>
             </div>
             <div class="form-group">
-                <label>Porsi yang Dibagikan (%)</label>
-                <input type="number" id="porsiSHU" value="100" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                <label>Porsi SHU Dibagikan (%)</label>
+                <input type="number" id="porsiSHU" value="100" min="1" max="100">
+            </div>
+            <div class="form-group">
+                <label>Total SHU yang Dibagikan</label>
+                <input type="text" id="totalDibagikan" style="background:#f8f9fa; font-weight:bold; color:var(--primary);" readonly>
             </div>
         </div>
-        <button id="btnHitungSHU" style="margin-top:20px; width:100%; padding:15px; background:var(--dark); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">SIMULASI PEMBAGIAN SHU</button>
+        
+        <button id="btnHitungSHU" style="margin-top:20px; width:100%; padding:15px; background:var(--dark); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; transition:0.3s;">
+            <i class="fa fa-calculator"></i> HITUNG PEMBAGIAN SHU ANGGOTA
+        </button>
     </div>
+
     <div id="hasilSHU" style="display:none;" class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3>Rincian Penerimaan SHU per Anggota</h3>
+            <button onclick="window.print()" class="btn-print" style="background:var(--success); padding:8px 15px; font-size:0.8rem;">Cetak Laporan SHU</button>
+        </div>
         <table id="tabelSHU">
             <thead>
                 <tr>
                     <th>Nama Anggota</th>
-                    <th>Kontribusi Bunga</th>
-                    <th>Porsi (%)</th>
-                    <th>SHU Diterima</th>
+                    <th class="txt-right">Kontribusi Bunga (Laba)</th>
+                    <th class="txt-right">Porsi (%)</th>
+                    <th class="txt-right">SHU Diterima</th>
                 </tr>
             </thead>
-            <tbody id="bodySHU"></tbody>
+            <tbody id="bodySHU">
+                </tbody>
         </table>
     </div>
 </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Konfigurasi tetap sama
+    const firebaseConfig = {
+        apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+        authDomain: "koperasi-pengayoman.firebaseapp.com",
+        projectId: "koperasi-pengayoman",
+        storageBucket: "koperasi-pengayoman.firebasestorage.app",
+        messagingSenderId: "302370488338",
+        appId: "1:302370488338:web:52cecadea899bcaba998cb"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+
+    let totalLabaMurni = 0;
+    let dataRekapAnggota = {};
+
+    // 1. Ambil Data secara Otomatis saat halaman dibuka
+    async function muatDataLaba() {
+        const snapAns = await getDocs(collection(db, "angsuran"));
+        totalLabaMurni = 0;
+        dataRekapAnggota = {};
+
+        snapAns.forEach(doc => {
+            const d = doc.data();
+            const bunga = Number(d.bunga) || 0;
+            const nama = d.info_anggota || "Tanpa Nama";
+
+            totalLabaMurni += bunga;
+
+            // Rekap per nama anggota
+            if(!dataRekapAnggota[nama]) dataRekapAnggota[nama] = 0;
+            dataRekapAnggota[nama] += bunga;
+        });
+
+        document.getElementById('labaTersedia').value = formatR(totalLabaMurni);
+        updateTotalDibagikan();
+    }
+
+    function updateTotalDibagikan() {
+        const porsi = document.getElementById('porsiSHU').value / 100;
+        document.getElementById('totalDibagikan').value = formatR(totalLabaMurni * porsi);
+    }
+
+    document.getElementById('porsiSHU').addEventListener('input', updateTotalDibagikan);
+
+    // 2. Logika Pembagian SHU
+    document.getElementById('btnHitungSHU').addEventListener('click', () => {
+        const porsiPersen = document.getElementById('porsiSHU').value / 100;
+        const totalAkanDibagi = totalLabaMurni * porsiPersen;
+        const tbody = document.getElementById('bodySHU');
+        
+        tbody.innerHTML = '';
+        
+        for (let nama in dataRekapAnggota) {
+            const kontribusi = dataRekapAnggota[nama];
+            const porsiIndividu = (kontribusi / totalLabaMurni) * 100;
+            const shuDiterima = (kontribusi / totalLabaMurni) * totalAkanDibagi;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${nama}</strong></td>
+                    <td class="txt-right">${formatR(kontribusi)}</td>
+                    <td class="txt-right">${porsiIndividu.toFixed(2)}%</td>
+                    <td class="txt-right" style="font-weight:bold; color:var(--primary);">${formatR(shuDiterima)}</td>
+                </tr>
+            `;
+        }
+
+        document.getElementById('hasilSHU').style.display = 'block';
+    });
+
+    muatDataLaba();
+</script>

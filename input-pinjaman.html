@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Pinjaman Baru - Koperasi Pengayoman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--light); }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; }
+        .menu { list-style: none; padding: 20px 0; flex: 1; }
+        .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; border-left: 4px solid transparent; }
+        .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
+        .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left-color: var(--primary); }
+        
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 30px; overflow-y: auto; }
+
+        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        
+        .btn-save { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-save:hover { background: #16a085; transform: translateY(-2px); }
+        
+        .info-box { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; border-left: 4px solid #ffeeba; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
+        <ul class="menu">
+            <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="daftar-anggota.html"><i class="fa fa-users"></i> Data Anggota</a></li>
+            <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
+            <li><a href="pinjaman.html" class="active"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
+            <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2 style="color: var(--dark)">Input Pinjaman Baru</h2>
+            <a href="pinjaman.html" style="color: var(--primary); text-decoration: none; font-weight: bold;"><i class="fa fa-arrow-left"></i> Kembali</a>
+        </div>
+
+        <div class="content">
+            <div class="form-card">
+                <div class="info-box">
+                    <i class="fa fa-info-circle"></i> <strong>Catatan:</strong> Jika ini adalah <strong>Top Up</strong>, pastikan pinjaman lama anggota sudah dilunasi terlebih dahulu di menu Angsuran agar perhitungan saldo sinkron.
+                </div>
+                
+                <form id="formPinjaman">
+                    <div class="form-group">
+                        <label>Nama Anggota</label>
+                        <select id="selectAnggota" required>
+                            <option value="">-- Memuat data anggota... --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Besar Pinjaman (Plafon)</label>
+                        <input type="number" id="jumlah" placeholder="Contoh: 5000000" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tanggal Pinjam</label>
+                        <input type="date" id="tanggal" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Keterangan</label>
+                        <select id="keterangan">
+                            <option value="Normal">Pinjaman Baru (Normal)</option>
+                            <option value="Top Up">Top Up Pinjaman</option>
+                            <option value="Emergency">Pinjaman Darurat</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-save" id="btnSimpan">SIMPAN DATA PINJAMAN</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        document.getElementById('tanggal').valueAsDate = new Date();
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = "login.html";
+            else muatDaftarAnggota();
+        });
+
+        async function muatDaftarAnggota() {
+            const dropdown = document.getElementById('selectAnggota');
+            try {
+                const snap = await getDocs(query(collection(db, "anggota"), orderBy("nama", "asc")));
+                dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    dropdown.innerHTML += `<option value="${doc.id}" data-nama="${d.nama}" data-no="${d.no_anggota}">${d.no_anggota} - ${d.nama}</option>`;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSimpan');
+            const sel = document.getElementById('selectAnggota');
+            const opt = sel.options[sel.selectedIndex];
+
+            btn.disabled = true;
+            btn.innerText = "Menyimpan...";
+
+            try {
+                await addDoc(collection(db, "pinjaman"), {
+                    id_anggota: sel.value,
+                    info_anggota: opt.dataset.no + " - " + opt.dataset.nama,
+                    jumlah: Number(document.getElementById('jumlah').value),
+                    tanggal: document.getElementById('tanggal').value,
+                    keterangan: document.getElementById('keterangan').value,
+                    status: "Aktif",
+                    waktu_input: new Date().toISOString()
+                });
+
+                alert("Data Pinjaman Berhasil Disimpan!");
+                window.location.href = "pinjaman.html";
+            } catch (err) {
+                alert("Gagal menyimpan: " + err.message);
+                btn.disabled = false;
+                btn.innerText = "SIMPAN DATA PINJAMAN";
+            }
+        });
+    </script>
+</body>
+</html>

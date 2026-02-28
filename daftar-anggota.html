@@ -4,132 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Anggota - Koperasi Pengayoman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* CSS Dasar */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { display: flex; height: 100vh; background-color: #f4f7f6; }
-        .sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background-color: #1a252f; text-align: center; }
-        .sidebar-header h2 { font-size: 1.2rem; color: #1abc9c; }
-        .menu { list-style: none; padding: 20px 0; }
-        .menu li a { color: white; text-decoration: none; display: block; padding: 15px 20px; transition: 0.3s; }
-        .menu li a:hover, .menu li a.active { background-color: #1abc9c; }
-        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
-        .header { background-color: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .content { padding: 20px; overflow-y: auto; }
-        
-        /* CSS Tabel */
-        .table-container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-add { background-color: #1abc9c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; transition: 0.3s; }
-        .btn-add:hover { background-color: #16a085; }
-        table { width: 100%; border-collapse: collapse; }
-        table th, table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        table th { background-color: #f8f9fa; color: #34495e; font-weight: bold; }
-        table tr:hover { background-color: #f1f2f6; }
-        .btn-action { padding: 6px 10px; border: none; border-radius: 3px; cursor: pointer; color: white; font-size: 0.85rem; text-decoration: none; margin-right: 5px; font-weight: bold; }
-        .btn-edit { background-color: #3498db; }
-        .btn-edit:hover { background-color: #2980b9; }
-        .btn-delete { background-color: #e74c3c; }
-        .btn-delete:hover { background-color: #c0392b; }
-        .loading-text { text-align: center; font-style: italic; color: #7f8c8d; }
-        .nama-link { color: #1abc9c; font-weight: bold; text-decoration: none; }
-        .nama-link:hover { text-decoration: underline; }
-
-        /* CSS Modal (Jendela Edit Melayang) */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background-color: white; padding: 25px; border-radius: 8px; width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .modal-header h3 { color: #2c3e50; }
-        .close-btn { font-size: 1.5rem; font-weight: bold; color: #95a5a6; cursor: pointer; }
-        .close-btn:hover { color: #e74c3c; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; color: #34495e; font-weight: bold; font-size: 0.9rem; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-        .form-group input:focus { border-color: #3498db; outline: none; }
-        .btn-update { width: 100%; background-color: #3498db; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
-        .btn-update:hover { background-color: #2980b9; }
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--light); }
+        .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; }
+        .menu { list-style: none; padding: 20px 0; flex: 1; }
+        .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; border-left: 4px solid transparent; }
+        .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
+        .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left-color: var(--primary); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 30px; overflow-y: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .search-box { margin-bottom: 20px; width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        .btn-add { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
-
     <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>KOPERASI PENGAYOMAN</h2>
-        </div>
+        <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
         <ul class="menu">
-            <li><a href="index.html">Beranda (Dashboard)</a></li>
-            <li><a href="#" class="active">Data Anggota</a></li>
-            <li><a href="simpanan.html">Simpanan</a></li>
-            <li><a href="pinjaman.html">Pinjaman</a></li>
-            <li><a href="angsuran.html">Angsuran</a></li>
-            <li><a href="laporan.html">Laporan</a></li>
+            <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="daftar-anggota.html" class="active"><i class="fa fa-users"></i> Data Anggota</a></li>
+            <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
+            <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
+            <li><a href="pinjaman.html"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
+            <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+            <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
         </ul>
     </div>
-
     <div class="main-content">
         <div class="header">
-            <h2>Kelola Data Anggota</h2>
+            <h2>Manajemen Anggota</h2>
+            <button onclick="alert('Gunakan halaman import untuk menambah massal')" class="btn-add">+ Anggota Baru</button>
         </div>
-
         <div class="content">
-            <div class="table-container">
-                <div class="table-header">
-                    <h3>Daftar Seluruh Anggota</h3>
-                    <a href="tambah-anggota.html" class="btn-add">+ Tambah Anggota Baru</a>
-                </div>
-
+            <div class="card">
+                <input type="text" id="inputCari" class="search-box" placeholder="Cari nama atau nomor anggota...">
                 <table>
                     <thead>
                         <tr>
-                            <th>No</th>
                             <th>No. Anggota</th>
                             <th>Nama Lengkap</th>
-                            <th>Tanggal Bergabung</th>
-                            <th>Aksi</th>
+                            <th>Tanggal Gabung</th>
+                            <th style="text-align: right;">Total Simpanan</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelDataAnggota">
-                        <tr>
-                            <td colspan="5" class="loading-text">Sedang memuat data dari database...</td>
-                        </tr>
+                    <tbody id="tabelAnggota">
+                        <tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <div id="modalEdit" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Edit Data Anggota</h3>
-                    <span class="close-btn" onclick="tutupModal()">&times;</span>
-                </div>
-                <form id="formEdit">
-                    <input type="hidden" id="editId">
-                    
-                    <div class="form-group">
-                        <label>No. Anggota</label>
-                        <input type="text" id="editNo" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Nama Lengkap</label>
-                        <input type="text" id="editNama" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Tanggal Bergabung</label>
-                        <input type="date" id="editTanggal" required>
-                    </div>
-                    <button type="submit" class="btn-update">Simpan Perubahan</button>
-                </form>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // Tambahan fitur updateDoc untuk fungsi Edit
-        import { getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
@@ -137,131 +75,49 @@
             projectId: "koperasi-pengayoman",
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
-            appId: "1:302370488338:web:52cecadea899bcaba998cb",
-            measurementId: "G-CVWCXTF3FX"
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
+        const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-        // 1. Cek Login
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-            } else {
-                tampilkanDataAnggota();
-            }
-        });
+        async function muatData() {
+            const [sAng, sSim] = await Promise.all([
+                getDocs(query(collection(db, "anggota"), orderBy("no_anggota", "asc"))),
+                getDocs(collection(db, "simpanan"))
+            ]);
 
-        // 2. Tampilkan Data Anggota
-        async function tampilkanDataAnggota() {
-            const tabelBody = document.getElementById('tabelDataAnggota');
+            const rekapSimpanan = {};
+            sSim.forEach(doc => {
+                const d = doc.data();
+                rekapSimpanan[d.id_anggota] = (rekapSimpanan[d.id_anggota] || 0) + (Number(d.jumlah) || 0);
+            });
 
-            try {
-                const q = query(collection(db, "anggota"), orderBy("waktu_input", "desc"));
-                const querySnapshot = await getDocs(q);
-                
-                tabelBody.innerHTML = '';
+            const tbody = document.getElementById('tabelAnggota');
+            tbody.innerHTML = '';
+            sAng.forEach(doc => {
+                const a = doc.data();
+                const total = rekapSimpanan[doc.id] || 0;
+                tbody.innerHTML += `
+                    <tr class="baris-anggota">
+                        <td>${a.no_anggota}</td>
+                        <td><strong>${a.nama}</strong></td>
+                        <td>${a.tanggal_gabung || '-'}</td>
+                        <td style="text-align: right; color: #27ae60; font-weight: bold;">${formatR(total)}</td>
+                    </tr>
+                `;
+            });
 
-                if (querySnapshot.empty) {
-                    tabelBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada data anggota terdaftar.</td></tr>';
-                    return;
-                }
-
-                let nomorUrut = 1;
-                querySnapshot.forEach((dokumen) => {
-                    const data = dokumen.data();
-                    const idDoc = dokumen.id;
-                    
-                    const barisHTML = `
-                        <tr>
-                            <td>${nomorUrut}</td>
-                            <td>${data.no_anggota || '-'}</td>
-                            <td><a href="detail-anggota.html?id=${idDoc}" class="nama-link">${data.nama}</a></td>
-                            <td>${data.tanggal_gabung || '-'}</td>
-                            <td>
-                                <button class="btn-action btn-edit" onclick="bukaModal('${idDoc}', '${data.no_anggota}', '${data.nama}', '${data.tanggal_gabung}')">Edit</button>
-                                <button class="btn-action btn-delete" onclick="hapusAnggota('${idDoc}', '${data.nama}')">Hapus</button>
-                            </td>
-                        </tr>
-                    `;
-                    
-                    tabelBody.innerHTML += barisHTML;
-                    nomorUrut++;
+            // Fitur Cari
+            document.getElementById('inputCari').addEventListener('keyup', function() {
+                const val = this.value.toLowerCase();
+                document.querySelectorAll('.baris-anggota').forEach(tr => {
+                    tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
                 });
-
-            } catch (error) {
-                console.error("Gagal mengambil data: ", error);
-                tabelBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Gagal terhubung ke database.</td></tr>';
-            }
+            });
         }
-
-        // ============================================
-        // FITUR HAPUS DATA
-        // ============================================
-        window.hapusAnggota = async function(idDokumen, namaAnggota) {
-            const yakin = confirm(`Peringatan: Apakah Anda yakin ingin menghapus data anggota bernama "${namaAnggota}"?`);
-            if (yakin) {
-                try {
-                    await deleteDoc(doc(db, "anggota", idDokumen));
-                    alert("Data berhasil dihapus dari database!");
-                    tampilkanDataAnggota(); // Refresh tabel otomatis
-                } catch (error) {
-                    console.error("Gagal hapus:", error);
-                    alert("Terjadi kesalahan saat menghapus data.");
-                }
-            }
-        };
-
-        // ============================================
-        // FITUR EDIT DATA (MODAL)
-        // ============================================
-        
-        // Membuka jendela edit & mengisi kotak teks dengan data lama
-        window.bukaModal = function(id, no, nama, tanggal) {
-            document.getElementById('editId').value = id;
-            document.getElementById('editNo').value = no !== 'undefined' ? no : '';
-            document.getElementById('editNama').value = nama;
-            document.getElementById('editTanggal').value = tanggal !== 'undefined' ? tanggal : '';
-            
-            // Tampilkan modal
-            document.getElementById('modalEdit').style.display = 'flex';
-        };
-
-        // Menutup jendela edit
-        window.tutupModal = function() {
-            document.getElementById('modalEdit').style.display = 'none';
-        };
-
-        // Fungsi menyimpan perubahan ke Firebase saat tombol 'Simpan' diklik
-        document.getElementById('formEdit').addEventListener('submit', async function(e) {
-            e.preventDefault(); // Mencegah halaman reload
-            
-            const idDoc = document.getElementById('editId').value;
-            const noBaru = document.getElementById('editNo').value;
-            const namaBaru = document.getElementById('editNama').value;
-            const tanggalBaru = document.getElementById('editTanggal').value;
-
-            try {
-                // Perintah Firebase untuk memperbarui sebagian data
-                const docRef = doc(db, "anggota", idDoc);
-                await updateDoc(docRef, {
-                    no_anggota: noBaru,
-                    nama: namaBaru,
-                    tanggal_gabung: tanggalBaru
-                });
-
-                alert("Data berhasil diperbarui!");
-                tutupModal(); // Tutup jendela
-                tampilkanDataAnggota(); // Refresh tabel untuk melihat perubahan
-
-            } catch (error) {
-                console.error("Gagal edit:", error);
-                alert("Gagal memperbarui data. Pastikan koneksi internet stabil.");
-            }
-        });
-
+        muatData();
     </script>
 </body>
 </html>

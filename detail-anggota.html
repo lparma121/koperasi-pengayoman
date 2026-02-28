@@ -2,72 +2,110 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Anggota - Koperasi Pengayoman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { display: flex; background-color: #f4f7f6; min-height: 100vh; }
-        .sidebar { width: 250px; background-color: #2c3e50; color: white; }
-        .main-content { flex: 1; padding: 25px; overflow-y: auto; }
-        .summary-container { display: flex; gap: 20px; margin-bottom: 25px; }
-        .summary-box { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-top: 4px solid #1abc9c; }
-        .summary-box h4 { color: #7f8c8d; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 5px; }
-        .summary-box p { font-size: 1.5rem; font-weight: bold; color: #2c3e50; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 25px; }
-        h3 { margin-bottom: 15px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; }
-        table th, table td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
-        table th { background: #f8f9fa; font-size: 0.9rem; color: #34495e; }
-        .btn-back { background: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; }
-        .text-red { color: #e74c3c; font-weight: bold; }
-        .text-green { color: #27ae60; font-weight: bold; }
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --orange: #e67e22; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; background-color: var(--light); min-height: 100vh; }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; letter-spacing: 1px; }
+        .menu { list-style: none; padding: 20px 0; flex: 1; }
+        .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; border-left: 4px solid transparent; }
+        .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
+        .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left-color: var(--primary); }
+        
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 30px; overflow-y: auto; }
+
+        .btn-back { background: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        .btn-back:hover { background: #7f8c8d; }
+
+        /* Summary Cards */
+        .summary-container { display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; }
+        .summary-box { flex: 1; min-width: 250px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+        .summary-box h4 { color: #7f8c8d; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; }
+        .summary-box p { font-size: 1.8rem; font-weight: bold; color: var(--dark); }
+        .summary-box i { position: absolute; right: 20px; bottom: 20px; font-size: 3rem; color: rgba(0,0,0,0.03); }
+
+        /* Table Card */
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card h3 { margin-bottom: 20px; color: var(--dark); border-bottom: 3px solid var(--primary); padding-bottom: 10px; display: inline-block; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        table th { background: #f8f9fa; color: var(--dark); padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
+        table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        
+        .text-red { color: var(--danger); font-weight: bold; }
+        .text-green { color: var(--success); font-weight: bold; }
+        .row-angsuran { background-color: #fcfdfe; }
+        .row-angsuran td:nth-child(2) { padding-left: 30px; border-left: 3px solid var(--success); }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <div style="padding:20px; background:#1a252f; text-align:center;"><h2>KOPERASI</h2></div>
+        <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
+        <ul class="menu">
+            <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="daftar-anggota.html" class="active"><i class="fa fa-users"></i> Data Anggota</a></li>
+            <li><a href="simpanan.html"><i class="fa fa-wallet"></i> Simpanan</a></li>
+            <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
+            <li><a href="pinjaman.html"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
+            <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+            <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
+        </ul>
     </div>
     
     <div class="main-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 id="namaAnggota">Memuat Profil...</h2>
-            <a href="daftar-anggota.html" class="btn-back">← Kembali</a>
+        <div class="header">
+            <h2 id="namaAnggota" style="color: var(--dark)"><i class="fa fa-user-circle"></i> Memuat Profil...</h2>
+            <a href="daftar-anggota.html" class="btn-back"><i class="fa fa-arrow-left"></i> Kembali</a>
         </div>
 
-        <div class="summary-container">
-            <div class="summary-box">
-                <h4>Total Simpanan</h4>
-                <p id="totalSimpanan">Rp 0</p>
+        <div class="content">
+            <div class="summary-container">
+                <div class="summary-box" style="border-top: 4px solid var(--primary);">
+                    <h4>Total Saldo Simpanan</h4>
+                    <p id="totalSimpanan">Rp 0</p>
+                    <i class="fa fa-piggy-bank"></i>
+                </div>
+                <div class="summary-box" style="border-top: 4px solid var(--orange);">
+                    <h4>Total Sisa Pinjaman (Hutang)</h4>
+                    <p id="sisaPinjaman" style="color: var(--danger);">Rp 0</p>
+                    <i class="fa fa-hand-holding-dollar"></i>
+                </div>
             </div>
-            <div class="summary-box" style="border-top-color: #e67e22;">
-                <h4>Total Pinjaman (Belum Lunas)</h4>
-                <p id="sisaPinjaman">Rp 0</p>
-            </div>
-        </div>
 
-        <div class="card">
-            <h3>Riwayat Transaksi Anggota</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Keterangan / Jenis</th>
-                        <th>Arah Dana</th>
-                        <th>Jumlah</th>
-                    </tr>
-                </thead>
-                <tbody id="listTransaksi">
-                    <tr><td colspan="4" style="text-align:center; padding:20px;">Mencari riwayat...</td></tr>
-                </tbody>
-            </table>
+            <div class="card">
+                <h3><i class="fa fa-list-alt"></i> Riwayat Transaksi Anggota</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Keterangan / Jenis Transaksi</th>
+                            <th>Arah Dana</th>
+                            <th style="text-align:right;">Jumlah (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listTransaksi">
+                        <tr><td colspan="4" style="text-align:center; padding:20px;"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CONFIG FIREBASE ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
@@ -93,16 +131,17 @@
                 if (idAnggota) {
                     muatDataPenuh();
                 } else {
-                    document.getElementById('namaAnggota').innerText = "Error: ID Tidak Valid";
+                    document.getElementById('namaAnggota').innerHTML = '<i class="fa fa-exclamation-triangle" style="color:red;"></i> Error: ID Anggota Tidak Valid';
                 }
             }
         });
 
         async function muatDataPenuh() {
             try {
+                // 1. Ambil Nama Profil
                 const profilSnap = await getDoc(doc(db, "anggota", idAnggota));
                 if (profilSnap.exists()) {
-                    document.getElementById('namaAnggota').innerText = "Riwayat: " + profilSnap.data().nama;
+                    document.getElementById('namaAnggota').innerHTML = `<i class="fa fa-user-circle"></i> Profil: ${profilSnap.data().no_anggota} - ${profilSnap.data().nama}`;
                 }
 
                 const tbody = document.getElementById('listTransaksi');
@@ -110,60 +149,73 @@
                 let totalP = 0;
                 let htmlKonten = "";
 
-                // Ambil Simpanan
+                // 2. Ambil Simpanan
                 const snapS = await getDocs(query(collection(db, "simpanan"), where("id_anggota", "==", idAnggota)));
                 snapS.forEach(d => {
                     const data = d.data();
                     const nilai = Number(data.jumlah) || 0;
                     totalS += nilai;
-                    htmlKonten += `<tr>
-                        <td>${data.tanggal || data.tanggal_transaksi || '-'}</td>
-                        <td>Simpanan (${data.jenis_simpanan || 'Setoran'})</td>
-                        <td class="text-green">MASUK</td>
-                        <td>${formatRupiah(nilai)}</td>
-                    </tr>`;
+                    htmlKonten += `
+                        <tr>
+                            <td>${data.tanggal || data.tanggal_transaksi || '-'}</td>
+                            <td><strong>Simpanan:</strong> ${data.jenis_simpanan || 'Setoran'} <br><small style="color:#7f8c8d;">${data.keterangan || '-'}</small></td>
+                            <td><span class="text-green"><i class="fa fa-arrow-down"></i> MASUK</span></td>
+                            <td style="text-align:right; font-weight:bold;">${formatRupiah(nilai)}</td>
+                        </tr>`;
                 });
 
-                // Ambil Pinjaman
+                // 3. Ambil Pinjaman & Angsurannya (Struktur Pohon)
                 const snapP = await getDocs(query(collection(db, "pinjaman"), where("id_anggota", "==", idAnggota)));
                 for (const docP of snapP.docs) {
                     const dataP = docP.data();
                     const nilaiP = Number(dataP.jumlah) || 0;
                     totalP += nilaiP;
-                    htmlKonten += `<tr>
-                        <td>${dataP.tanggal || '-'}</td>
-                        <td>Pinjaman: ${dataP.keterangan || '-'}</td>
-                        <td class="text-red">KELUAR</td>
-                        <td>${formatRupiah(nilaiP)}</td>
-                    </tr>`;
+                    
+                    // Baris Induk Pinjaman
+                    htmlKonten += `
+                        <tr>
+                            <td>${dataP.tanggal || '-'}</td>
+                            <td><strong>Pencairan Pinjaman</strong> <br><small style="color:#7f8c8d;">Keterangan: ${dataP.keterangan || '-'} | Status: ${dataP.status || 'Aktif'}</small></td>
+                            <td><span class="text-red"><i class="fa fa-arrow-up"></i> KELUAR</span></td>
+                            <td style="text-align:right; font-weight:bold;">${formatRupiah(nilaiP)}</td>
+                        </tr>`;
 
-                    // Cek Angsuran untuk pinjaman ini
+                    // Cek Angsuran khusus untuk pinjaman ini
                     const snapA = await getDocs(query(collection(db, "angsuran"), where("id_pinjaman", "==", docP.id)));
                     snapA.forEach(docA => {
                         const dataA = docA.data();
-                        const nilaiA = Number(dataA.jumlah) || 0;
-                        totalP -= nilaiA; // Kurangi sisa pinjaman
-                        htmlKonten += `<tr style="font-size: 0.85rem; color: #7f8c8d;">
-                            <td>${dataA.tanggal || '-'}</td>
-                            <td>└ Angsuran ke-${dataA.angsuran_ke || '-'}</td>
-                            <td class="text-green">MASUK</td>
-                            <td>${formatRupiah(nilaiA)}</td>
-                        </tr>`;
+                        const pokok = Number(dataA.jumlah) || 0;
+                        const bunga = Number(dataA.bunga) || 0;
+                        const totalBayar = pokok + bunga;
+                        
+                        totalP -= pokok; // Pokok mengurangi sisa pinjaman
+
+                        // Baris Anak (Angsuran)
+                        htmlKonten += `
+                            <tr class="row-angsuran">
+                                <td style="color:#7f8c8d; font-size:0.85rem;">${dataA.tanggal || '-'}</td>
+                                <td><i class="fa fa-level-up-alt fa-rotate-90" style="color:#bdc3c7; margin-right:5px;"></i> <strong>Angsuran</strong> <br>
+                                    <small style="color:#7f8c8d;">Pokok: ${formatRupiah(pokok)} | Jasa: ${formatRupiah(bunga)}</small>
+                                </td>
+                                <td><span class="text-green" style="font-size:0.85rem;"><i class="fa fa-arrow-down"></i> MASUK</span></td>
+                                <td style="text-align:right; font-weight:bold; color:var(--success);">${formatRupiah(totalBayar)}</td>
+                            </tr>`;
                     });
                 }
 
+                // Update Ringkasan Saldo di Atas
                 document.getElementById('totalSimpanan').innerText = formatRupiah(totalS);
-                document.getElementById('sisaPinjaman').innerText = formatRupiah(totalP);
+                document.getElementById('sisaPinjaman').innerText = formatRupiah(totalP < 0 ? 0 : totalP); // Mencegah minus jika ada lebih bayar
 
                 if (htmlKonten === "") {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Belum ada riwayat transaksi.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#7f8c8d;">Belum ada riwayat transaksi sama sekali.</td></tr>';
                 } else {
                     tbody.innerHTML = htmlKonten;
                 }
 
             } catch (err) {
                 console.error("Gagal memuat:", err);
-                document.getElementById('listTransaksi').innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Gagal mengambil data: Pastikan Aturan Firestore sudah di-Publish.</td></tr>';
+                document.getElementById('listTransaksi').innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;"><i class="fa fa-exclamation-circle"></i> Gagal mengambil data. Cek koneksi internet atau setelan Firebase.</td></tr>';
             }
         }
     </script>

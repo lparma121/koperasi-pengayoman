@@ -6,7 +6,16 @@
     <title>Kelola Pinjaman - Koperasi Pengayoman</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --orange: #e67e22; --blue: #2980b9; }
+        :root { 
+            --primary: #1abc9c; 
+            --dark: #2c3e50; 
+            --light: #f4f7f6; 
+            --danger: #e74c3c; 
+            --success: #27ae60; 
+            --orange: #e67e22; 
+            --blue: #2980b9; 
+            --table-border: #edf2f7;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--light); }
         
@@ -34,19 +43,50 @@
         .btn-save { background-color: var(--orange); color: white; padding: 12px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; margin-top: 10px; }
         .btn-save:hover { background-color: #d35400; }
 
-        /* Tabel Styling */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
-        th { background: #f8f9fa; color: var(--dark); font-weight: bold; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-        td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
-        .txt-right { text-align: right; }
+        /* PERBAIKAN TABEL: Sticky & Modern */
+        .table-responsive { overflow-x: auto; max-height: 500px; border-radius: 8px; border: 1px solid var(--table-border); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
-        .status-aktif { background: rgba(243, 156, 18, 0.1); color: #d35400; }
-        .status-lunas { background: rgba(39, 174, 96, 0.1); color: var(--success); }
+        thead th { 
+            position: sticky; 
+            top: 0; 
+            background: #f8f9fa; 
+            color: var(--dark); 
+            font-weight: bold; 
+            padding: 15px 12px; 
+            text-align: left; 
+            border-bottom: 2px solid var(--primary);
+            z-index: 5;
+        }
+
+        tbody td { padding: 14px 12px; border-bottom: 1px solid var(--table-border); vertical-align: middle; }
+        
+        /* Zebra Stripes */
+        tbody tr:nth-child(even) { background-color: #f9fbfb; }
+        tbody tr:hover { background-color: #f1f5f9; transition: 0.2s; }
+
+        .txt-right { text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 600; }
+        
+        /* STATUS BADGE: Pill Style */
+        .status-badge { 
+            padding: 6px 12px; 
+            border-radius: 50px; 
+            font-size: 0.7rem; 
+            font-weight: 800; 
+            display: inline-block; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+            min-width: 85px;
+        }
+        .status-aktif { background: #fff3e0; color: #e67e22; border: 1px solid #ffe0b2; }
+        .status-lunas { background: #e8f5e9; color: var(--success); border: 1px solid #c8e6c9; }
+        
         .text-jasa { color: var(--blue); font-weight: bold; }
         .saldo-minus { color: var(--danger); font-weight: bold; }
 
-        .btn-lunas-manual { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .btn-lunas-manual { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.2s; }
+        .btn-lunas-manual:hover { background: #219150; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -99,23 +139,25 @@
 
         <div class="card-container">
             <h3><i class="fa fa-list"></i> Monitoring Pinjaman & Jasa (Database)</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Anggota</th>
-                        <th class="txt-right">Plafon</th>
-                        <th class="txt-right">Jasa Terbayar</th>
-                        <th class="txt-right">Total Angsuran (Pokok)</th>
-                        <th class="txt-right">Sisa Saldo</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelPinjaman">
-                    <tr><td colspan="8" style="text-align:center; padding:20px;">Memuat data dan menyinkronkan jasa...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Anggota</th>
+                            <th class="txt-right">Plafon</th>
+                            <th class="txt-right">Jasa Terbayar</th>
+                            <th class="txt-right">Total Angsuran (Pokok)</th>
+                            <th class="txt-right">Sisa Saldo</th>
+                            <th style="text-align: center;">Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelPinjaman">
+                        <tr><td colspan="8" style="text-align:center; padding:20px;">Memuat data dan menyinkronkan jasa...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -173,8 +215,6 @@
                 const d = docSnap.data();
                 const idPinjaman = d.id_pinjaman;
                 if (!rekapData[idPinjaman]) rekapData[idPinjaman] = { pokok: 0, jasa: 0 };
-                
-                // Mengambil nilai bunga asli dari database
                 rekapData[idPinjaman].pokok += (Number(d.jumlah) || 0);
                 rekapData[idPinjaman].jasa += (Number(d.bunga) || 0);
             });
@@ -208,7 +248,7 @@
                         <td class="txt-right ${sisaPokok > 0 && statusDatabase === 'Aktif' ? 'saldo-minus' : ''}">
                             ${formatR(sisaPokok <= 0 ? 0 : sisaPokok)}
                         </td>
-                        <td><span class="status-badge ${badgeClass}">${statusLayar}</span></td>
+                        <td style="text-align: center;"><span class="status-badge ${badgeClass}">${statusLayar}</span></td>
                         <td>
                             ${statusDatabase === 'Aktif' 
                               ? `<button class="btn-lunas-manual" onclick="tandaiLunasManual('${idDoc}', '${p.info_anggota}')">✔ Set Lunas</button>` 

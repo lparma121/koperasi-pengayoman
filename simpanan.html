@@ -1,24 +1,202 @@
-<div class="content">
-    <div class="form-card" style="background:white; padding:30px; border-radius:12px; max-width:600px; margin:auto; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
-        <h3 style="margin-bottom:20px;">Input Simpanan Manual</h3>
-        <form id="formSimpanan">
-            <div class="form-group">
-                <label>Pilih Anggota</label>
-                <select id="selectAnggota" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required></select>
-            </div>
-            <div class="form-group">
-                <label>Jenis Simpanan</label>
-                <select id="jenisSimpanan" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required>
-                    <option value="Simpanan Sukarela">Simpanan Sukarela</option>
-                    <option value="Simpanan Pokok">Simpanan Pokok (Anggota Baru)</option>
-                    <option value="Penarikan">Penarikan Saldo (-)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Jumlah (Rp)</label>
-                <input type="number" id="jumlah" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required>
-            </div>
-            <button type="submit" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:10px;">SIMPAN TRANSAKSI</button>
-        </form>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Simpanan - Koperasi Pengayoman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --blue: #3498db; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--light); }
+        
+        .sidebar { width: 260px; background-color: var(--dark); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px 20px; background-color: #1a252f; text-align: center; border-bottom: 1px solid #34495e; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; }
+        .menu { list-style: none; padding: 20px 0; flex: 1; }
+        .menu li a { color: #bdc3c7; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; transition: 0.3s; }
+        .menu li a i { margin-right: 15px; width: 20px; text-align: center; }
+        .menu li a:hover, .menu li a.active { background-color: #34495e; color: white; border-left: 4px solid var(--primary); }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background-color: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .content { padding: 30px; overflow-y: auto; }
+
+        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto 30px auto; border-top: 4px solid var(--blue); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.9rem; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        
+        .btn-submit { background-color: var(--blue); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem; transition: 0.3s; }
+        .btn-submit:hover { background-color: #2980b9; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-size: 0.9rem; }
+        th { background: #f8f9fa; color: var(--dark); padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #eee; }
+        .text-red { color: var(--danger); font-weight: bold; }
+        .text-green { color: var(--success); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header"><h2>KOPERASI PENGAYOMAN</h2></div>
+        <ul class="menu">
+            <li><a href="index.html"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="daftar-anggota.html"><i class="fa fa-users"></i> Data Anggota</a></li>
+            <li><a href="simpanan.html" class="active"><i class="fa fa-wallet"></i> Simpanan</a></li>
+            <li><a href="setor-massal.html"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
+            <li><a href="pinjaman.html"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
+            <li><a href="angsuran.html"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+            <li><a href="laporan.html"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
+        </ul>
     </div>
-</div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2 style="color: var(--dark)"><i class="fa fa-wallet" style="color: var(--blue);"></i> Kelola Simpanan Manual</h2>
+        </div>
+
+        <div class="content">
+            <div class="form-card">
+                <h3 style="margin-bottom: 20px; color: var(--dark);"><i class="fa fa-edit"></i> Form Setor / Tarik Simpanan</h3>
+                <form id="formSimpanan">
+                    <div class="form-group">
+                        <label>Pilih Anggota</label>
+                        <select id="id_anggota" required>
+                            <option value="">-- Memuat data anggota... --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Jenis Transaksi</label>
+                        <select id="jenis_simpanan" required>
+                            <option value="Simpanan Sukarela">Setor Simpanan Sukarela</option>
+                            <option value="Simpanan Pokok">Setor Simpanan Pokok (Anggota Baru)</option>
+                            <option value="Simpanan Wajib">Setor Simpanan Wajib (Susulan)</option>
+                            <option value="Penarikan" style="color:red; font-weight:bold;">Tarik Tunai / Kembalikan Simpanan (-)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Jumlah (Rp)</label>
+                        <input type="number" id="jumlah" placeholder="Contoh: 500000" required>
+                        <small style="color: #7f8c8d;">*Jika memilih Tarik Tunai, sistem otomatis mengurangi saldo.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tanggal Transaksi</label>
+                        <input type="date" id="tanggal" required>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="btnSimpan">SIMPAN TRANSAKSI</button>
+                </form>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--dark);">50 Transaksi Simpanan Terakhir</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Anggota</th>
+                        <th>Jenis Transaksi</th>
+                        <th style="text-align:right;">Jumlah (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelSimpanan">
+                    <tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
+            authDomain: "koperasi-pengayoman.firebaseapp.com",
+            projectId: "koperasi-pengayoman",
+            storageBucket: "koperasi-pengayoman.firebasestorage.app",
+            messagingSenderId: "302370488338",
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+
+        document.getElementById('tanggal').valueAsDate = new Date();
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = "login.html";
+            else { muatAnggota(); muatTabel(); }
+        });
+
+        async function muatAnggota() {
+            const dropdown = document.getElementById('id_anggota');
+            try {
+                // Hanya muat anggota yang masih aktif
+                const snap = await getDocs(query(collection(db, "anggota"), orderBy("nama", "asc")));
+                dropdown.innerHTML = '<option value="">-- Pilih Anggota --</option>';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if(data.status !== "Keluar") {
+                        dropdown.innerHTML += `<option value="${doc.id}" data-nama="${data.nama}">${data.no_anggota} - ${data.nama}</option>`;
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function muatTabel() {
+            const tbody = document.getElementById('tabelSimpanan');
+            try {
+                const snap = await getDocs(query(collection(db, "simpanan"), orderBy("waktu_input", "desc"), limit(50)));
+                tbody.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const nilai = Number(d.jumlah);
+                    const kelasWarna = nilai < 0 ? 'text-red' : 'text-green';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${d.tanggal_transaksi || '-'}</td>
+                            <td><strong>${d.info_anggota}</strong></td>
+                            <td>${d.jenis_simpanan}</td>
+                            <td style="text-align:right;" class="${kelasWarna}">${formatR(nilai)}</td>
+                        </tr>
+                    `;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('formSimpanan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSimpan');
+            btn.disabled = true;
+            btn.innerText = "Menyimpan...";
+
+            const sel = document.getElementById('id_anggota');
+            const namaFull = sel.options[sel.selectedIndex].text;
+            const jenis = document.getElementById('jenis_simpanan').value;
+            let nominal = Math.abs(Number(document.getElementById('jumlah').value));
+
+            // Jika penarikan, jadikan minus
+            if (jenis === "Penarikan") nominal = -nominal;
+
+            try {
+                await addDoc(collection(db, "simpanan"), {
+                    id_anggota: sel.value,
+                    info_anggota: namaFull,
+                    jenis_simpanan: jenis,
+                    jumlah: nominal,
+                    tanggal_transaksi: document.getElementById('tanggal').value,
+                    waktu_input: new Date().toISOString()
+                });
+                alert("Transaksi Berhasil Disimpan!");
+                document.getElementById('formSimpanan').reset();
+                document.getElementById('tanggal').valueAsDate = new Date();
+                muatTabel();
+            } catch (err) { alert("Error: "

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cek Saldo - Koperasi Pengayoman</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #2c3e50; padding: 20px; }
@@ -19,7 +20,7 @@
         .input-group label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: bold; font-size: 0.9rem; }
         .input-group input { width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 8px; font-size: 1.1rem; text-align: center; font-weight: bold; transition: 0.3s; }
         .input-group input:focus { outline: none; border-color: #1abc9c; }
-        .catatan-input { font-size: 0.75rem; color: #e74c3c; margin-top: 5px; display: block; text-align: center; }
+        .catatan-input { font-size: 0.75rem; color: #95a5a6; margin-top: 5px; display: block; text-align: center; }
 
         .btn-cari {
             width: 100%; padding: 14px; background-color: #1abc9c; color: white;
@@ -28,7 +29,6 @@
         }
         .btn-cari:hover { background-color: #16a085; }
 
-        /* Area Hasil Pencarian */
         #areaHasil { margin-top: 25px; display: none; text-align: left; padding-top: 20px; border-top: 2px dashed #ecf0f1; }
         #areaHasil h3 { color: #2c3e50; margin-bottom: 15px; text-align: center; font-size: 1.2rem; }
         
@@ -52,17 +52,18 @@
         <form id="formCekSaldo">
             <div class="input-group">
                 <label for="namaAnggota">Masukkan Nama Lengkap Anda</label>
-                <input type="text" id="namaAnggota" placeholder="Contoh: Budi Santoso" required autocomplete="off">
-                <span class="catatan-input">*Huruf besar/kecil harus sama persis dengan yang terdaftar.</span>
+                <input type="text" id="namaAnggota" list="namaSaran" placeholder="Ketik Nama Anda..." required autocomplete="off">
+                <datalist id="namaSaran"></datalist>
+                <span class="catatan-input">Pilih nama Anda yang muncul di kotak saran.</span>
             </div>
-            <button type="submit" class="btn-cari">Cek Saldo Saya</button>
+            <button type="submit" class="btn-cari"><i class="fa fa-search"></i> Cek Saldo Saya</button>
         </form>
 
-        <div id="pesanLoading" class="loading">Mencari data ke database...</div>
-        <div id="pesanError" class="error-msg">Nama tidak ditemukan! Pastikan ejaan & huruf besar/kecil sudah benar.</div>
+        <div id="pesanLoading" class="loading"><i class="fa fa-spinner fa-spin"></i> Mencari data...</div>
+        <div id="pesanError" class="error-msg">Nama tidak ditemukan! Coba ketik ulang dan pilih saran yang muncul.</div>
 
         <div id="areaHasil">
-            <h3 id="namaAnggotaTampil">Halo, Nama!</h3>
+            <h3 id="namaAnggotaTampil">Halo!</h3>
             
             <div class="saldo-box">
                 <p>Total Tabungan / Simpanan</p>
@@ -75,96 +76,107 @@
             </div>
             
             <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #95a5a6;">
-                <i>*Data diperbarui secara real-time oleh sistem admin.</i>
+                <i>*Data diperbarui secara real-time.</i>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CONFIG FIREBASE ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
             authDomain: "koperasi-pengayoman.firebaseapp.com",
             projectId: "koperasi-pengayoman",
             storageBucket: "koperasi-pengayoman.firebasestorage.app",
             messagingSenderId: "302370488338",
-            appId: "1:302370488338:web:52cecadea899bcaba998cb",
-            measurementId: "G-CVWCXTF3FX"
+            appId: "1:302370488338:web:52cecadea899bcaba998cb"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+
+        // 1. FITUR AUTOCOMPLETE: Ambil semua nama anggota saat halaman dibuka
+        async function muatSaranNama() {
+            const datalist = document.getElementById('namaSaran');
+            try {
+                const snap = await getDocs(query(collection(db, "anggota"), orderBy("nama", "asc")));
+                snap.forEach(doc => {
+                    const opt = document.createElement('option');
+                    opt.value = doc.data().nama;
+                    datalist.appendChild(opt);
+                });
+            } catch (e) { console.error("Gagal muat saran:", e); }
+        }
+        muatSaranNama();
 
         document.getElementById('formCekSaldo').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Mengambil input Nama (trim untuk menghapus spasi ekstra di awal/akhir)
             const inputNama = document.getElementById('namaAnggota').value.trim();
             const areaHasil = document.getElementById('areaHasil');
             const pesanLoading = document.getElementById('pesanLoading');
             const pesanError = document.getElementById('pesanError');
 
-            // Reset tampilan
             areaHasil.style.display = 'none';
             pesanError.style.display = 'none';
             pesanLoading.style.display = 'block';
 
             try {
-                // 1. CARI DATA ANGGOTA BERDASARKAN NAMA
-                const qAnggota = query(collection(db, "anggota"), where("nama", "==", inputNama));
-                const snapAnggota = await getDocs(qAnggota);
+                // Ambil semua anggota untuk pencarian Case-Insensitive (Abaikan besar/kecil)
+                const snapAnggota = await getDocs(collection(db, "anggota"));
+                let anggotaDitemukan = null;
 
-                if (snapAnggota.empty) {
+                snapAnggota.forEach(doc => {
+                    if (doc.data().nama.toLowerCase() === inputNama.toLowerCase()) {
+                        anggotaDitemukan = { id: doc.id, ...doc.data() };
+                    }
+                });
+
+                if (!anggotaDitemukan) {
                     pesanLoading.style.display = 'none';
                     pesanError.style.display = 'block';
                     return;
                 }
 
-                // Jika ketemu, ambil ID unik dan Namanya
-                const docAnggota = snapAnggota.docs[0];
-                const idUnikAnggota = docAnggota.id;
-                const namaAsli = docAnggota.data().nama;
-
-                // 2. HITUNG TOTAL SIMPANAN
-                let totalSimpanan = 0;
-                const qSimpanan = query(collection(db, "simpanan"), where("id_anggota", "==", idUnikAnggota));
-                const snapSimpanan = await getDocs(qSimpanan);
-                snapSimpanan.forEach(doc => {
-                    totalSimpanan += Number(doc.data().jumlah) || 0;
+                // HITUNG SIMPANAN
+                let totalS = 0;
+                const snapS = await getDocs(collection(db, "simpanan"));
+                snapS.forEach(d => {
+                    if(d.data().id_anggota === anggotaDitemukan.id) totalS += Number(d.data().jumlah) || 0;
                 });
 
-                // 3. HITUNG SISA PINJAMAN (Pinjaman - Angsuran)
-                let sisaPinjaman = 0;
-                const qPinjaman = query(collection(db, "pinjaman"), where("id_anggota", "==", idUnikAnggota));
-                const snapPinjaman = await getDocs(qPinjaman);
+                // HITUNG PINJAMAN
+                let totalP = 0;
+                const snapP = await getDocs(collection(db, "pinjaman"));
+                const snapAns = await getDocs(collection(db, "angsuran"));
 
-                for (const docP of snapPinjaman.docs) {
-                    sisaPinjaman += Number(docP.data().jumlah) || 0;
+                const rekapAns = {};
+                snapAns.forEach(d => {
+                    const data = d.data();
+                    rekapAns[data.id_pinjaman] = (rekapAns[data.id_pinjaman] || 0) + (Number(data.jumlah) || 0);
+                });
 
-                    // Cari angsuran untuk pinjaman ini
-                    const qAngsuran = query(collection(db, "angsuran"), where("id_pinjaman", "==", docP.id));
-                    const snapAngsuran = await getDocs(qAngsuran);
-                    snapAngsuran.forEach(docA => {
-                        sisaPinjaman -= Number(docA.data().jumlah) || 0;
-                    });
-                }
+                snapP.forEach(d => {
+                    const data = d.data();
+                    if(data.id_anggota === anggotaDitemukan.id) {
+                        const plafon = Number(data.jumlah) || 0;
+                        const bayar = rekapAns[d.id] || 0;
+                        totalP += (plafon - bayar);
+                    }
+                });
 
-                // 4. TAMPILKAN KE LAYAR
                 pesanLoading.style.display = 'none';
-                document.getElementById('namaAnggotaTampil').innerText = "Halo, " + namaAsli + "!";
-                document.getElementById('simpananTampil').innerText = formatRupiah(totalSimpanan);
-                document.getElementById('pinjamanTampil').innerText = formatRupiah(sisaPinjaman);
+                document.getElementById('namaAnggotaTampil').innerText = "Halo, " + anggotaDitemukan.nama + "!";
+                document.getElementById('simpananTampil').innerText = formatRupiah(totalS);
+                document.getElementById('pinjamanTampil').innerText = formatRupiah(totalP < 0 ? 0 : totalP);
                 areaHasil.style.display = 'block';
 
             } catch (error) {
-                console.error("Error:", error);
+                console.error(error);
                 pesanLoading.style.display = 'none';
-                pesanError.innerText = "Terjadi kesalahan jaringan. Coba lagi nanti.";
+                pesanError.innerText = "Terjadi gangguan sistem.";
                 pesanError.style.display = 'block';
             }
         });

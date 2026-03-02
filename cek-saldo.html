@@ -22,7 +22,7 @@
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
             width: 100%; 
-            max-width: 450px; 
+            max-width: 500px; 
             text-align: center;
         }
         .portal-container h2 { color: #1abc9c; margin-bottom: 5px; font-size: 1.5rem; letter-spacing: 1px; }
@@ -34,7 +34,7 @@
             padding-bottom: 25px;
             border-bottom: 2px dashed #eee;
             text-align: left;
-            display: block; /* Langsung tampil sejak awal */
+            display: block; 
         }
         .global-title { font-size: 0.85rem; color: #7f8c8d; text-align: center; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: bold; }
         
@@ -81,6 +81,22 @@
         
         .error-msg { color: #e74c3c; font-weight: bold; margin-top: 15px; display: none; text-align: center; font-size: 0.9rem; }
 
+        /* Tabel Riwayat Pribadi & Global */
+        .riwayat-title { font-size: 0.9rem; color: #34495e; margin: 25px 0 10px 0; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; text-align: left; }
+        .tabel-wrapper { overflow-x: auto; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #f8f9fa; color: #7f8c8d; font-weight: bold; }
+        .text-right { text-align: right; font-family: monospace; font-weight: bold;}
+        .text-masuk { color: #27ae60; }
+        .text-keluar { color: #e74c3c; }
+        
+        .badge { font-size: 0.65rem; padding: 3px 6px; border-radius: 4px; color: white; background: #95a5a6; display: inline-block; white-space: nowrap;}
+        .b-simpanan { background: #3498db; }
+        .b-angsuran { background: #27ae60; }
+        .b-pinjaman { background: #e74c3c; }
+        .b-waserda { background: #f39c12; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -94,18 +110,35 @@
             <div class="global-title"><i class="fa fa-globe"></i> Info Keuangan Koperasi Saat Ini</div>
             <div class="global-grid">
                 <div class="g-card g-simpanan">
-                    <span class="label"><i class="fa fa-piggy-bank"></i> Total Simpanan (Masuk)</span>
+                    <span class="label"><i class="fa fa-piggy-bank"></i> Total Simpanan</span>
                     <span class="value" id="globSimpanan"><i class="fa fa-spinner fa-spin"></i></span>
                 </div>
                 <div class="g-card g-beredar">
-                    <span class="label"><i class="fa fa-money-bill-transfer"></i> Uang Beredar (Piutang)</span>
+                    <span class="label"><i class="fa fa-money-bill-transfer"></i> Uang Beredar</span>
                     <span class="value" id="globBeredar"><i class="fa fa-spinner fa-spin"></i></span>
                 </div>
                 <div class="g-card g-laba">
-                    <span class="label"><i class="fa fa-chart-line"></i> Total Laba Jasa & Waserda</span>
+                    <span class="label"><i class="fa fa-chart-line"></i> Total Laba Sistem</span>
                     <span class="value" id="globLaba"><i class="fa fa-spinner fa-spin"></i></span>
                 </div>
             </div>
+            
+            <div class="riwayat-title" style="margin-top: 20px;"><i class="fa fa-history"></i> 10 Arus Kas Terakhir Koperasi</div>
+            <div class="tabel-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Keterangan</th>
+                            <th class="text-right">Nominal (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyRiwayatGlobal">
+                        <tr><td colspan="3" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
             <div style="text-align: center; margin-top: 10px; font-size: 0.75rem; color: #bdc3c7;">
                 <i>*Data diperbarui secara real-time dari database.</i>
             </div>
@@ -118,7 +151,7 @@
                 <datalist id="namaSaran"></datalist>
                 <span class="catatan-input"><i class="fa fa-info-circle"></i> Pilih nama dari kotak saran yang muncul.</span>
             </div>
-            <button type="submit" class="btn-cari"><i class="fa fa-search"></i> Cek Saldo Saya</button>
+            <button type="submit" class="btn-cari"><i class="fa fa-search"></i> Cek Saldo & Riwayat Saya</button>
         </form>
 
         <div id="pesanError" class="error-msg"><i class="fa fa-exclamation-triangle"></i> Nama tidak ditemukan! Pastikan Anda memilih nama dari saran.</div>
@@ -137,12 +170,27 @@
                 <h4 id="pinjamanTampil">Rp 0</h4>
                 <i class="fa fa-hand-holding-dollar"></i>
             </div>
+
+            <div class="riwayat-title"><i class="fa fa-list-alt"></i> 10 Transaksi Terakhir Anda</div>
+            <div class="tabel-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Kategori</th>
+                            <th class="text-right">Nominal (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyRiwayatPribadi">
+                        </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
@@ -157,13 +205,11 @@
         const db = getFirestore(app);
         const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 
-        // PENAMPUNG CACHE DATA (Agar pencarian instan tanpa loading)
         let cacheData = { anggota: [], simpanan: [], pinjaman: [], angsuran: [], waserda: [] };
+        let semuaTransaksiGlobal = [];
 
-        // 1. MUAT SELURUH DATA SAAT HALAMAN DIBUKA
         async function muatDataAwal() {
             try {
-                // Tarik semua koleksi secara paralel
                 const [snapA, snapS, snapP, snapAns, snapWas] = await Promise.all([
                     getDocs(collection(db, "anggota")),
                     getDocs(collection(db, "simpanan")),
@@ -172,41 +218,79 @@
                     getDocs(collection(db, "waserda"))
                 ]);
 
-                // Masukkan ke Cache memori browser
                 snapA.forEach(d => cacheData.anggota.push({id: d.id, ...d.data()}));
-                snapS.forEach(d => cacheData.simpanan.push(d.data()));
-                snapP.forEach(d => cacheData.pinjaman.push({id: d.id, ...d.data()}));
-                snapAns.forEach(d => cacheData.angsuran.push(d.data()));
-                snapWas.forEach(d => cacheData.waserda.push(d.data()));
-
-                // Hitung Data Global
+                
                 let gSimpanan = 0;
-                cacheData.simpanan.forEach(d => gSimpanan += (Number(d.jumlah) || 0));
+                snapS.forEach(d => {
+                    const data = d.data();
+                    cacheData.simpanan.push(data);
+                    const val = Number(data.jumlah) || 0;
+                    gSimpanan += val;
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal_transaksi || "1970-01-01", tanggal: data.tanggal_transaksi || "-", ket: `Simpanan: ${data.info_anggota.split(' - ')[1] || data.info_anggota}`, nominal: Math.abs(val), isMasuk: val >= 0, badge: 'b-simpanan', label: 'Simpanan' });
+                });
 
                 let gPlafon = 0;
-                cacheData.pinjaman.forEach(d => gPlafon += (Number(d.jumlah) || 0));
+                snapP.forEach(d => {
+                    const data = d.data();
+                    cacheData.pinjaman.push({id: d.id, ...data});
+                    const val = Number(data.jumlah) || 0;
+                    gPlafon += val;
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Pencairan: ${data.info_anggota.split(' - ')[1] || data.info_anggota}`, nominal: val, isMasuk: false, badge: 'b-pinjaman', label: 'Pinjaman' });
+                });
 
                 let gPokokMasuk = 0;
                 let gLabaJasa = 0;
-                cacheData.angsuran.forEach(d => {
-                    gPokokMasuk += (Number(d.jumlah) || 0);
-                    gLabaJasa += (Number(d.bunga) || 0);
+                snapAns.forEach(d => {
+                    const data = d.data();
+                    cacheData.angsuran.push(data);
+                    const pk = Number(data.jumlah) || 0;
+                    const bg = Number(data.bunga) || 0;
+                    gPokokMasuk += pk;
+                    gLabaJasa += bg;
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Angsuran: ${data.info_anggota.split(' - ')[1] || data.info_anggota}`, nominal: pk+bg, isMasuk: true, badge: 'b-angsuran', label: 'Angsuran' });
                 });
 
                 let gLabaWaserda = 0;
-                cacheData.waserda.forEach(d => {
-                    const nom = Number(d.nominal) || 0;
-                    if(d.jenis === "Pemasukan") gLabaWaserda += nom;
-                    else gLabaWaserda -= nom;
+                snapWas.forEach(d => {
+                    const data = d.data();
+                    cacheData.waserda.push(data);
+                    const nom = Number(data.nominal) || 0;
+                    const isMasuk = data.jenis === "Pemasukan";
+                    if(isMasuk) gLabaWaserda += nom; else gLabaWaserda -= nom;
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Waserda: ${data.keterangan}`, nominal: nom, isMasuk: isMasuk, badge: 'b-waserda', label: 'Waserda' });
                 });
 
+                // Hitung & Tampilkan Kotak Info Global
                 const uangBeredar = gPlafon - gPokokMasuk;
                 const totalLaba = gLabaJasa + gLabaWaserda;
 
-                // Tampilkan Data Global ke Layar
                 document.getElementById('globSimpanan').innerText = formatRupiah(gSimpanan);
                 document.getElementById('globBeredar').innerText = formatRupiah(uangBeredar < 0 ? 0 : uangBeredar);
                 document.getElementById('globLaba').innerText = formatRupiah(totalLaba);
+
+                // Render 10 Transaksi Global
+                semuaTransaksiGlobal.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+                const tbodyGlobal = document.getElementById('bodyRiwayatGlobal');
+                tbodyGlobal.innerHTML = '';
+                const top10Global = semuaTransaksiGlobal.slice(0, 10);
+
+                if(top10Global.length === 0) {
+                    tbodyGlobal.innerHTML = '<tr><td colspan="3" style="text-align:center;">Belum ada transaksi.</td></tr>';
+                } else {
+                    top10Global.forEach(t => {
+                        const sign = t.isMasuk ? '+' : '-';
+                        const colorClass = t.isMasuk ? 'text-masuk' : 'text-keluar';
+                        tbodyGlobal.innerHTML += `
+                            <tr>
+                                <td style="font-size:0.75rem; color:#7f8c8d;">${t.tanggal}</td>
+                                <td>
+                                    <div style="font-size:0.8rem; font-weight:bold; color:#34495e; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${t.ket}">${t.ket}</div>
+                                </td>
+                                <td class="text-right ${colorClass}" style="font-size:0.8rem;">${sign} ${formatRupiah(t.nominal)}</td>
+                            </tr>
+                        `;
+                    });
+                }
 
                 // Isi Autocomplete Nama
                 const datalist = document.getElementById('namaSaran');
@@ -220,13 +304,9 @@
 
             } catch (e) {
                 console.error("Gagal memuat data awal:", e);
-                document.getElementById('globSimpanan').innerText = "Error";
-                document.getElementById('globBeredar').innerText = "Error";
-                document.getElementById('globLaba').innerText = "Error";
             }
         }
 
-        // Panggil fungsi saat halaman selesai dimuat
         muatDataAwal();
 
         // 2. FUNGSI PENCARIAN SALDO PRIBADI (Pencarian Instan)
@@ -239,7 +319,6 @@
             areaHasil.style.display = 'none';
             pesanError.style.display = 'none';
 
-            // Cari nama di dalam cache memori (bukan ke database lagi)
             let anggotaDitemukan = cacheData.anggota.find(d => d.nama.toLowerCase() === inputNama && d.status !== "Keluar" && d.status !== "Nonaktif");
 
             if (!anggotaDitemukan) {
@@ -247,37 +326,99 @@
                 return;
             }
 
-            // Hitung Simpanan Pribadi
+            let riwayatPribadi = [];
+
+            // 1. Simpanan Pribadi
             let pSimpanan = 0;
             cacheData.simpanan.forEach(d => {
-                if(d.id_anggota === anggotaDitemukan.id) pSimpanan += (Number(d.jumlah) || 0);
+                if(d.id_anggota === anggotaDitemukan.id) {
+                    const val = Number(d.jumlah) || 0;
+                    pSimpanan += val;
+                    riwayatPribadi.push({
+                        waktu: d.waktu_input || d.tanggal_transaksi || "1970-01-01",
+                        tanggal: d.tanggal_transaksi || "-",
+                        kategori: 'Simpanan',
+                        badgeClass: 'b-simpanan',
+                        nominal: Math.abs(val),
+                        isMasuk: val >= 0
+                    });
+                }
             });
 
-            // Hitung Hutang Pribadi
+            // 2. Pinjaman Pribadi
             let pPlafon = 0;
             let idPinjamanPribadi = [];
             cacheData.pinjaman.forEach(d => {
                 if(d.id_anggota === anggotaDitemukan.id) {
-                    pPlafon += (Number(d.jumlah) || 0);
+                    const val = Number(d.jumlah) || 0;
+                    pPlafon += val;
                     idPinjamanPribadi.push(d.id);
+                    riwayatPribadi.push({
+                        waktu: d.waktu_input || d.tanggal || "1970-01-01",
+                        tanggal: d.tanggal || "-",
+                        kategori: 'Pencairan',
+                        badgeClass: 'b-pinjaman',
+                        nominal: val,
+                        isMasuk: false 
+                    });
                 }
             });
 
+            // 3. Angsuran Pribadi
             let pAngsuranMasuk = 0;
             cacheData.angsuran.forEach(d => {
                 if(idPinjamanPribadi.includes(d.id_pinjaman)) {
-                    pAngsuranMasuk += (Number(d.jumlah) || 0);
+                    const pk = Number(d.jumlah) || 0;
+                    const bg = Number(d.bunga) || 0;
+                    pAngsuranMasuk += pk;
+                    riwayatPribadi.push({
+                        waktu: d.waktu_input || d.tanggal || "1970-01-01",
+                        tanggal: d.tanggal || "-",
+                        kategori: 'Angsuran',
+                        badgeClass: 'b-angsuran',
+                        nominal: pk + bg,
+                        isMasuk: true
+                    });
                 }
             });
 
             let sisaHutang = pPlafon - pAngsuranMasuk;
 
-            // Tampilkan Hasil Pribadi
+            // Tampilkan Header Saldo
             document.getElementById('namaAnggotaTampil').innerHTML = `<i class="fa fa-user"></i> Halo, ${anggotaDitemukan.nama}!`;
             document.getElementById('simpananTampil').innerText = formatRupiah(pSimpanan);
             document.getElementById('pinjamanTampil').innerText = formatRupiah(sisaHutang < 0 ? 0 : sisaHutang);
 
+            // URUTKAN DAN TAMPILKAN 10 RIWAYAT TERAKHIR PRIBADI
+            riwayatPribadi.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+            const top10Riwayat = riwayatPribadi.slice(0, 10);
+            
+            const tbodyRiwayat = document.getElementById('bodyRiwayatPribadi');
+            tbodyRiwayat.innerHTML = '';
+            
+            if(top10Riwayat.length === 0) {
+                tbodyRiwayat.innerHTML = '<tr><td colspan="3" style="text-align:center;">Belum ada transaksi.</td></tr>';
+            } else {
+                top10Riwayat.forEach(t => {
+                    const sign = t.isMasuk ? '+' : '-';
+                    const colorClass = t.isMasuk ? 'text-masuk' : 'text-keluar';
+                    
+                    tbodyRiwayat.innerHTML += `
+                        <tr>
+                            <td style="font-size:0.75rem; color:#7f8c8d;">${t.tanggal}</td>
+                            <td><span class="badge ${t.badgeClass}">${t.kategori}</span></td>
+                            <td class="text-right ${colorClass}">${sign} ${formatRupiah(t.nominal)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
             areaHasil.style.display = 'block';
+            
+            // Gulung layar halus ke bawah agar hasil terlihat penuh
+            setTimeout(() => {
+                areaHasil.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         });
     </script>
 </body>

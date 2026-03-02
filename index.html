@@ -84,14 +84,6 @@
         .hl-modal { color: var(--orange); }
         .hl-jasa { color: var(--blue); }
         .hl-total { color: var(--success); font-size: 1.05rem; }
-
-        @media print {
-            .sidebar, .header, .btn-submit, button, .form-grid { display: none !important; }
-            .main-content { margin: 0; padding: 0; }
-            .card { box-shadow: none; border: none; padding: 0; }
-            body { background: white; }
-            #areaSHU { display: block !important; }
-        }
     </style>
 </head>
 <body>
@@ -366,7 +358,7 @@
                     </div>
                     <div class="form-group">
                         <label>Honor Pengurus & Pengawas (Input Manual Rp)</label>
-                        <input type="number" id="shuPengurus" value="0" placeholder="Ketik nominal disini...">
+                        <input type="number" id="shuPengurus" value="1600000" placeholder="Ketik nominal disini...">
                         <small style="color: #7f8c8d; font-size: 0.75rem; margin-top:5px; display:block;">*Isi sesuai hasil perhitungan di luar sistem.</small>
                     </div>
                     <div class="form-group">
@@ -733,17 +725,7 @@
 
         async function muatLabaFormal() {
             try {
-                // Cari data anggota
-                const sAngg = await getDocs(collection(db, "anggota"));
-                let mapNamaKeId = {};
-                let mapIdKeNamaReal = {};
-                sAngg.forEach(d => {
-                    // Simpan mapping nama lowercase -> ID Anggota untuk akurasi tinggi
-                    mapNamaKeId[d.data().nama.trim().toLowerCase()] = d.id;
-                    mapIdKeNamaReal[d.id] = d.data().nama.trim(); // Nama asli untuk di tabel
-                });
-
-                // Hanya mengambil data Simpanan dan Angsuran (Waserda diabaikan)
+                // Hanya mengambil data Simpanan dan Angsuran (Murni Pinjaman)
                 const [sSimp, sAns] = await Promise.all([
                     getDocs(collection(db, "simpanan")),
                     getDocs(collection(db, "angsuran"))
@@ -757,9 +739,8 @@
                 // 1. Rekap Simpanan
                 sSimp.forEach(d => {
                     const val = Number(d.data().jumlah) || 0;
-                    const idAnggotaSimpanan = d.data().id_anggota;
-                    let namaFixed = mapIdKeNamaReal[idAnggotaSimpanan] || d.data().info_anggota || "Tanpa Nama";
-                    if(namaFixed.includes(" - ")) namaFixed = namaFixed.split(" - ")[1].trim();
+                    let namaRaw = d.data().info_anggota || "Tanpa Nama";
+                    let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1].trim() : namaRaw.trim();
                     
                     if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
                     dbDataSHU[namaFixed].simpanan += val;
@@ -769,7 +750,6 @@
                 // 2. Rekap Jasa (Hanya dari koleksi angsuran)
                 sAns.forEach(d => {
                     const val = Number(d.data().bunga) || 0;
-                    // Format nama dari angsuran seringkali sudah digabung dengan "Nomor - Nama" di menu sebelumnya
                     let namaRaw = d.data().info_anggota || "Tanpa Nama";
                     let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1].trim() : namaRaw.trim();
 
@@ -789,7 +769,7 @@
             }
         }
 
-        // Update live perhitungan jika input dirubah
+        // Live Update Sisa Dana Anggota
         document.getElementById('shuPengurus').addEventListener('input', updateSisaAnggota);
         document.getElementById('shuCadanganPersen').addEventListener('input', updateSisaAnggota);
 
@@ -815,13 +795,20 @@
             const pSimpanan = Number(document.getElementById('porsiSimpanan').value) || 0;
             const pPinjaman = Number(document.getElementById('porsiPinjaman').value) || 0;
 
-            if (pSimpanan + pPinjaman !== 100) return Swal.fire('Error', 'Total porsi Simpanan & Usaha harus 100%', 'error');
+            if (pSimpanan + pPinjaman !== 100) return Swal.fire('Error', 'Total porsi Simpanan & Usaha harus tepat 100%', 'error');
 
             const danaBagiSimpanan = danaAnggota * (pSimpanan / 100);
             const danaBagiPinjaman = danaAnggota * (pPinjaman / 100);
 
             const tb = document.getElementById('bodySHU'); 
             tb.innerHTML = '';
+
+            // Variabel Penampung Total
+            let sumSimpanan = 0;
+            let sumJasa = 0;
+            let sumSHUModal = 0;
+            let sumSHUUsaha = 0;
+            let sumTotalSHU = 0;
 
             for(let n in dbDataSHU) {
                 const data = dbDataSHU[n];
@@ -834,6 +821,13 @@
                 const dapatTotal = dapatSimpanan + dapatPinjaman;
 
                 if (data.simpanan > 0 || data.jasa > 0) {
+                    // Akumulasi Total
+                    sumSimpanan += data.simpanan;
+                    sumJasa += data.jasa;
+                    sumSHUModal += dapatSimpanan;
+                    sumSHUUsaha += dapatPinjaman;
+                    sumTotalSHU += dapatTotal;
+
                     tb.innerHTML += `
                         <tr>
                             <td><strong>${n}</strong></td>
@@ -846,9 +840,23 @@
                     `;
                 }
             }
+
+            // Tambahkan Baris Total Keseluruhan
+            tb.innerHTML += `
+                <tr style="background-color: #e8f5e9; border-top: 2px solid var(--success);">
+                    <td style="text-align: center; font-weight: bold; color: var(--dark);">TOTAL KESELURUHAN</td>
+                    <td class="txt-right" style="font-weight: bold;">${formatR(sumSimpanan)}</td>
+                    <td class="txt-right" style="font-weight: bold;">${formatR(sumJasa)}</td>
+                    <td class="txt-right hl-modal" style="font-weight: bold;">${formatR(sumSHUModal)}</td>
+                    <td class="txt-right hl-jasa" style="font-weight: bold;">${formatR(sumSHUUsaha)}</td>
+                    <td class="txt-right hl-total" style="font-weight: bold; color: var(--dark);">${formatR(sumTotalSHU)}</td>
+                </tr>
+            `;
+
             document.getElementById('areaSHU').style.display = 'block';
         }
-// --- FITUR CETAK LAPORAN RESMI ---
+
+        // --- FITUR CETAK LAPORAN RESMI ---
         window.cetakLaporan = function() {
             const isiTabel = document.getElementById('tabelSHU').outerHTML;
             const totalLaba = document.getElementById('shuTotal').value;
@@ -909,13 +917,12 @@
             jendelaCetak.document.close();
             jendelaCetak.focus();
             
-            // Tunggu sebentar agar struktur HTML selesai dibuat sebelum memanggil print
             setTimeout(() => {
                 jendelaCetak.print();
                 jendelaCetak.close();
             }, 500);
         }
+
     </script>
 </body>
 </html>
-

@@ -92,6 +92,7 @@
             <li><a onclick="showPage('setormassal')" id="link-setormassal"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
             <li><a onclick="showPage('pinjaman')" id="link-pinjaman"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
             <li><a onclick="showPage('angsuran')" id="link-angsuran"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
+            <li><a onclick="showPage('waserda')" id="link-waserda"><i class="fa fa-store"></i> Kas Waserda</a></li>
             <li><a onclick="showPage('laporan')" id="link-laporan"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
         </ul>
     </div>
@@ -109,10 +110,10 @@
             <div class="stats-grid">
                 <div class="stat-card"><h3>Total Anggota Aktif</h3><p id="dash-anggota">0</p><i class="fa fa-users" style="position:absolute; right:20px; bottom:20px; font-size:2.5rem; opacity:0.1;"></i></div>
                 <div class="stat-card" style="border-top-color: var(--success);"><h3>Total Simpanan</h3><p id="dash-simpanan">Rp 0</p><i class="fa fa-piggy-bank" style="position:absolute; right:20px; bottom:20px; font-size:2.5rem; opacity:0.1;"></i></div>
-                <div class="stat-card" style="border-top-color: var(--orange);"><h3>Laba Jasa (Bunga)</h3><p id="dash-laba">Rp 0</p><i class="fa fa-chart-line" style="position:absolute; right:20px; bottom:20px; font-size:2.5rem; opacity:0.1;"></i></div>
+                <div class="stat-card" style="border-top-color: var(--orange);"><h3>Laba Jasa & Waserda</h3><p id="dash-laba">Rp 0</p><i class="fa fa-chart-line" style="position:absolute; right:20px; bottom:20px; font-size:2.5rem; opacity:0.1;"></i></div>
             </div>
             <div class="card">
-                <h3>Visualisasi Arus Kas</h3>
+                <h3>Visualisasi Laba Koperasi</h3>
                 <canvas id="chartUtama" height="100"></canvas>
             </div>
         </div>
@@ -298,8 +299,41 @@
                     
                     <div class="total-box"><p>Total Diterima Kasir Bulan Ini</p><h2 id="txtTotalAns">Rp 0</h2></div>
                     
-                    <button type="submit" class="btn-submit" style="margin-top:20px;"><i class="fa fa-check-circle"></i> SIMPAN PEMBAYARAN</button>
+                    <button type="submit" class="btn-submit" style="margin-top:20px; background:var(--orange);"><i class="fa fa-check-circle"></i> SIMPAN PEMBAYARAN</button>
                 </form>
+            </div>
+        </div>
+
+        <div id="waserda" class="page-section">
+            <div class="card">
+                <h3>Input Transaksi Waserda</h3>
+                <form id="formWaserda">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Tanggal Transaksi</label><input type="date" id="tglWaserda" required></div>
+                        <div class="form-group">
+                            <label>Jenis Transaksi</label>
+                            <select id="jenisWaserda">
+                                <option value="Pemasukan">Pemasukan (Laba Penjualan Harian/Mingguan)</option>
+                                <option value="Pengeluaran">Pengeluaran (Belanja Stok / Operasional)</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="nomWaserda" required></div>
+                        <div class="form-group"><label>Keterangan</label><input type="text" id="ketWaserda" placeholder="Contoh: Laba kotor minggu 1" required></div>
+                    </div>
+                    <button type="submit" class="btn-submit" style="background:var(--blue)"><i class="fa fa-save"></i> SIMPAN TRANSAKSI WASERDA</button>
+                </form>
+            </div>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Riwayat Kas Waserda</h3>
+                    <h3 id="saldoWaserda" style="color:var(--success);">Laba Bersih Waserda: Rp 0</h3>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Tanggal</th><th>Keterangan</th><th style="text-align:center;">Jenis</th><th class="txt-right">Nominal (Rp)</th></tr></thead>
+                        <tbody id="bodyWaserda"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -307,7 +341,7 @@
             <div class="card">
                 <h3>Pembagian SHU Berdasarkan Kontribusi Jasa</h3>
                 <div class="form-grid" style="margin-top:15px;">
-                    <div class="form-group"><label>Total Laba Jasa (Terkumpul di Sistem)</label><input type="text" id="labaLaporan" readonly style="background:#f8f9fa; color:var(--success); font-weight:bold;"></div>
+                    <div class="form-group"><label>Total Laba Jasa Pinjaman</label><input type="text" id="labaLaporan" readonly style="background:#f8f9fa; color:var(--success); font-weight:bold;"></div>
                     <div class="form-group"><label>Porsi yang Ingin Dibagikan (%)</label><input type="number" id="porsiSHU" value="100" min="1" max="100"></div>
                 </div>
                 <button class="btn-submit" onclick="hitungSHU()"><i class="fa fa-calculator"></i> HITUNG PEMBAGIAN SHU</button>
@@ -344,6 +378,7 @@
                 document.getElementById('tglSimpan').valueAsDate = new Date();
                 document.getElementById('tglPinjam').valueAsDate = new Date();
                 document.getElementById('tglAns').valueAsDate = new Date();
+                document.getElementById('tglWaserda').valueAsDate = new Date();
                 document.getElementById('add_tanggal_gabung').valueAsDate = new Date();
                 showPage('dashboard');
             }
@@ -363,7 +398,7 @@
             document.getElementById(pageId).classList.add('active');
             if(document.getElementById('link-' + pageId)) document.getElementById('link-' + pageId).classList.add('active');
             
-            const titles = { dashboard: "Ringkasan Operasional", anggota: "Manajemen Anggota", 'tambah-anggota': "Input Anggota Baru", 'detail-anggota': "Profil Anggota", simpanan: "Kelola Simpanan", setormassal: "Setoran Massal", pinjaman: "Kelola Pinjaman", angsuran: "Penerimaan Angsuran", laporan: "Laporan SHU" };
+            const titles = { dashboard: "Ringkasan Operasional", anggota: "Manajemen Anggota", 'tambah-anggota': "Input Anggota Baru", 'detail-anggota': "Profil Anggota", simpanan: "Kelola Simpanan", setormassal: "Setoran Massal", pinjaman: "Kelola Pinjaman", angsuran: "Penerimaan Angsuran", waserda: "Keuangan Waserda", laporan: "Laporan SHU" };
             document.getElementById('page-title').innerText = titles[pageId];
 
             // Trigger load data
@@ -373,23 +408,37 @@
             if(pageId === 'angsuran') muatDropAns();
             if(pageId === 'simpanan') { muatDropSimpanan(); muatRiwayatSimpanan(); }
             if(pageId === 'setormassal') muatAnggotaMassal();
+            if(pageId === 'waserda') muatWaserda();
             if(pageId === 'laporan') muatLaba();
         }
 
         // --- PAGE: DASHBOARD ---
         async function muatDash() {
-            const [sA, sS, sAns] = await Promise.all([getDocs(collection(db, "anggota")), getDocs(collection(db, "simpanan")), getDocs(collection(db, "angsuran"))]);
-            let s = 0; sS.forEach(d => s += Number(d.data().jumlah) || 0);
-            let l = 0; sAns.forEach(d => l += Number(d.data().bunga) || 0);
+            const [sA, sS, sAns, sWas] = await Promise.all([getDocs(collection(db, "anggota")), getDocs(collection(db, "simpanan")), getDocs(collection(db, "angsuran")), getDocs(collection(db, "waserda"))]);
             
+            let s = 0; sS.forEach(d => s += Number(d.data().jumlah) || 0);
+            let l_jasa = 0; sAns.forEach(d => l_jasa += Number(d.data().bunga) || 0);
+            
+            let l_waserda = 0; 
+            sWas.forEach(d => {
+                if(d.data().jenis === "Pemasukan") l_waserda += Number(d.data().nominal);
+                else l_waserda -= Number(d.data().nominal);
+            });
+
             let aktif = 0; sA.forEach(d => { if(d.data().status !== "Keluar" && d.data().status !== "Nonaktif") aktif++; });
 
             document.getElementById('dash-anggota').innerText = aktif;
             document.getElementById('dash-simpanan').innerText = formatR(s);
-            document.getElementById('dash-laba').innerText = formatR(l);
+            document.getElementById('dash-laba').innerText = formatR(l_jasa + l_waserda); // Gabungan Laba Pinjaman + Waserda
             
             if(currentChart) currentChart.destroy();
-            currentChart = new Chart(document.getElementById('chartUtama'), { type:'bar', data: { labels:['Total Simpanan','Laba Jasa'], datasets:[{label:'Rupiah', data:[s,l], backgroundColor:['#1abc9c','#e67e22']}] } });
+            currentChart = new Chart(document.getElementById('chartUtama'), { 
+                type:'bar', 
+                data: { 
+                    labels:['Jasa Pinjaman','Laba Waserda'], 
+                    datasets:[{label:'Keuntungan', data:[l_jasa, l_waserda], backgroundColor:['#e67e22', '#3498db']}] 
+                } 
+            });
         }
 
         // --- PAGE: ANGGOTA ---
@@ -580,7 +629,52 @@
             } catch(err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: LAPORAN SHU ---
+        // --- PAGE: WASERDA ---
+        async function muatWaserda() {
+            const tb = document.getElementById('bodyWaserda');
+            tb.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+            const snap = await getDocs(query(collection(db, "waserda"), orderBy("waktu_input", "desc")));
+            
+            tb.innerHTML = '';
+            let saldoBersih = 0;
+
+            if(snap.empty) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi Waserda</td></tr>'; }
+            
+            snap.forEach(doc => {
+                const d = doc.data();
+                const nom = Number(d.nominal) || 0;
+                const isMasuk = d.jenis === "Pemasukan";
+                
+                if(isMasuk) saldoBersih += nom; else saldoBersih -= nom;
+
+                tb.innerHTML += `<tr>
+                    <td>${d.tanggal}</td>
+                    <td>${d.keterangan}</td>
+                    <td style="text-align:center;"><span class="status-badge" style="background:${isMasuk?'#e8f5e9':'#ffebee'}; color:${isMasuk?'var(--success)':'var(--danger)'}">${d.jenis}</span></td>
+                    <td class="txt-right" style="color:${isMasuk?'var(--success)':'var(--danger)'}">${isMasuk?'+':'-'} ${formatR(nom)}</td>
+                </tr>`;
+            });
+            document.getElementById('saldoWaserda').innerText = `Laba Bersih Waserda: ${formatR(saldoBersih)}`;
+        }
+
+        document.getElementById('formWaserda').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await addDoc(collection(db, "waserda"), {
+                    tanggal: document.getElementById('tglWaserda').value,
+                    jenis: document.getElementById('jenisWaserda').value,
+                    nominal: Number(document.getElementById('nomWaserda').value),
+                    keterangan: document.getElementById('ketWaserda').value,
+                    waktu_input: new Date().toISOString()
+                });
+                Swal.fire('Sukses', 'Transaksi Waserda tersimpan', 'success');
+                document.getElementById('formWaserda').reset();
+                document.getElementById('tglWaserda').valueAsDate = new Date();
+                muatWaserda();
+            } catch (err) { Swal.fire('Error', err.message, 'error'); }
+        });
+
+        // --- PAGE: LAPORAN SHU (HANYA DARI JASA PINJAMAN) ---
         let lapDataPerAnggota = {}; let lapTotLaba = 0;
         async function muatLaba() {
             const sA = await getDocs(collection(db,"angsuran")); lapTotLaba = 0; lapDataPerAnggota = {};

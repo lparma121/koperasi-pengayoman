@@ -3,18 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Saldo - Koperasi Pengayoman</title>
+    <title>Portal Anggota - Cek Saldo Koperasi Pengayoman</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #2c3e50; padding: 20px; }
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; /* Ubah ke flex-start agar bisa scroll jika konten panjang */
+            min-height: 100vh; 
+            background-color: #2c3e50; 
+            padding: 40px 20px; 
+        }
         
         .portal-container {
-            background-color: white; padding: 30px; border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center;
+            background-color: white; 
+            padding: 35px 30px; 
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            width: 100%; 
+            max-width: 450px; 
+            text-align: center;
         }
-        .portal-container h2 { color: #1abc9c; margin-bottom: 5px; font-size: 1.5rem; }
-        .portal-container p { color: #7f8c8d; margin-bottom: 25px; font-size: 0.9rem; }
+        .portal-container h2 { color: #1abc9c; margin-bottom: 5px; font-size: 1.5rem; letter-spacing: 1px; }
+        .portal-container p.subtitle { color: #7f8c8d; margin-bottom: 30px; font-size: 0.95rem; }
 
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: bold; font-size: 0.9rem; }
@@ -27,56 +39,100 @@
             border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer;
             transition: 0.3s; font-weight: bold; margin-top: 10px;
         }
-        .btn-cari:hover { background-color: #16a085; }
+        .btn-cari:hover { background-color: #16a085; transform: translateY(-2px); }
 
-        #areaHasil { margin-top: 25px; display: none; text-align: left; padding-top: 20px; border-top: 2px dashed #ecf0f1; }
-        #areaHasil h3 { color: #2c3e50; margin-bottom: 15px; text-align: center; font-size: 1.2rem; }
+        /* Area Hasil Pribadi */
+        #areaHasil { margin-top: 30px; display: none; text-align: left; padding-top: 20px; border-top: 2px dashed #ecf0f1; animation: fadeIn 0.5s ease; }
+        #areaHasil h3 { color: #2c3e50; margin-bottom: 15px; text-align: center; font-size: 1.3rem; }
         
-        .saldo-box { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #1abc9c; }
+        .saldo-box { background-color: #f8f9fa; padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #1abc9c; position: relative; }
         .saldo-box p { margin: 0; color: #7f8c8d; font-size: 0.85rem; text-transform: uppercase; font-weight: bold; }
         .saldo-box h4 { margin: 5px 0 0 0; color: #2c3e50; font-size: 1.4rem; }
+        .saldo-box i { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 1.8rem; color: #1abc9c; opacity: 0.2; }
         
         .saldo-box.hutang { border-left-color: #e74c3c; }
         .saldo-box.hutang h4 { color: #e74c3c; }
+        .saldo-box.hutang i { color: #e74c3c; }
+
+        /* Area Info Global Koperasi */
+        #areaGlobal {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            text-align: left;
+            display: none;
+            animation: fadeIn 0.8s ease;
+        }
+        .global-title { font-size: 0.85rem; color: #7f8c8d; text-align: center; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: bold; }
         
-        .loading { color: #f39c12; font-weight: bold; margin-top: 15px; display: none; }
-        .error-msg { color: #e74c3c; font-weight: bold; margin-top: 15px; display: none; }
+        .global-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .g-card { background: #f4f7f6; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .g-card span.label { font-size: 0.8rem; font-weight: bold; color: #34495e; }
+        .g-card span.value { font-size: 1rem; font-weight: 800; font-family: monospace; }
+        
+        .g-simpanan span.value { color: #27ae60; }
+        .g-beredar span.value { color: #3498db; }
+        .g-laba span.value { color: #e67e22; }
+        
+        .loading { color: #f39c12; font-weight: bold; margin-top: 15px; display: none; text-align: center; }
+        .error-msg { color: #e74c3c; font-weight: bold; margin-top: 15px; display: none; text-align: center; font-size: 0.9rem; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="portal-container">
-        <h2>PORTAL ANGGOTA</h2>
-        <p>Koperasi Pengayoman</p>
+        <h2><i class="fa fa-search-dollar"></i> PORTAL ANGGOTA</h2>
+        <p class="subtitle">Transparansi Koperasi Pengayoman</p>
         
         <form id="formCekSaldo">
             <div class="input-group">
-                <label for="namaAnggota">Masukkan Nama Lengkap Anda</label>
+                <label for="namaAnggota">Cek Saldo Pribadi Anda</label>
                 <input type="text" id="namaAnggota" list="namaSaran" placeholder="Ketik Nama Anda..." required autocomplete="off">
                 <datalist id="namaSaran"></datalist>
-                <span class="catatan-input">Pilih nama Anda yang muncul di kotak saran.</span>
+                <span class="catatan-input"><i class="fa fa-info-circle"></i> Pilih nama dari kotak saran yang muncul.</span>
             </div>
-            <button type="submit" class="btn-cari"><i class="fa fa-search"></i> Cek Saldo Saya</button>
+            <button type="submit" class="btn-cari"><i class="fa fa-search"></i> Cek Saldo & Informasi</button>
         </form>
 
-        <div id="pesanLoading" class="loading"><i class="fa fa-spinner fa-spin"></i> Mencari data...</div>
-        <div id="pesanError" class="error-msg">Nama tidak ditemukan! Coba ketik ulang dan pilih saran yang muncul.</div>
+        <div id="pesanLoading" class="loading"><i class="fa fa-spinner fa-spin"></i> Menghubungkan ke server...</div>
+        <div id="pesanError" class="error-msg"><i class="fa fa-exclamation-triangle"></i> Nama tidak ditemukan! Pastikan Anda memilih nama dari saran.</div>
 
         <div id="areaHasil">
             <h3 id="namaAnggotaTampil">Halo!</h3>
             
             <div class="saldo-box">
-                <p>Total Tabungan / Simpanan</p>
+                <p>Total Simpanan Anda</p>
                 <h4 id="simpananTampil">Rp 0</h4>
+                <i class="fa fa-wallet"></i>
             </div>
 
             <div class="saldo-box hutang">
-                <p>Sisa Pinjaman Berjalan</p>
+                <p>Sisa Pinjaman (Hutang)</p>
                 <h4 id="pinjamanTampil">Rp 0</h4>
+                <i class="fa fa-hand-holding-dollar"></i>
             </div>
-            
-            <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #95a5a6;">
-                <i>*Data diperbarui secara real-time.</i>
+        </div>
+
+        <div id="areaGlobal">
+            <div class="global-title"><i class="fa fa-globe"></i> Info Keuangan Koperasi Saat Ini</div>
+            <div class="global-grid">
+                <div class="g-card g-simpanan">
+                    <span class="label"><i class="fa fa-piggy-bank"></i> Total Simpanan (Kas Masuk)</span>
+                    <span class="value" id="globSimpanan">Rp 0</span>
+                </div>
+                <div class="g-card g-beredar">
+                    <span class="label"><i class="fa fa-money-bill-transfer"></i> Uang Beredar (Piutang)</span>
+                    <span class="value" id="globBeredar">Rp 0</span>
+                </div>
+                <div class="g-card g-laba">
+                    <span class="label"><i class="fa fa-chart-line"></i> Total Laba Sistem</span>
+                    <span class="value" id="globLaba">Rp 0</span>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 15px; font-size: 0.75rem; color: #bdc3c7;">
+                <i>*Data dienkripsi dan diperbarui secara real-time.</i>
             </div>
         </div>
     </div>
@@ -98,15 +154,18 @@
         const db = getFirestore(app);
         const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 
-        // 1. FITUR AUTOCOMPLETE: Ambil semua nama anggota saat halaman dibuka
+        // 1. FITUR AUTOCOMPLETE
         async function muatSaranNama() {
             const datalist = document.getElementById('namaSaran');
             try {
                 const snap = await getDocs(query(collection(db, "anggota"), orderBy("nama", "asc")));
                 snap.forEach(doc => {
-                    const opt = document.createElement('option');
-                    opt.value = doc.data().nama;
-                    datalist.appendChild(opt);
+                    const data = doc.data();
+                    if(data.status !== "Keluar" && data.status !== "Nonaktif") {
+                        const opt = document.createElement('option');
+                        opt.value = data.nama;
+                        datalist.appendChild(opt);
+                    }
                 });
             } catch (e) { console.error("Gagal muat saran:", e); }
         }
@@ -116,20 +175,22 @@
             e.preventDefault();
             const inputNama = document.getElementById('namaAnggota').value.trim();
             const areaHasil = document.getElementById('areaHasil');
+            const areaGlobal = document.getElementById('areaGlobal');
             const pesanLoading = document.getElementById('pesanLoading');
             const pesanError = document.getElementById('pesanError');
 
             areaHasil.style.display = 'none';
+            areaGlobal.style.display = 'none';
             pesanError.style.display = 'none';
             pesanLoading.style.display = 'block';
 
             try {
-                // Ambil semua anggota untuk pencarian Case-Insensitive (Abaikan besar/kecil)
+                // 1. CARI ANGGOTA
                 const snapAnggota = await getDocs(collection(db, "anggota"));
                 let anggotaDitemukan = null;
 
                 snapAnggota.forEach(doc => {
-                    if (doc.data().nama.toLowerCase() === inputNama.toLowerCase()) {
+                    if (doc.data().nama.toLowerCase() === inputNama.toLowerCase() && doc.data().status !== "Keluar") {
                         anggotaDitemukan = { id: doc.id, ...doc.data() };
                     }
                 });
@@ -140,43 +201,96 @@
                     return;
                 }
 
-                // HITUNG SIMPANAN
-                let totalS = 0;
-                const snapS = await getDocs(collection(db, "simpanan"));
+                // 2. AMBIL SEMUA DATA KEUANGAN SEKALIGUS UNTUK PRIBADI & GLOBAL
+                const [snapS, snapP, snapAns, snapWas] = await Promise.all([
+                    getDocs(collection(db, "simpanan")),
+                    getDocs(collection(db, "pinjaman")),
+                    getDocs(collection(db, "angsuran")),
+                    getDocs(collection(db, "waserda"))
+                ]);
+
+                // Variabel Pribadi
+                let pribadiSimpanan = 0;
+                let pribadiPlafonPinjam = 0;
+                let pribadiSudahBayarPokok = 0;
+
+                // Variabel Global
+                let globalSimpanan = 0;
+                let globalPlafonKeluar = 0;
+                let globalPokokMasuk = 0;
+                let globalLabaJasa = 0;
+                let globalLabaWaserda = 0;
+
+                // -- Proses Data Simpanan --
                 snapS.forEach(d => {
-                    if(d.data().id_anggota === anggotaDitemukan.id) totalS += Number(d.data().jumlah) || 0;
-                });
-
-                // HITUNG PINJAMAN
-                let totalP = 0;
-                const snapP = await getDocs(collection(db, "pinjaman"));
-                const snapAns = await getDocs(collection(db, "angsuran"));
-
-                const rekapAns = {};
-                snapAns.forEach(d => {
-                    const data = d.data();
-                    rekapAns[data.id_pinjaman] = (rekapAns[data.id_pinjaman] || 0) + (Number(data.jumlah) || 0);
-                });
-
-                snapP.forEach(d => {
-                    const data = d.data();
-                    if(data.id_anggota === anggotaDitemukan.id) {
-                        const plafon = Number(data.jumlah) || 0;
-                        const bayar = rekapAns[d.id] || 0;
-                        totalP += (plafon - bayar);
+                    const val = Number(d.data().jumlah) || 0;
+                    globalSimpanan += val;
+                    if(d.data().id_anggota === anggotaDitemukan.id) {
+                        pribadiSimpanan += val;
                     }
                 });
 
+                // -- Proses Data Pinjaman (Plafon) --
+                snapP.forEach(d => {
+                    const val = Number(d.data().jumlah) || 0;
+                    globalPlafonKeluar += val;
+                    if(d.data().id_anggota === anggotaDitemukan.id) {
+                        pribadiPlafonPinjam += val;
+                    }
+                });
+
+                // -- Proses Data Angsuran (Pokok & Jasa) --
+                const rekapPokokPerPinjaman = {};
+                snapAns.forEach(d => {
+                    const pokok = Number(d.data().jumlah) || 0;
+                    const jasa = Number(d.data().bunga) || 0;
+                    const idPinjam = d.data().id_pinjaman;
+                    
+                    globalPokokMasuk += pokok;
+                    globalLabaJasa += jasa;
+
+                    rekapPokokPerPinjaman[idPinjam] = (rekapPokokPerPinjaman[idPinjam] || 0) + pokok;
+                });
+
+                // Menghitung sisa hutang pribadi berdasarkan ID Pinjaman miliknya
+                snapP.forEach(d => {
+                    if(d.data().id_anggota === anggotaDitemukan.id) {
+                        pribadiSudahBayarPokok += (rekapPokokPerPinjaman[d.id] || 0);
+                    }
+                });
+
+                // -- Proses Data Waserda --
+                snapWas.forEach(d => {
+                    const nom = Number(d.data().nominal) || 0;
+                    if(d.data().jenis === "Pemasukan") globalLabaWaserda += nom;
+                    else globalLabaWaserda -= nom;
+                });
+
+                // 3. HITUNG HASIL AKHIR
+                const sisaHutangPribadi = pribadiPlafonPinjam - pribadiSudahBayarPokok;
+                const uangBeredar = globalPlafonKeluar - globalPokokMasuk;
+                const totalLabaSistem = globalLabaJasa + globalLabaWaserda;
+
+                // 4. TAMPILKAN KE LAYAR
                 pesanLoading.style.display = 'none';
-                document.getElementById('namaAnggotaTampil').innerText = "Halo, " + anggotaDitemukan.nama + "!";
-                document.getElementById('simpananTampil').innerText = formatRupiah(totalS);
-                document.getElementById('pinjamanTampil').innerText = formatRupiah(totalP < 0 ? 0 : totalP);
+                
+                // Tampil Pribadi
+                document.getElementById('namaAnggotaTampil').innerHTML = `<i class="fa fa-user"></i> Halo, ${anggotaDitemukan.nama}!`;
+                document.getElementById('simpananTampil').innerText = formatRupiah(pribadiSimpanan);
+                document.getElementById('pinjamanTampil').innerText = formatRupiah(sisaHutangPribadi < 0 ? 0 : sisaHutangPribadi);
+                
+                // Tampil Global
+                document.getElementById('globSimpanan').innerText = formatRupiah(globalSimpanan);
+                document.getElementById('globBeredar').innerText = formatRupiah(uangBeredar < 0 ? 0 : uangBeredar);
+                document.getElementById('globLaba').innerText = formatRupiah(totalLabaSistem);
+
                 areaHasil.style.display = 'block';
+                areaGlobal.style.display = 'block';
 
             } catch (error) {
                 console.error(error);
                 pesanLoading.style.display = 'none';
-                pesanError.innerText = "Terjadi gangguan sistem.";
+                pesanError.innerHTML = "<i class='fa fa-wifi'></i> Terjadi gangguan koneksi ke server.";
                 pesanError.style.display = 'block';
             }
         });

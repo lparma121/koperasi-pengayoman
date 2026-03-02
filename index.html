@@ -708,32 +708,25 @@
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: LAPORAN SHU (KOMPREHENSIF) ---
+        // --- PAGE: LAPORAN SHU (KHUSUS JASA PINJAMAN) ---
         let dbDataSHU = {}; 
         let calcSimpananTotal = 0;
         let calcJasaTotal = 0;
-        let calcLabaSistem = 0;
+        let calcLabaPinjaman = 0; // Hanya Laba Pinjaman
 
         async function muatLabaFormal() {
-            const [sSimp, sAns, sWas] = await Promise.all([
+            // Hapus pengambilan data waserda di sini
+            const [sSimp, sAns] = await Promise.all([
                 getDocs(collection(db, "simpanan")),
-                getDocs(collection(db, "angsuran")),
-                getDocs(collection(db, "waserda"))
+                getDocs(collection(db, "angsuran"))
             ]);
 
             dbDataSHU = {};
             calcSimpananTotal = 0;
             calcJasaTotal = 0;
-            calcLabaSistem = 0;
+            calcLabaPinjaman = 0;
 
-            // 1. Hitung Laba Waserda
-            let labaWaserda = 0;
-            sWas.forEach(d => {
-                const nom = Number(d.data().nominal) || 0;
-                if(d.data().jenis === "Pemasukan") labaWaserda += nom; else labaWaserda -= nom;
-            });
-
-            // 2. Rekap Simpanan
+            // 1. Rekap Simpanan Anggota
             sSimp.forEach(d => {
                 const val = Number(d.data().jumlah) || 0;
                 let namaRaw = d.data().info_anggota || "Tanpa Nama";
@@ -745,7 +738,7 @@
                 calcSimpananTotal += val;
             });
 
-            // 3. Rekap Jasa (Pinjaman)
+            // 2. Rekap Jasa (Pinjaman) dan Total Laba Pinjaman
             sAns.forEach(d => {
                 const val = Number(d.data().bunga) || 0;
                 let namaRaw = d.data().info_anggota || "Tanpa Nama";
@@ -756,9 +749,13 @@
                 calcJasaTotal += val;
             });
 
-            // Total Laba Gabungan
-            calcLabaSistem = calcJasaTotal + labaWaserda;
-            document.getElementById('shuTotal').value = formatR(calcLabaSistem);
+            // Total Laba SEKARANG HANYA DARI PINJAMAN
+            calcLabaPinjaman = calcJasaTotal; 
+            
+            // Perbarui Label di UI agar lebih jelas
+            document.querySelector('label[for="shuTotal"]').innerText = "Total Laba Jasa Pinjaman (Murni)";
+            document.getElementById('shuTotal').value = formatR(calcLabaPinjaman);
+            
             updateSisaAnggota();
         }
 
@@ -770,8 +767,8 @@
             const pctCdg = Number(document.getElementById('shuCadanganPersen').value) || 0;
             const vPngrs = Number(document.getElementById('shuPengurus').value) || 0;
             
-            const vCdg = calcLabaSistem * (pctCdg / 100);
-            const sisaAnggota = calcLabaSistem - vPngrs - vCdg;
+            const vCdg = calcLabaPinjaman * (pctCdg / 100);
+            const sisaAnggota = calcLabaPinjaman - vPngrs - vCdg;
             
             document.getElementById('shuAnggotaTotal').value = formatR(sisaAnggota < 0 ? 0 : sisaAnggota);
         }
@@ -780,8 +777,8 @@
             const pctCdg = Number(document.getElementById('shuCadanganPersen').value) || 0;
             const vPngrs = Number(document.getElementById('shuPengurus').value) || 0;
             
-            const vCdg = calcLabaSistem * (pctCdg / 100);
-            const danaAnggota = calcLabaSistem - vPngrs - vCdg;
+            const vCdg = calcLabaPinjaman * (pctCdg / 100);
+            const danaAnggota = calcLabaPinjaman - vPngrs - vCdg;
 
             if (danaAnggota <= 0) return Swal.fire('Oops', 'Sisa dana untuk anggota habis/minus setelah dikurangi Cadangan & Honor Pengurus.', 'warning');
 
@@ -826,3 +823,4 @@
     </script>
 </body>
 </html>
+

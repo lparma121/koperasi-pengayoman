@@ -84,6 +84,14 @@
         .hl-modal { color: var(--orange); }
         .hl-jasa { color: var(--blue); }
         .hl-total { color: var(--success); font-size: 1.05rem; }
+
+        @media print {
+            .sidebar, .header, .btn-submit, button, .form-grid { display: none !important; }
+            .main-content { margin: 0; padding: 0; }
+            .card { box-shadow: none; border: none; padding: 0; }
+            body { background: white; }
+            #areaSHU { display: block !important; }
+        }
     </style>
 </head>
 <body>
@@ -348,14 +356,23 @@
                 <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom:15px;">Sesuaikan persentase dan potongan di bawah ini sebelum disahkan di RAT.</p>
                 
                 <div class="form-grid">
-                    <div class="form-group"><label>Total Laba (Pinjaman + Waserda)</label><input type="text" id="shuTotal" readonly style="background:#f8f9fa; color:var(--dark); font-weight:bold;"></div>
-                    <div class="form-group"><label>Dana Cadangan (%)</label><input type="number" id="shuCadanganPersen" value="25" title="Idealnya 20-30%"></div>
+                    <div class="form-group">
+                        <label>Total Laba Jasa Pinjaman (Murni)</label>
+                        <input type="text" id="shuTotal" readonly style="background:#f8f9fa; color:var(--dark); font-weight:bold;">
+                    </div>
+                    <div class="form-group">
+                        <label>Dana Cadangan (%)</label>
+                        <input type="number" id="shuCadanganPersen" value="25" title="Idealnya 20-30%">
+                    </div>
                     <div class="form-group">
                         <label>Honor Pengurus & Pengawas (Input Manual Rp)</label>
                         <input type="number" id="shuPengurus" value="0" placeholder="Ketik nominal disini...">
                         <small style="color: #7f8c8d; font-size: 0.75rem; margin-top:5px; display:block;">*Isi sesuai hasil perhitungan di luar sistem.</small>
                     </div>
-                    <div class="form-group"><label>Dana Bersih Untuk Anggota (Rp)</label><input type="text" id="shuAnggotaTotal" readonly style="background:#e8f5e9; color:var(--success); font-weight:bold;"></div>
+                    <div class="form-group">
+                        <label>Dana Bersih Untuk Anggota (Rp)</label>
+                        <input type="text" id="shuAnggotaTotal" readonly style="background:#e8f5e9; color:var(--success); font-weight:bold;">
+                    </div>
                 </div>
 
                 <h4 style="margin-top: 15px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Porsi Pembagian Untuk Anggota</h4>
@@ -712,54 +729,67 @@
         let dbDataSHU = {}; 
         let calcSimpananTotal = 0;
         let calcJasaTotal = 0;
-        let calcLabaPinjaman = 0; // Hanya Laba Pinjaman
+        let calcLabaPinjaman = 0;
 
         async function muatLabaFormal() {
-            // Hapus pengambilan data waserda di sini
-            const [sSimp, sAns] = await Promise.all([
-                getDocs(collection(db, "simpanan")),
-                getDocs(collection(db, "angsuran"))
-            ]);
+            try {
+                // Cari data anggota
+                const sAngg = await getDocs(collection(db, "anggota"));
+                let mapNamaKeId = {};
+                let mapIdKeNamaReal = {};
+                sAngg.forEach(d => {
+                    // Simpan mapping nama lowercase -> ID Anggota untuk akurasi tinggi
+                    mapNamaKeId[d.data().nama.trim().toLowerCase()] = d.id;
+                    mapIdKeNamaReal[d.id] = d.data().nama.trim(); // Nama asli untuk di tabel
+                });
 
-            dbDataSHU = {};
-            calcSimpananTotal = 0;
-            calcJasaTotal = 0;
-            calcLabaPinjaman = 0;
+                // Hanya mengambil data Simpanan dan Angsuran (Waserda diabaikan)
+                const [sSimp, sAns] = await Promise.all([
+                    getDocs(collection(db, "simpanan")),
+                    getDocs(collection(db, "angsuran"))
+                ]);
 
-            // 1. Rekap Simpanan Anggota
-            sSimp.forEach(d => {
-                const val = Number(d.data().jumlah) || 0;
-                let namaRaw = d.data().info_anggota || "Tanpa Nama";
-                // Ekstrak nama jika formatnya "No - Nama"
-                let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1] : namaRaw;
+                dbDataSHU = {};
+                calcSimpananTotal = 0;
+                calcJasaTotal = 0;
+                calcLabaPinjaman = 0;
+
+                // 1. Rekap Simpanan
+                sSimp.forEach(d => {
+                    const val = Number(d.data().jumlah) || 0;
+                    const idAnggotaSimpanan = d.data().id_anggota;
+                    let namaFixed = mapIdKeNamaReal[idAnggotaSimpanan] || d.data().info_anggota || "Tanpa Nama";
+                    if(namaFixed.includes(" - ")) namaFixed = namaFixed.split(" - ")[1].trim();
+                    
+                    if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
+                    dbDataSHU[namaFixed].simpanan += val;
+                    calcSimpananTotal += val;
+                });
+
+                // 2. Rekap Jasa (Hanya dari koleksi angsuran)
+                sAns.forEach(d => {
+                    const val = Number(d.data().bunga) || 0;
+                    // Format nama dari angsuran seringkali sudah digabung dengan "Nomor - Nama" di menu sebelumnya
+                    let namaRaw = d.data().info_anggota || "Tanpa Nama";
+                    let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1].trim() : namaRaw.trim();
+
+                    if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
+                    dbDataSHU[namaFixed].jasa += val;
+                    calcJasaTotal += val;
+                });
+
+                // Total Laba Murni dari Jasa Pinjaman
+                calcLabaPinjaman = calcJasaTotal; 
+                document.getElementById('shuTotal').value = formatR(calcLabaPinjaman);
                 
-                if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
-                dbDataSHU[namaFixed].simpanan += val;
-                calcSimpananTotal += val;
-            });
-
-            // 2. Rekap Jasa (Pinjaman) dan Total Laba Pinjaman
-            sAns.forEach(d => {
-                const val = Number(d.data().bunga) || 0;
-                let namaRaw = d.data().info_anggota || "Tanpa Nama";
-                let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1] : namaRaw;
-
-                if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
-                dbDataSHU[namaFixed].jasa += val;
-                calcJasaTotal += val;
-            });
-
-            // Total Laba SEKARANG HANYA DARI PINJAMAN
-            calcLabaPinjaman = calcJasaTotal; 
-            
-            // Perbarui Label di UI agar lebih jelas
-            document.querySelector('label[for="shuTotal"]').innerText = "Total Laba Jasa Pinjaman (Murni)";
-            document.getElementById('shuTotal').value = formatR(calcLabaPinjaman);
-            
-            updateSisaAnggota();
+                updateSisaAnggota();
+            } catch (error) {
+                console.error("Error muat laba: ", error);
+                document.getElementById('shuTotal').value = "Error memuat data";
+            }
         }
 
-        // Live Update Sisa Dana Anggota
+        // Update live perhitungan jika input dirubah
         document.getElementById('shuPengurus').addEventListener('input', updateSisaAnggota);
         document.getElementById('shuCadanganPersen').addEventListener('input', updateSisaAnggota);
 
@@ -780,12 +810,12 @@
             const vCdg = calcLabaPinjaman * (pctCdg / 100);
             const danaAnggota = calcLabaPinjaman - vPngrs - vCdg;
 
-            if (danaAnggota <= 0) return Swal.fire('Oops', 'Sisa dana untuk anggota habis/minus setelah dikurangi Cadangan & Honor Pengurus.', 'warning');
+            if (danaAnggota <= 0) return Swal.fire('Oops', 'Sisa dana untuk anggota habis setelah dikurangi Cadangan & Honor Pengurus.', 'warning');
 
             const pSimpanan = Number(document.getElementById('porsiSimpanan').value) || 0;
             const pPinjaman = Number(document.getElementById('porsiPinjaman').value) || 0;
 
-            if (pSimpanan + pPinjaman !== 100) return Swal.fire('Error', 'Total porsi Simpanan & Usaha harus tepat 100%', 'error');
+            if (pSimpanan + pPinjaman !== 100) return Swal.fire('Error', 'Total porsi Simpanan & Usaha harus 100%', 'error');
 
             const danaBagiSimpanan = danaAnggota * (pSimpanan / 100);
             const danaBagiPinjaman = danaAnggota * (pPinjaman / 100);
@@ -796,11 +826,10 @@
             for(let n in dbDataSHU) {
                 const data = dbDataSHU[n];
                 
-                // Hitung Proporsional
                 let dapatSimpanan = calcSimpananTotal > 0 ? (data.simpanan / calcSimpananTotal) * danaBagiSimpanan : 0;
                 let dapatPinjaman = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
                 
-                if(dapatSimpanan < 0) dapatSimpanan = 0; // Jika simpanan ditarik sampai minus
+                if(dapatSimpanan < 0) dapatSimpanan = 0; 
                 
                 const dapatTotal = dapatSimpanan + dapatPinjaman;
 
@@ -823,4 +852,3 @@
     </script>
 </body>
 </html>
-

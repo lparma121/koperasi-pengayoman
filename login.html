@@ -11,74 +11,54 @@
 
         /* Kotak Login */
         .login-container {
-            background-color: white; padding: 40px; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center;
+            background-color: white; padding: 40px; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center;
         }
-        .login-container h2 { color: #1abc9c; margin-bottom: 10px; font-size: 1.5rem; }
-        .login-container p { color: #7f8c8d; margin-bottom: 30px; font-size: 0.9rem; }
+        .login-container h2 { color: #1abc9c; margin-bottom: 10px; font-size: 1.6rem; letter-spacing: 1px; }
+        .login-container p { color: #7f8c8d; margin-bottom: 35px; font-size: 0.95rem; }
 
         /* Grup Input Form */
         .input-group { margin-bottom: 20px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 5px; color: #2c3e50; font-weight: bold; font-size: 0.9rem; }
-        .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        .input-group label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: bold; font-size: 0.9rem; }
+        .input-group input { width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 8px; font-size: 1rem; transition: 0.3s; }
         .input-group input:focus { outline: none; border-color: #1abc9c; }
 
         /* Tombol Masuk Email */
         .btn-login {
-            width: 100%; padding: 12px; background-color: #1abc9c; color: white;
-            border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;
-            transition: 0.3s; font-weight: bold; margin-top: 10px;
+            width: 100%; padding: 14px; background-color: #1abc9c; color: white;
+            border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer;
+            transition: 0.3s; font-weight: bold; margin-top: 15px;
         }
-        .btn-login:hover { background-color: #16a085; }
-
-        /* Pemisah */
-        .divider { margin: 20px 0; color: #95a5a6; font-size: 0.9rem; position: relative; }
-        .divider::before, .divider::after {
-            content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background-color: #ddd;
-        }
-        .divider::before { left: 0; }
-        .divider::after { right: 0; }
-
-        /* Tombol Masuk Google */
-        .btn-google {
-            width: 100%; padding: 12px; background-color: #db4437; color: white;
-            border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;
-            transition: 0.3s; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px;
-        }
-        .btn-google:hover { background-color: #c23321; }
+        .btn-login:hover { background-color: #16a085; transform: translateY(-2px); }
+        
+        .loading-text { font-size: 0.9rem; color: #1abc9c; margin-top: 15px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="login-container">
         <h2>KOPERASI PENGAYOMAN</h2>
-        <p>Silakan masuk ke akun pengurus Anda</p>
+        <p>Silakan masuk ke portal admin koperasi</p>
         
         <form id="loginForm">
             <div class="input-group">
                 <label for="username">Email Pengurus</label>
-                <input type="email" id="username" placeholder="Masukkan email terdaftar" required>
+                <input type="email" id="username" placeholder="Masukkan email terdaftar" required autocomplete="email">
             </div>
             
             <div class="input-group">
                 <label for="password">Kata Sandi</label>
-                <input type="password" id="password" placeholder="Masukkan kata sandi" required>
+                <input type="password" id="password" placeholder="Masukkan kata sandi" required autocomplete="current-password">
             </div>
             
-            <button type="submit" class="btn-login">Masuk dengan Email</button>
+            <button type="submit" class="btn-login" id="btnSubmit">Masuk ke Sistem</button>
+            <div id="loadingMsg" class="loading-text">Memverifikasi kredensial...</div>
         </form>
-
-        <div class="divider">ATAU</div>
-
-        <button type="button" id="btnGoogle" class="btn-google">
-            Masuk dengan Google
-        </button>
     </div>
 
     <script type="module">
-        // 1. Impor fungsi Google Login dari Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         // CONFIG FIREBASE ANDA
         const firebaseConfig = {
@@ -94,47 +74,42 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // Siapkan "Pintu" Google
-        const googleProvider = new GoogleAuthProvider();
-
-        // ----------------------------------------------------
-        // LOGIKA LOGIN GOOGLE
-        // ----------------------------------------------------
-        const btnGoogle = document.getElementById('btnGoogle');
-        btnGoogle.addEventListener('click', () => {
-            // Membuka jendela pop-up Google
-            signInWithPopup(auth, googleProvider)
-                .then((result) => {
-                    // Jika sukses memilih akun Google
-                    const namaGoogle = result.user.displayName;
-                    alert("Berhasil! Selamat datang, " + namaGoogle);
-                    window.location.href = "index.html"; 
-                })
-                .catch((error) => {
-                    // Jika jendela ditutup atau error
-                    console.error("Error Google Login:", error);
-                    alert("Gagal masuk dengan Google: " + error.message);
-                });
-        });
-
-        // ----------------------------------------------------
-        // LOGIKA LOGIN EMAIL & PASSWORD (Tetap dipertahankan)
-        // ----------------------------------------------------
         const loginForm = document.getElementById('loginForm');
+        const btnSubmit = document.getElementById('btnSubmit');
+        const loadingMsg = document.getElementById('loadingMsg');
+
+        // LOGIKA LOGIN EMAIL & PASSWORD
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            
+            // Ubah tampilan tombol saat proses loading
+            btnSubmit.style.display = 'none';
+            loadingMsg.style.display = 'block';
             
             const email = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             signInWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
-                    alert("Login Email Berhasil! Selamat Datang.");
+                    // Redirect ke SPA Master File (index.html)
                     window.location.href = "index.html"; 
                 })
                 .catch((error) => {
-                    console.error(error.message);
-                    alert("Gagal Masuk: Periksa kembali Email dan Password Anda.");
+                    console.error("Error Code:", error.code);
+                    
+                    // Kembalikan tampilan tombol
+                    btnSubmit.style.display = 'block';
+                    loadingMsg.style.display = 'none';
+                    
+                    // Pesan error ramah pengguna
+                    let pesanError = "Gagal Masuk. Terjadi kesalahan sistem.";
+                    if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                        pesanError = "Email atau Kata Sandi Anda salah!";
+                    } else if(error.code === 'auth/network-request-failed') {
+                        pesanError = "Gagal terhubung ke server. Periksa internet Anda.";
+                    }
+                    
+                    alert(pesanError);
                 });
         });
     </script>

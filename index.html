@@ -831,7 +831,7 @@
             const pSimpanan = Number(document.getElementById('porsiSimpanan').value) || 0;
             const pPinjaman = Number(document.getElementById('porsiPinjaman').value) || 0;
 
-            if (pSimpanan + pPinjaman !== 100) return Swal.fire('Error', 'Total porsi Simpanan & Usaha harus tepat 100%', 'error');
+            if (pSimpanan + pPinjaman !== 100) return Swal.fire('Error', 'Total porsi Simpanan & Usaha harus 100%', 'error');
 
             const danaBagiSimpanan = danaAnggota * (pSimpanan / 100);
             const danaBagiPinjaman = danaAnggota * (pPinjaman / 100);
@@ -849,15 +849,19 @@
             for(let n in dbDataSHU) {
                 const data = dbDataSHU[n];
                 
-                let dapatSimpanan = calcSimpananTotal > 0 ? (data.simpanan / calcSimpananTotal) * danaBagiSimpanan : 0;
-                let dapatPinjaman = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
+                // Hitung Proporsional Desimal (Asli)
+                let dapatSimpananAsli = calcSimpananTotal > 0 ? (data.simpanan / calcSimpananTotal) * danaBagiSimpanan : 0;
+                let dapatPinjamanAsli = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
                 
-                if(dapatSimpanan < 0) dapatSimpanan = 0; 
+                if(dapatSimpananAsli < 0) dapatSimpananAsli = 0; 
                 
+                // --- PROSES PEMBULATAN KE BAWAH (RIBUAN) ---
+                let dapatSimpanan = Math.floor(dapatSimpananAsli / 1000) * 1000;
+                let dapatPinjaman = Math.floor(dapatPinjamanAsli / 1000) * 1000;
                 const dapatTotal = dapatSimpanan + dapatPinjaman;
 
                 if (data.simpanan > 0 || data.jasa > 0) {
-                    // Akumulasi Total
+                    // Akumulasi Total Keseluruhan
                     sumSimpanan += data.simpanan;
                     sumJasa += data.jasa;
                     sumSHUModal += dapatSimpanan;
@@ -961,3 +965,4 @@
     </script>
 </body>
 </html>
+

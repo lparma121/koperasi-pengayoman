@@ -387,7 +387,7 @@
             <div class="card" id="areaSHU" style="display:none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h3>Rincian Penerimaan SHU per Anggota</h3>
-                    <button onclick="window.print()" style="background:var(--dark); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;"><i class="fa fa-print"></i> Cetak Laporan</button>
+                    <button onclick="cetakLaporan()" style="background:var(--dark); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;"><i class="fa fa-print"></i> Cetak Laporan Resmi</button>
                 </div>
                 <div class="table-responsive">
                     <table id="tabelSHU">
@@ -848,7 +848,74 @@
             }
             document.getElementById('areaSHU').style.display = 'block';
         }
+// --- FITUR CETAK LAPORAN RESMI ---
+        window.cetakLaporan = function() {
+            const isiTabel = document.getElementById('tabelSHU').outerHTML;
+            const totalLaba = document.getElementById('shuTotal').value;
+            const cadangan = document.getElementById('shuCadanganPersen').value;
+            const pengurus = document.getElementById('shuPengurus').value;
+            const danaAnggota = document.getElementById('shuAnggotaTotal').value;
 
+            // Membuat jendela baru khusus untuk format cetak
+            const jendelaCetak = window.open('', '', 'height=800,width=1000');
+            
+            jendelaCetak.document.write('<html><head><title>Laporan SHU - Koperasi Pengayoman</title>');
+            jendelaCetak.document.write('<style>');
+            jendelaCetak.document.write('body { font-family: "Times New Roman", Times, serif; padding: 30px; color: black; }');
+            jendelaCetak.document.write('.kop-surat { text-align: center; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 25px; }');
+            jendelaCetak.document.write('.kop-surat h1 { margin: 0; font-size: 22px; text-transform: uppercase; }');
+            jendelaCetak.document.write('.kop-surat p { margin: 5px 0 0 0; font-size: 14px; }');
+            jendelaCetak.document.write('table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }');
+            jendelaCetak.document.write('th, td { border: 1px solid black; padding: 8px; }');
+            jendelaCetak.document.write('th { background-color: #f2f2f2; text-align: center; font-weight: bold; }');
+            jendelaCetak.document.write('.txt-right { text-align: right; }');
+            jendelaCetak.document.write('.rincian-dana { margin-bottom: 20px; font-size: 13px; }');
+            jendelaCetak.document.write('.rincian-dana table { width: 50%; border: none; margin-top: 10px; }');
+            jendelaCetak.document.write('.rincian-dana td { border: none; padding: 4px; }');
+            jendelaCetak.document.write('.ttd-box { margin-top: 50px; width: 100%; display: flex; justify-content: space-between; text-align: center; }');
+            jendelaCetak.document.write('</style>');
+            jendelaCetak.document.write('</head><body>');
+            
+            // Kop Surat
+            jendelaCetak.document.write('<div class="kop-surat">');
+            jendelaCetak.document.write('<h1>KOPERASI PENGAYOMAN</h1>');
+            jendelaCetak.document.write('<p>Laporan Alokasi Sisa Hasil Usaha (SHU) Anggota</p>');
+            jendelaCetak.document.write('<p>Tahun Buku: ' + new Date().getFullYear() + '</p>');
+            jendelaCetak.document.write('</div>');
+
+            // Rincian Parameter Dana
+            jendelaCetak.document.write('<div class="rincian-dana">');
+            jendelaCetak.document.write('<strong>A. Rincian Sumber Dana SHU:</strong>');
+            jendelaCetak.document.write('<table>');
+            jendelaCetak.document.write(`<tr><td>1. Total Laba Jasa Pinjaman</td><td>: ${totalLaba}</td></tr>`);
+            jendelaCetak.document.write(`<tr><td>2. Potongan Cadangan Koperasi (${cadangan}%)</td><td>: Sesuai Ketentuan</td></tr>`);
+            jendelaCetak.document.write(`<tr><td>3. Potongan Honor Pengurus</td><td>: Rp ${Number(pengurus).toLocaleString('id-ID')}</td></tr>`);
+            jendelaCetak.document.write(`<tr><td><strong>4. Total Dana Dibagikan ke Anggota</strong></td><td><strong>: ${danaAnggota}</strong></td></tr>`);
+            jendelaCetak.document.write('</table>');
+            jendelaCetak.document.write('</div>');
+
+            // Tabel Data Anggota
+            jendelaCetak.document.write('<strong>B. Rincian Pembagian per Anggota:</strong>');
+            jendelaCetak.document.write(isiTabel);
+            
+            // Kolom Tanda Tangan
+            jendelaCetak.document.write('<div class="ttd-box">');
+            jendelaCetak.document.write('<div><p>Mengetahui,</p><br><br><br><br><p><strong>( Ketua Koperasi )</strong></p></div>');
+            jendelaCetak.document.write('<div><p>Dibuat Oleh,</p><br><br><br><br><p><strong>( Bendahara / Admin )</strong></p></div>');
+            jendelaCetak.document.write('</div>');
+
+            jendelaCetak.document.write('</body></html>');
+            
+            jendelaCetak.document.close();
+            jendelaCetak.focus();
+            
+            // Tunggu sebentar agar struktur HTML selesai dibuat sebelum memanggil print
+            setTimeout(() => {
+                jendelaCetak.print();
+                jendelaCetak.close();
+            }, 500);
+        }
     </script>
 </body>
 </html>
+

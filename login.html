@@ -50,7 +50,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI",
@@ -64,14 +64,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // Pengecekan Login. Jika SUDAH login, pindah ke index.html
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.location.href = "index.html"; // Ini yang akan memindahkan Anda ke dashboard setelah login
-            }
-        });
-
-        // Proses Login
+        // HANYA proses perpindahan halaman JIKA tombol Masuk ditekan
         document.getElementById('formLogin').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnLogin');
@@ -84,7 +77,10 @@
             try {
                 // Autentikasi dengan Firebase
                 await signInWithEmailAndPassword(auth, email, password);
-                // Jika berhasil, kode di dalam onAuthStateChanged akan dieksekusi otomatis
+                
+                // Jika sukses, lempar ke dashboard secara manual
+                window.location.href = "index.html"; 
+                
             } catch (error) {
                 btn.innerHTML = 'Masuk ke Dashboard <i class="fa fa-arrow-right"></i>';
                 btn.disabled = false;

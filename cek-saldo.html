@@ -7,35 +7,112 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1abc9c; --primary-dark: #16a085; --dark: #2c3e50; --bg-color: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --warning: #f39c12; --blue: #3498db; --text-muted: #7f8c8d; }
+        :root { 
+            --primary: #1abc9c; 
+            --primary-dark: #16a085;
+            --dark: #2c3e50; 
+            --bg-color: #f4f7f6; 
+            --danger: #e74c3c; 
+            --success: #27ae60; 
+            --warning: #f39c12;
+            --blue: #3498db;
+            --text-main: #333;
+            --text-muted: #7f8c8d;
+            --card-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-color); color: #333; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-        .navbar { background-color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 15px rgba(0,0,0,0.03); position: sticky; top: 0; z-index: 100; }
-        .navbar h1 { font-size: 1.5rem; color: var(--dark); display: flex; align-items: center; gap: 10px; }
+        /* Top Navigation */
+        .navbar {
+            background-color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.03);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar h1 { font-size: 1.5rem; color: var(--dark); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
         .navbar h1 i { color: var(--primary); font-size: 1.8rem; }
         .navbar p { color: var(--success); font-size: 0.9rem; font-weight: 600; background: #e8f5e9; padding: 5px 12px; border-radius: 20px;}
 
-        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: 4fr 5fr; gap: 30px; width: 100%; }
+        /* Main Layout */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 4fr 5fr;
+            gap: 30px;
+            width: 100%;
+        }
 
-        .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        /* Cards General */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
         .card-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f0f0f0; }
         .card-header h3 { font-size: 1.2rem; color: var(--dark); display: flex; align-items: center; gap: 10px; }
         
-        .search-area { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; }
+        /* Area Pencarian Pribadi (Secure) */
+        .search-area { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; position: relative; overflow: hidden;}
+        .search-area::after { content: '\f023'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; right: -20px; top: -20px; font-size: 10rem; color: rgba(255,255,255,0.03); z-index: 0;}
+        .search-area * { position: relative; z-index: 1; }
         .search-area .card-header { border-bottom-color: rgba(255,255,255,0.1); }
         .search-area h3 { color: white; }
+        
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: #bdc3c7; }
-        .input-group input { width: 100%; padding: 15px 20px; border: 2px solid transparent; border-radius: 12px; font-size: 1rem; outline: none; transition: 0.3s; background: rgba(255,255,255,0.95); color: var(--dark); font-weight: bold; }
+        .input-group input { 
+            width: 100%; padding: 15px 20px; border: 2px solid transparent; 
+            border-radius: 12px; font-size: 1rem; outline: none; transition: 0.3s;
+            background: rgba(255,255,255,0.95); color: var(--dark); font-weight: bold;
+        }
         .input-group input:focus { background: white; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.2); }
         .catatan-input { font-size: 0.8rem; color: #95a5a6; margin-top: 8px; display: block; }
         
-        .btn-cari { width: 100%; padding: 15px; background-color: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 15px; transition: 0.3s;}
-        .btn-cari:hover { background-color: var(--primary-dark); transform: translateY(-2px); }
+        /* Input Wrapper for Toggle Password */
+        .password-wrapper { position: relative; display: block; }
+        .password-wrapper i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            transition: 0.2s;
+        }
+        .password-wrapper i:hover { color: var(--primary); }
+        .password-wrapper input { padding-right: 45px !important; }
 
-        .error-msg { background: #ffebee; color: var(--danger); padding: 15px; border-radius: 12px; margin-top: 15px; display: none; font-size:0.9rem; font-weight: 600; text-align: center; border: 1px solid #ffcdd2; }
+        .btn-cari {
+            width: 100%; padding: 15px; background-color: var(--primary); color: white;
+            border: none; border-radius: 12px; font-size: 1.1rem; cursor: pointer;
+            transition: 0.3s; font-weight: bold; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-cari:hover { background-color: var(--primary-dark); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(26, 188, 156, 0.4); }
 
+        /* Error Message */
+        .error-msg { background: #ffebee; color: var(--danger); padding: 15px; border-radius: 12px; margin-top: 15px; display: none; font-size:0.9rem; font-weight: 600; text-align: center; border: 1px solid #ffcdd2; animation: shake 0.5s; }
+
+        /* Area Hasil Pribadi */
         #areaHasil { display: none; animation: fadeInUp 0.5s ease; }
         .header-hasil { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .user-greeting { font-size: 1.4rem; color: var(--dark); }
@@ -57,33 +134,59 @@
         .balance-box.pinjaman p { color: var(--danger); }
         .balance-box h4 { font-size: 1.6rem; font-weight: 800; color: var(--dark); }
         .balance-box i { position: absolute; right: -10px; bottom: -10px; font-size: 4rem; opacity: 0.1; }
+        .balance-box.simpanan i { color: var(--success); }
+        .balance-box.pinjaman i { color: var(--danger); }
 
+        /* Global Stats Cards */
         .global-stats-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        .g-card { background: white; padding: 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #f0f0f0; }
+        .g-card { 
+            background: white; padding: 20px; border-radius: 16px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border: 1px solid #f0f0f0; transition: 0.3s;
+        }
+        .g-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
         .g-card .icon-box { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; margin-right: 15px; }
+        
         .g-simpanan .icon-box { background: #e8f5e9; color: var(--success); }
         .g-beredar .icon-box { background: #e3f2fd; color: var(--blue); }
         .g-laba .icon-box { background: #fff3e0; color: var(--orange); }
-        .g-info p { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        
+        .g-info { flex: 1; }
+        .g-info p { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 3px; }
         .g-info h4 { font-size: 1.3rem; font-weight: 800; color: var(--dark); }
 
+        /* Tables Modern */
         .table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid #f0f0f0; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: white; }
-        th { background: #fafafa; color: var(--text-muted); font-weight: 600; padding: 15px; text-align: left; text-transform: uppercase; font-size: 0.75rem; }
-        td { padding: 15px; border-bottom: 1px solid #f5f5f5; font-size: 0.85rem;}
-        .text-right { text-align: right; font-family: monospace; font-weight: 700; }
+        th { background: #fafafa; color: var(--text-muted); font-weight: 600; padding: 15px; text-align: left; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 2px solid #eee; }
+        td { padding: 15px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; font-size:0.85rem;}
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #fcfcfc; }
+        
+        .text-right { text-align: right; font-family: 'Inter', monospace; font-weight: 700; }
         .text-masuk { color: var(--success); }
         .text-keluar { color: var(--danger); }
         
+        .badge { font-size: 0.7rem; padding: 5px 10px; border-radius: 50px; color: white; font-weight: 600; display: inline-block; }
+        .b-simpanan { background: rgba(52, 152, 219, 0.1); color: var(--blue); }
+        .b-angsuran { background: rgba(39, 174, 96, 0.1); color: var(--success); }
+        .b-pinjaman { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        .b-waserda { background: rgba(243, 156, 18, 0.1); color: var(--warning); }
+
         .loader-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .loader-overlay i { font-size: 3rem; color: var(--primary); margin-bottom: 15px; }
+        .loader-overlay p { font-size: 1.1rem; color: var(--dark); font-weight: 600; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
+        /* Responsive Design */
         @media (max-width: 900px) {
-            .container { grid-template-columns: 1fr; padding: 0 15px;}
+            .container { grid-template-columns: 1fr; gap: 20px; margin-top: 20px; padding: 0 15px;}
             .navbar { padding: 15px 20px; }
+            .navbar h1 { font-size: 1.2rem; }
             .balance-grid { grid-template-columns: 1fr; }
+            .pin-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -115,8 +218,11 @@
                     </div>
                     <div class="input-group" style="margin-top: 20px;">
                         <label>PIN Rahasia</label>
-                        <input type="password" id="inputPin" placeholder="Masukkan PIN (Default: 123456)" required autocomplete="off">
-                        <span class="catatan-input"><i class="fa fa-info-circle"></i> Anggota lama gunakan PIN: 123456</span>
+                        <div class="password-wrapper">
+                            <input type="password" id="inputPin" placeholder="Masukkan PIN..." required autocomplete="off">
+                            <i class="fa fa-eye toggle-icon" onclick="togglePasswordVisibility('inputPin', this)"></i>
+                        </div>
+                        <span class="catatan-input"><i class="fa fa-info-circle"></i> Anggota lama gunakan PIN awal: 123456</span>
                     </div>
                     <button type="submit" class="btn-cari"><i class="fa fa-sign-in-alt"></i> Masuk Ke Brankas</button>
                 </form>
@@ -134,8 +240,14 @@
                     <p style="font-size: 0.8rem; color: #856404; margin-bottom: 10px;">Ganti PIN default Anda dengan angka yang mudah diingat.</p>
                     <form id="formUbahPin">
                         <div class="pin-grid">
-                            <input type="password" id="pinBaru" placeholder="Ketik PIN Baru..." required style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
-                            <input type="password" id="pinKonfirm" placeholder="Ulangi PIN Baru..." required style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
+                            <div class="password-wrapper">
+                                <input type="password" id="pinBaru" placeholder="Ketik PIN Baru..." required style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
+                                <i class="fa fa-eye toggle-icon" onclick="togglePasswordVisibility('pinBaru', this)" style="font-size: 1rem; right: 10px;"></i>
+                            </div>
+                            <div class="password-wrapper">
+                                <input type="password" id="pinKonfirm" placeholder="Ulangi PIN Baru..." required style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
+                                <i class="fa fa-eye toggle-icon" onclick="togglePasswordVisibility('pinKonfirm', this)" style="font-size: 1rem; right: 10px;"></i>
+                            </div>
                         </div>
                         <button type="submit" class="btn-simpan-pin" id="btnSimpanPin"><i class="fa fa-save"></i> Terapkan PIN Baru</button>
                         <button type="button" onclick="toggleUbahPin()" style="background:transparent; border:none; color:#7f8c8d; width:100%; padding:10px; margin-top:5px; cursor:pointer; font-weight:bold;">Batal</button>
@@ -161,8 +273,15 @@
                     </div>
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>Tanggal</th><th>Kategori</th><th class="text-right">Nominal (Rp)</th></tr></thead>
-                            <tbody id="bodyRiwayatPribadi"></tbody>
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Kategori</th>
+                                    <th class="text-right">Nominal (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyRiwayatPribadi">
+                                </tbody>
                         </table>
                     </div>
                 </div>
@@ -170,20 +289,30 @@
         </div>
 
         <div class="right-column">
+            
             <div class="card" style="background: transparent; box-shadow: none; padding: 0; margin-bottom: 20px;">
                 <h3 style="color: var(--dark); font-size: 1.1rem; margin-bottom: 15px;"><i class="fa fa-chart-pie"></i> Info Keuangan Koperasi</h3>
                 <div class="global-stats-grid">
                     <div class="g-card g-simpanan">
                         <div class="icon-box"><i class="fa fa-vault"></i></div>
-                        <div class="g-info"><p>Total Dana (Simpanan)</p><h4 id="globSimpanan">Rp 0</h4></div>
+                        <div class="g-info">
+                            <p>Total Dana Terkumpul (Simpanan)</p>
+                            <h4 id="globSimpanan">Rp 0</h4>
+                        </div>
                     </div>
                     <div class="g-card g-beredar">
                         <div class="icon-box"><i class="fa fa-hand-holding-hand"></i></div>
-                        <div class="g-info"><p>Uang Beredar (Piutang)</p><h4 id="globBeredar">Rp 0</h4></div>
+                        <div class="g-info">
+                            <p>Uang Beredar di Anggota (Piutang)</p>
+                            <h4 id="globBeredar">Rp 0</h4>
+                        </div>
                     </div>
                     <div class="g-card g-laba">
                         <div class="icon-box"><i class="fa fa-arrow-trend-up"></i></div>
-                        <div class="g-info"><p>Akumulasi Laba</p><h4 id="globLaba">Rp 0</h4></div>
+                        <div class="g-info">
+                            <p>Akumulasi Laba (Jasa + Waserda)</p>
+                            <h4 id="globLaba">Rp 0</h4>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -194,18 +323,29 @@
                 </div>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Waktu</th><th>Transaksi</th><th class="text-right">Nominal (Rp)</th></tr></thead>
-                        <tbody id="bodyRiwayatGlobal"></tbody>
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Transaksi</th>
+                                <th class="text-right">Nominal (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyRiwayatGlobal">
+                            </tbody>
                     </table>
                 </div>
             </div>
+            
+            <p style="text-align: center; color: #bdc3c7; font-size: 0.75rem; margin-top: 10px;">
+                <i class="fa fa-server"></i> Terhubung langsung dengan server utama Koperasi.
+            </p>
+
         </div>
 
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // TAMBAHKAN updateDoc dan doc DI SINI UNTUK FITUR UBAH PIN
         import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -223,7 +363,23 @@
 
         let cacheData = { anggota: [], simpanan: [], pinjaman: [], angsuran: [], waserda: [] };
         let semuaTransaksiGlobal = [];
-        let currentUser = null; // Menyimpan data user yang sedang login
+        let currentUser = null; 
+
+        // Fungsi Tampilkan/Sembunyikan Password
+        window.togglePasswordVisibility = function(inputId, iconElement) {
+            const inputField = document.getElementById(inputId);
+            if (inputField.type === "password") {
+                inputField.type = "text";
+                iconElement.classList.remove("fa-eye");
+                iconElement.classList.add("fa-eye-slash");
+                iconElement.style.color = "var(--primary)";
+            } else {
+                inputField.type = "password";
+                iconElement.classList.remove("fa-eye-slash");
+                iconElement.classList.add("fa-eye");
+                iconElement.style.color = "#7f8c8d";
+            }
+        };
 
         // 1. MUAT SEMUA DATA AWAL
         async function muatDataAwal() {
@@ -241,14 +397,14 @@
                     const data = d.data(); cacheData.simpanan.push(data);
                     const val = Number(data.jumlah) || 0; gSimpanan += val;
                     let nama = data.info_anggota; if(nama.includes(" - ")) nama = nama.split(" - ")[1];
-                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal_transaksi || "1970-01-01", tanggal: data.tanggal_transaksi || "-", ket: `Simpanan: ${nama}`, nominal: Math.abs(val), isMasuk: val >= 0 });
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal_transaksi || "1970-01-01", tanggal: data.tanggal_transaksi || "-", ket: `Simpanan: ${nama}`, nominal: Math.abs(val), isMasuk: val >= 0, badge: 'b-simpanan' });
                 });
 
                 snapP.forEach(d => {
                     const data = d.data(); cacheData.pinjaman.push({id: d.id, ...data});
                     const val = Number(data.jumlah) || 0; gPlafon += val;
                     let nama = data.info_anggota; if(nama.includes(" - ")) nama = nama.split(" - ")[1];
-                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Cair: ${nama}`, nominal: val, isMasuk: false });
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Pencairan: ${nama}`, nominal: val, isMasuk: false, badge: 'b-pinjaman' });
                 });
 
                 snapAns.forEach(d => {
@@ -256,14 +412,14 @@
                     const pk = Number(data.jumlah) || 0; const bg = Number(data.bunga) || 0;
                     gPokokMasuk += pk; gLabaJasa += bg;
                     let nama = data.info_anggota; if(nama.includes(" - ")) nama = nama.split(" - ")[1];
-                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Angsuran: ${nama}`, nominal: pk+bg, isMasuk: true });
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Angsuran: ${nama}`, nominal: pk+bg, isMasuk: true, badge: 'b-angsuran' });
                 });
 
                 snapWas.forEach(d => {
                     const data = d.data(); cacheData.waserda.push(data);
                     const nom = Number(data.nominal) || 0; const isMasuk = data.jenis === "Pemasukan";
                     if(isMasuk) gLabaWaserda += nom; else gLabaWaserda -= nom;
-                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Waserda: ${data.keterangan}`, nominal: nom, isMasuk: isMasuk });
+                    semuaTransaksiGlobal.push({ waktu: data.waktu_input || data.tanggal || "1970-01-01", tanggal: data.tanggal || "-", ket: `Waserda: ${data.keterangan}`, nominal: nom, isMasuk: isMasuk, badge: 'b-waserda' });
                 });
 
                 document.getElementById('globSimpanan').innerText = formatRupiah(gSimpanan);
@@ -302,10 +458,9 @@
             
             document.getElementById('pesanError').style.display = 'none';
 
-            // Cari nama
             let anggotaDitemukan = cacheData.anggota.find(d => d.nama.toLowerCase() === inputNama && d.status !== "Keluar" && d.status !== "Nonaktif");
 
-            // Jika nama tidak ada, atau PIN salah (Jika tidak ada pin di db, defaultnya "123456")
+            // Validasi PIN. Jika tidak ada data PIN, asumsikan default 123456
             let pinValid = anggotaDitemukan && anggotaDitemukan.pin ? anggotaDitemukan.pin : "123456";
 
             if (!anggotaDitemukan || inputPin !== pinValid) {
@@ -315,7 +470,7 @@
 
             // --- LOGIN BERHASIL ---
             currentUser = anggotaDitemukan;
-            document.getElementById('boxLogin').style.display = 'none'; // Sembunyikan form login
+            document.getElementById('boxLogin').style.display = 'none'; 
 
             let riwayatPribadi = [];
             let pSimpanan = 0;
@@ -342,7 +497,7 @@
                 }
             });
 
-            document.getElementById('namaAnggotaTampil').innerHTML = `Halo, <span>${currentUser.nama.split(' ')[0]}!</span>`;
+            document.getElementById('namaAnggotaTampil').innerHTML = `Akses Terbuka, <span>${currentUser.nama.split(' ')[0]}!</span>`;
             document.getElementById('simpananTampil').innerText = formatRupiah(pSimpanan);
             document.getElementById('pinjamanTampil').innerText = formatRupiah((pPlafon - pAngsuranMasuk) < 0 ? 0 : (pPlafon - pAngsuranMasuk));
 
@@ -381,10 +536,8 @@
             btn.disabled = true;
 
             try {
-                // Update ke database server
                 await updateDoc(doc(db, "anggota", currentUser.id), { pin: p1 });
                 
-                // Update ke memori lokal browser agar gak perlu refresh
                 currentUser.pin = p1;
                 const idx = cacheData.anggota.findIndex(a => a.id === currentUser.id);
                 if(idx > -1) cacheData.anggota[idx].pin = p1;
@@ -397,6 +550,15 @@
                 });
 
                 document.getElementById('formUbahPin').reset();
+                
+                // Reset ikon mata kembali seperti semula
+                document.querySelectorAll('.toggle-icon').forEach(icon => {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                    icon.style.color = '#7f8c8d';
+                    icon.previousElementSibling.type = 'password';
+                });
+
                 toggleUbahPin();
 
             } catch(err) {

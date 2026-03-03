@@ -171,8 +171,8 @@
                 <form id="formTambahAnggota">
                     <div class="form-group"><label>Nomor Anggota / NIK / NIP</label><input type="text" id="add_no_anggota" required></div>
                     <div class="form-group"><label>Nama Lengkap</label><input type="text" id="add_nama" required></div>
+                    <div class="form-group"><label>PIN Sandi Rahasia (Angka)</label><input type="text" id="add_pin" value="123456" required></div>
                     <div class="form-group"><label>Tanggal Bergabung</label><input type="date" id="add_tanggal_gabung" required></div>
-                    <div class="form-group"><label>PIN Awal (Angka)</label><input type="text" id="add_pin" value="123456" required></div>
                     <div class="form-group"><label>Status Keanggotaan</label>
                         <select id="add_status">
                             <option value="Aktif">Aktif</option>
@@ -390,7 +390,7 @@
         <div id="laporan" class="page-section">
             <div class="card" style="border-top: 5px solid var(--primary);">
                 <h3><i class="fa fa-chart-pie"></i> Parameter Pembagian SHU Tahunan</h3>
-                <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom:15px;">Sesuaikan persentase di bawah ini sebelum disahkan di RAT.</p>
+                <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom:15px;">Sesuaikan persentase dan potongan di bawah ini sebelum disahkan di RAT.</p>
                 
                 <div class="form-grid">
                     <div class="form-group">
@@ -403,8 +403,8 @@
                     </div>
                     <div class="form-group">
                         <label>Honor Pengurus & Pengawas (Input Manual Rp)</label>
-                        <input type="number" id="shuPengurus" value="0">
-                        <small style="color: #7f8c8d; font-size: 0.75rem; margin-top:5px; display:block;">*Isi sesuai hitungan luar sistem.</small>
+                        <input type="number" id="shuPengurus" value="1600000" placeholder="Ketik nominal disini...">
+                        <small style="color: #7f8c8d; font-size: 0.75rem; margin-top:5px; display:block;">*Isi sesuai hasil perhitungan di luar sistem.</small>
                     </div>
                     <div class="form-group">
                         <label>Dana Bersih Untuk Anggota (Rp)</label>
@@ -544,8 +544,21 @@
                 arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Waserda: ${d.data().keterangan}`, tipe: isMasuk ? 'Masuk' : 'Keluar', nominal: nom, kategori: 'Waserda' });
             });
 
-            // Urutkan terbaru di atas
-            arrTx.sort((a, b) => new Date(b.waktu_asli) - new Date(a.waktu_asli));
+            // LOGIKA PENGURUTAN BARU (Berdasarkan Tanggal Kalender, lalu Waktu Input)
+            arrTx.sort((a, b) => {
+                // Pastikan format aman jika kosong
+                const tglA = a.tanggal !== "-" ? a.tanggal : "1970-01-01";
+                const tglB = b.tanggal !== "-" ? b.tanggal : "1970-01-01";
+                
+                // Jika tanggal berbeda, urutkan berdasarkan tanggal terbalik (Z-A / Terbaru di atas)
+                if (tglB !== tglA) {
+                    return tglB.localeCompare(tglA);
+                }
+                
+                // Jika tanggal sama persis, urutkan berdasarkan waktu dia ngetik datanya
+                return new Date(b.waktu_asli) - new Date(a.waktu_asli);
+            });
+
             return { arrTx, stats };
         }
 
@@ -571,11 +584,10 @@
                 } 
             });
 
-            // Render 10 Transaksi Terakhir
             const top10 = arrTx.slice(0, 10);
             const tbDash = document.getElementById('dashBodyTransaksi');
             tbDash.innerHTML = '';
-            if(top10.length === 0) tbDash.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi.</td></tr>';
+            if(top10.length === 0) tbDash.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada transaksi.</td></tr>';
             top10.forEach(t => {
                 const color = t.tipe === 'Masuk' ? 'var(--success)' : 'var(--danger)';
                 const cls = t.tipe === 'Masuk' ? 'status-masuk' : 'status-keluar';
@@ -635,13 +647,13 @@
             e.preventDefault();
             try {
                 await addDoc(collection(db, "anggota"), { 
-    no_anggota: document.getElementById('add_no_anggota').value, 
-    nama: document.getElementById('add_nama').value, 
-    pin: document.getElementById('add_pin').value, // TAMBAHKAN BARIS INI
-    tanggal_gabung: document.getElementById('add_tanggal_gabung').value, 
-    status: document.getElementById('add_status').value, 
-    waktu_input: new Date().toISOString() 
-});
+                    no_anggota: document.getElementById('add_no_anggota').value, 
+                    nama: document.getElementById('add_nama').value, 
+                    pin: document.getElementById('add_pin').value,
+                    tanggal_gabung: document.getElementById('add_tanggal_gabung').value, 
+                    status: document.getElementById('add_status').value, 
+                    waktu_input: new Date().toISOString() 
+                });
                 Swal.fire('Sukses', 'Anggota berhasil ditambahkan', 'success');
                 document.getElementById('formTambahAnggota').reset();
                 showPage('anggota');
@@ -958,19 +970,14 @@
             for(let n in dbDataSHU) {
                 const data = dbDataSHU[n];
                 
-                // Hitung Proporsional Desimal Asli
-                let dapatSimpananAsli = calcSimpananTotal > 0 ? (data.simpanan / calcSimpananTotal) * danaBagiSimpanan : 0;
-                let dapatPinjamanAsli = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
+                let dapatSimpanan = calcSimpananTotal > 0 ? (data.simpanan / calcSimpananTotal) * danaBagiSimpanan : 0;
+                let dapatPinjaman = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
                 
-                if(dapatSimpananAsli < 0) dapatSimpananAsli = 0; 
+                if(dapatSimpanan < 0) dapatSimpanan = 0; 
                 
-                // --- PROSES PEMBULATAN KE BAWAH (RIBUAN) ---
-                let dapatSimpanan = Math.floor(dapatSimpananAsli / 1000) * 1000;
-                let dapatPinjaman = Math.floor(dapatPinjamanAsli / 1000) * 1000;
                 const dapatTotal = dapatSimpanan + dapatPinjaman;
 
                 if (data.simpanan > 0 || data.jasa > 0) {
-                    // Akumulasi Total Keseluruhan
                     sumSimpanan += data.simpanan;
                     sumJasa += data.jasa;
                     sumSHUModal += dapatSimpanan;
@@ -990,7 +997,6 @@
                 }
             }
 
-            // Tambahkan Baris Total Keseluruhan
             tb.innerHTML += `
                 <tr style="background-color: #e8f5e9; border-top: 2px solid var(--success);">
                     <td style="text-align: center; font-weight: bold; color: var(--dark);">TOTAL KESELURUHAN</td>
@@ -1002,19 +1008,12 @@
                 </tr>
             `;
 
-            // HITUNG SELISIH DAN TAMPILKAN CATATAN
             const selisih = danaAnggota - sumTotalSHU;
-            document.getElementById('catatanSelisih').innerHTML = `
-                <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; border-radius: 6px; font-size: 0.85rem; color: #856404; line-height: 1.5;">
-                    <strong><i class="fa fa-info-circle"></i> Penjelasan Selisih Dana:</strong><br>
-                    Terdapat perbedaan nilai sebesar <strong>${formatR(selisih)}</strong> antara <em>Dana Bersih Untuk Anggota (${formatR(danaAnggota)})</em> dengan <em>Total Keseluruhan yang riil dibagikan (${formatR(sumTotalSHU)})</em>. Hal ini murni dikarenakan sistem melakukan <strong>pembulatan nominal ke bawah (ke ribuan terdekat)</strong> pada setiap anggota untuk memudahkan proses pencairan tunai. Sisa selisih dana (recehan) tersebut tidak hilang, melainkan tetap mengendap dan tercatat sebagai Saldo Kas Koperasi.
-                </div>
-            `;
+            document.getElementById('catatanSelisih').innerHTML = `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; border-radius: 6px; font-size: 0.85rem; color: #856404; line-height: 1.5;"><strong><i class="fa fa-info-circle"></i> Penjelasan Selisih Dana:</strong><br>Terdapat perbedaan nilai sebesar <strong>${formatR(selisih)}</strong> antara <em>Dana Bersih Untuk Anggota (${formatR(danaAnggota)})</em> dengan <em>Total Keseluruhan yang riil dibagikan (${formatR(sumTotalSHU)})</em>. Hal ini murni dikarenakan sistem melakukan <strong>pembulatan nominal ke bawah (ke ribuan terdekat)</strong> pada setiap anggota untuk memudahkan proses pencairan tunai. Sisa selisih dana (recehan) tersebut tidak hilang, melainkan tetap mengendap dan tercatat sebagai Saldo Kas Koperasi.</div>`;
 
             document.getElementById('areaSHU').style.display = 'block';
         }
 
-        // --- FITUR CETAK LAPORAN RESMI ---
         window.cetakLaporan = function() {
             const isiTabel = document.getElementById('tabelSHU').outerHTML;
             const totalLaba = document.getElementById('shuTotal').value;
@@ -1024,57 +1023,12 @@
 
             const jendelaCetak = window.open('', '', 'height=800,width=1000');
             
-            jendelaCetak.document.write('<html><head><title>Laporan SHU - Koperasi Konsumen</title>');
-            jendelaCetak.document.write('<style>');
-            jendelaCetak.document.write('body { font-family: "Times New Roman", Times, serif; padding: 30px; color: black; }');
-            jendelaCetak.document.write('.kop-surat { text-align: center; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 25px; }');
-            jendelaCetak.document.write('.kop-surat h1 { margin: 0; font-size: 22px; text-transform: uppercase; }');
-            jendelaCetak.document.write('.kop-surat p { margin: 5px 0 0 0; font-size: 14px; }');
-            jendelaCetak.document.write('table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }');
-            jendelaCetak.document.write('th, td { border: 1px solid black; padding: 8px; }');
-            jendelaCetak.document.write('th { background-color: #f2f2f2; text-align: center; font-weight: bold; }');
-            jendelaCetak.document.write('.txt-right { text-align: right; }');
-            jendelaCetak.document.write('.rincian-dana { margin-bottom: 20px; font-size: 13px; }');
-            jendelaCetak.document.write('.rincian-dana table { width: 50%; border: none; margin-top: 10px; }');
-            jendelaCetak.document.write('.rincian-dana td { border: none; padding: 4px; }');
-            jendelaCetak.document.write('.ttd-box { margin-top: 50px; width: 100%; display: flex; justify-content: space-between; text-align: center; }');
-            jendelaCetak.document.write('.catatan-print { margin-top: 20px; font-size: 11px; border: 1px dashed black; padding: 10px; text-align: justify; line-height: 1.4; }');
-            jendelaCetak.document.write('</style>');
-            jendelaCetak.document.write('</head><body>');
-            
-            // Kop Surat
-            jendelaCetak.document.write('<div class="kop-surat">');
-            jendelaCetak.document.write('<h1>KOPERASI KONSUMEN</h1>');
-            jendelaCetak.document.write('<p>Laporan Alokasi Sisa Hasil Usaha (SHU) Anggota</p>');
-            jendelaCetak.document.write('<p>Tahun Buku: ' + new Date().getFullYear() + '</p>');
-            jendelaCetak.document.write('</div>');
-
-            // Rincian Parameter Dana
-            jendelaCetak.document.write('<div class="rincian-dana">');
-            jendelaCetak.document.write('<strong>A. Rincian Sumber Dana SHU:</strong>');
-            jendelaCetak.document.write('<table>');
-            jendelaCetak.document.write(`<tr><td>1. Total Laba Jasa Pinjaman</td><td>: ${totalLaba}</td></tr>`);
-            jendelaCetak.document.write(`<tr><td>2. Potongan Cadangan Koperasi (${cadangan}%)</td><td>: Sesuai Ketentuan</td></tr>`);
-            jendelaCetak.document.write(`<tr><td>3. Potongan Honor Pengurus</td><td>: Rp ${Number(pengurus).toLocaleString('id-ID')}</td></tr>`);
-            jendelaCetak.document.write(`<tr><td><strong>4. Total Dana Dibagikan ke Anggota</strong></td><td><strong>: ${danaAnggota}</strong></td></tr>`);
-            jendelaCetak.document.write('</table>');
-            jendelaCetak.document.write('</div>');
-
-            // Tabel Data Anggota
-            jendelaCetak.document.write('<strong>B. Rincian Pembagian per Anggota:</strong>');
-            jendelaCetak.document.write(isiTabel);
-            
-            // Catatan Penjelasan Pembulatan (Masuk ke format PDF)
-            jendelaCetak.document.write('<div class="catatan-print">');
-            jendelaCetak.document.write('<strong>*Catatan Pembulatan:</strong> Terdapat selisih nominal antara <em>Dana Bersih Untuk Anggota</em> (A.4) dengan <em>Total Keseluruhan</em> yang dibagikan pada tabel di atas. Selisih ini terjadi karena sistem menerapkan <strong>pembulatan nilai ke bawah (ke ribuan terdekat)</strong> pada nominal penerimaan tiap anggota untuk memudahkan pencairan tunai. Sisa uang dari selisih pembulatan tersebut tidak hilang, melainkan tetap tersimpan aman dan masuk kembali sebagai Saldo Kas Koperasi.');
-            jendelaCetak.document.write('</div>');
-
-            // Kolom Tanda Tangan
-            jendelaCetak.document.write('<div class="ttd-box">');
-            jendelaCetak.document.write('<div><p>Ketua,</p><br><br><br><br><p><strong>( Iwan Aprilianto )</strong></p></div>');
-            jendelaCetak.document.write('<div><p>Bendahara,</p><br><br><br><br><p><strong>( M. Andika Riansyah )</strong></p></div>');
-            jendelaCetak.document.write('</div>');
-
+            jendelaCetak.document.write('<html><head><title>Laporan SHU - Koperasi Konsumen</title><style>body { font-family: "Times New Roman", Times, serif; padding: 30px; color: black; } .kop-surat { text-align: center; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 25px; } .kop-surat h1 { margin: 0; font-size: 22px; text-transform: uppercase; } .kop-surat p { margin: 5px 0 0 0; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; } th, td { border: 1px solid black; padding: 8px; } th { background-color: #f2f2f2; text-align: center; font-weight: bold; } .txt-right { text-align: right; } .rincian-dana { margin-bottom: 20px; font-size: 13px; } .rincian-dana table { width: 50%; border: none; margin-top: 10px; } .rincian-dana td { border: none; padding: 4px; } .ttd-box { margin-top: 50px; width: 100%; display: flex; justify-content: space-between; text-align: center; } .catatan-print { margin-top: 20px; font-size: 11px; border: 1px dashed black; padding: 10px; text-align: justify; line-height: 1.4; }</style></head><body>');
+            jendelaCetak.document.write('<div class="kop-surat"><h1>KOPERASI KONSUMEN</h1><p>Laporan Alokasi Sisa Hasil Usaha (SHU) Anggota</p><p>Tahun Buku: ' + new Date().getFullYear() + '</p></div>');
+            jendelaCetak.document.write('<div class="rincian-dana"><strong>A. Rincian Sumber Dana SHU:</strong><table><tr><td>1. Total Laba Jasa Pinjaman</td><td>: ' + totalLaba + '</td></tr><tr><td>2. Potongan Cadangan Koperasi (' + cadangan + '%)</td><td>: Sesuai Ketentuan</td></tr><tr><td>3. Potongan Honor Pengurus</td><td>: Rp ' + Number(pengurus).toLocaleString('id-ID') + '</td></tr><tr><td><strong>4. Total Dana Dibagikan ke Anggota</strong></td><td><strong>: ' + danaAnggota + '</strong></td></tr></table></div>');
+            jendelaCetak.document.write('<strong>B. Rincian Pembagian per Anggota:</strong>' + isiTabel);
+            jendelaCetak.document.write('<div class="catatan-print"><strong>*Catatan Pembulatan:</strong> Terdapat selisih nominal antara <em>Dana Bersih Untuk Anggota</em> (A.4) dengan <em>Total Keseluruhan</em> yang dibagikan pada tabel di atas. Selisih ini terjadi karena sistem menerapkan <strong>pembulatan nilai ke bawah (ke ribuan terdekat)</strong> pada nominal penerimaan tiap anggota untuk memudahkan pencairan tunai. Sisa uang dari selisih pembulatan tersebut tidak hilang, melainkan tetap tersimpan aman dan masuk kembali sebagai Saldo Kas Koperasi.</div>');
+            jendelaCetak.document.write('<div class="ttd-box"><div><p>Ketua,</p><br><br><br><br><p><strong>( Iwan Aprilianto )</strong></p></div><div><p>Bendahara,</p><br><br><br><br><p><strong>( M. Andika Riansyah )</strong></p></div></div>');
             jendelaCetak.document.write('</body></html>');
             
             jendelaCetak.document.close();
@@ -1089,4 +1043,3 @@
     </script>
 </body>
 </html>
-

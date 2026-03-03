@@ -172,6 +172,7 @@
                     <div class="form-group"><label>Nomor Anggota / NIK / NIP</label><input type="text" id="add_no_anggota" required></div>
                     <div class="form-group"><label>Nama Lengkap</label><input type="text" id="add_nama" required></div>
                     <div class="form-group"><label>Tanggal Bergabung</label><input type="date" id="add_tanggal_gabung" required></div>
+                    <div class="form-group"><label>PIN Awal (Angka)</label><input type="text" id="add_pin" value="123456" required></div>
                     <div class="form-group"><label>Status Keanggotaan</label>
                         <select id="add_status">
                             <option value="Aktif">Aktif</option>
@@ -633,7 +634,14 @@
         document.getElementById('formTambahAnggota').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
-                await addDoc(collection(db, "anggota"), { no_anggota: document.getElementById('add_no_anggota').value, nama: document.getElementById('add_nama').value, tanggal_gabung: document.getElementById('add_tanggal_gabung').value, status: document.getElementById('add_status').value, waktu_input: new Date().toISOString() });
+                await addDoc(collection(db, "anggota"), { 
+    no_anggota: document.getElementById('add_no_anggota').value, 
+    nama: document.getElementById('add_nama').value, 
+    pin: document.getElementById('add_pin').value, // TAMBAHKAN BARIS INI
+    tanggal_gabung: document.getElementById('add_tanggal_gabung').value, 
+    status: document.getElementById('add_status').value, 
+    waktu_input: new Date().toISOString() 
+});
                 Swal.fire('Sukses', 'Anggota berhasil ditambahkan', 'success');
                 document.getElementById('formTambahAnggota').reset();
                 showPage('anggota');
@@ -1081,3 +1089,4 @@
     </script>
 </body>
 </html>
+

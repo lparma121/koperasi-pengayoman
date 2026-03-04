@@ -84,6 +84,10 @@
         .hl-jasa { color: var(--blue); }
         .hl-total { color: var(--success); font-size: 1.05rem; }
 
+        /* Preview Nominal Uang di Bawah Input Persen */
+        .nominal-preview { font-size: 0.85rem; color: var(--success); font-weight: 700; margin-top: 6px; display: block; }
+        .nominal-preview i { margin-right: 4px; }
+
         @media print {
             .sidebar, .header, .btn-submit, button, .form-grid { display: none !important; }
             .main-content { margin: 0; padding: 0; }
@@ -395,17 +399,43 @@
                         <label>Total Laba Jasa Pinjaman Murni (Rp)</label>
                         <input type="text" id="shuTotal" readonly style="background:#f8f9fa; color:var(--dark); font-weight:bold; font-size: 1.1rem;">
                     </div>
-                    <div class="form-group"><label>1. Dana Cadangan Koperasi (%)</label><input type="number" id="p_cadangan" value="25" class="pct-input"></div>
-                    <div class="form-group"><label>2. Honor Pengurus & Pengawas (%)</label><input type="number" id="p_pengurus" value="10" class="pct-input"></div>
-                    <div class="form-group"><label>3. Dana Pendidikan (%)</label><input type="number" id="p_pendidikan" value="5" class="pct-input"></div>
-                    <div class="form-group"><label>4. Dana Sosial (%)</label><input type="number" id="p_sosial" value="5" class="pct-input"></div>
-                    <div class="form-group"><label>5. Dana Operasional / Taktis (%)</label><input type="number" id="p_operasional" value="5" class="pct-input"></div>
+                    
                     <div class="form-group">
-                        <label>6. Porsi SHU Anggota (%) <span id="totPct" style="font-weight:bold;"></span></label>
+                        <label>1. Dana Cadangan Koperasi (%)</label>
+                        <input type="number" id="p_cadangan" value="25" class="pct-input">
+                        <span class="nominal-preview"><i class="fa fa-money-bill-wave"></i> <span id="nom_cadangan">Rp 0</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label>2. Honor Pengurus & Pengawas (%)</label>
+                        <input type="number" id="p_pengurus" value="10" class="pct-input">
+                        <span class="nominal-preview"><i class="fa fa-money-bill-wave"></i> <span id="nom_pengurus">Rp 0</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label>3. Dana Pendidikan (%)</label>
+                        <input type="number" id="p_pendidikan" value="5" class="pct-input">
+                        <span class="nominal-preview"><i class="fa fa-money-bill-wave"></i> <span id="nom_pendidikan">Rp 0</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label>4. Dana Sosial (%)</label>
+                        <input type="number" id="p_sosial" value="5" class="pct-input">
+                        <span class="nominal-preview"><i class="fa fa-money-bill-wave"></i> <span id="nom_sosial">Rp 0</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label>5. Dana Operasional / Taktis (%)</label>
+                        <input type="number" id="p_operasional" value="3" class="pct-input">
+                        <span class="nominal-preview"><i class="fa fa-money-bill-wave"></i> <span id="nom_operasional">Rp 0</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label>6. Reward Pegawai (%)</label>
+                        <input type="number" id="p_reward" value="2" class="pct-input">
+                        <span class="nominal-preview"><i class="fa fa-money-bill-wave"></i> <span id="nom_reward">Rp 0</span></span>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>7. Porsi SHU Anggota (%) <span id="totPct" style="font-weight:bold; margin-left:10px;"></span></label>
                         <input type="number" id="p_anggota" value="50" class="pct-input">
                     </div>
                     
-                    <div class="form-group" style="grid-column: span 2; background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9;">
+                    <div class="form-group" style="grid-column: span 2; background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; margin-top: -10px;">
                         <label style="color: var(--success); font-size: 1rem; margin-bottom: 5px;">Total Dana Bersih Untuk Dibagikan ke Anggota (Rp)</label>
                         <input type="text" id="shuAnggotaTotal" readonly style="background:transparent; border:none; color:var(--success); font-weight:bold; font-size:1.5rem; padding:0;">
                     </div>
@@ -857,7 +887,7 @@
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: LAPORAN SHU (DIPERBARUI FULL PERSENTASE) ---
+        // --- PAGE: LAPORAN SHU (DIPERBARUI FULL PERSENTASE + NOMINAL) ---
         let dbDataSHU = {}; 
         let calcSimpananTotal = 0;
         let calcJasaTotal = 0;
@@ -910,10 +940,11 @@
             const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;
             const p_sos = Number(document.getElementById('p_sosial').value) || 0;
             const p_opr = Number(document.getElementById('p_operasional').value) || 0;
+            const p_rew = Number(document.getElementById('p_reward').value) || 0;
             const p_ang = Number(document.getElementById('p_anggota').value) || 0;
             
-            // Validasi Total 100%
-            const totalPct = p_cad + p_png + p_pnd + p_sos + p_opr + p_ang;
+            // Validasi Total 100% (sekarang termasuk p_rew)
+            const totalPct = p_cad + p_png + p_pnd + p_sos + p_opr + p_rew + p_ang;
             const txtTot = document.getElementById('totPct');
             
             if(totalPct !== 100) {
@@ -923,6 +954,14 @@
                 txtTot.innerText = `(Total: 100% - Valid)`;
                 txtTot.style.color = "var(--success)";
             }
+
+            // Update Preview Nominal di bawah masing-masing input
+            document.getElementById('nom_cadangan').innerText = formatR(calcLabaPinjaman * (p_cad / 100));
+            document.getElementById('nom_pengurus').innerText = formatR(calcLabaPinjaman * (p_png / 100));
+            document.getElementById('nom_pendidikan').innerText = formatR(calcLabaPinjaman * (p_pnd / 100));
+            document.getElementById('nom_sosial').innerText = formatR(calcLabaPinjaman * (p_sos / 100));
+            document.getElementById('nom_operasional').innerText = formatR(calcLabaPinjaman * (p_opr / 100));
+            document.getElementById('nom_reward').innerText = formatR(calcLabaPinjaman * (p_rew / 100));
 
             // Hitung Porsi Anggota dalam Rupiah
             const danaAnggota = calcLabaPinjaman * (p_ang / 100);
@@ -936,9 +975,10 @@
             const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;
             const p_sos = Number(document.getElementById('p_sosial').value) || 0;
             const p_opr = Number(document.getElementById('p_operasional').value) || 0;
+            const p_rew = Number(document.getElementById('p_reward').value) || 0;
             const p_ang = Number(document.getElementById('p_anggota').value) || 0;
 
-            if((p_cad + p_png + p_pnd + p_sos + p_opr + p_ang) !== 100) {
+            if((p_cad + p_png + p_pnd + p_sos + p_opr + p_rew + p_ang) !== 100) {
                 return Swal.fire('Peringatan!', 'Total seluruh persentase (Cadangan s/d Anggota) harus tepat 100%. Silakan atur kembali angkanya.', 'warning');
             }
 
@@ -997,7 +1037,7 @@
             </tr>`;
 
             const selisih = danaAnggota - sumTotalSHU;
-            document.getElementById('catatanSelisih').innerHTML = `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; border-radius: 6px; font-size: 0.85rem; color: #856404; line-height: 1.5;"><strong><i class="fa fa-info-circle"></i> Penjelasan Selisih Dana:</strong><br>Terdapat perbedaan nilai sebesar <strong>${formatR(selisih)}</strong> antara <em>Dana Bersih Untuk Anggota (${formatR(danaAnggota)})</em> dengan <em>Total Keseluruhan yang riil dibagikan (${formatR(sumTotalSHU)})</em>. Hal ini murni dikarenakan sistem melakukan <strong>pembulatan nominal ke bawah (ke ribuan terdekat)</strong> pada setiap anggota untuk memudahkan pencairan tunai. Sisa selisih dana (recehan) tersebut tidak hilang, melainkan tetap mengendap dan tercatat sebagai Saldo Kas Koperasi.</div>`;
+            document.getElementById('catatanSelisih').innerHTML = `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; border-radius: 6px; font-size: 0.85rem; color: #856404; line-height: 1.5;"><strong><i class="fa fa-info-circle"></i> Penjelasan Selisih Dana:</strong><br>Terdapat perbedaan nilai sebesar <strong>${formatR(selisih)}</strong> antara <em>Dana Bersih Untuk Anggota (${formatR(danaAnggota)})</em> dengan <em>Total Keseluruhan yang riil dibagikan (${formatR(sumTotalSHU)})</em>. Hal ini murni dikarenakan sistem melakukan <strong>pembulatan nominal ke bawah (ke ribuan terdekat)</strong> pada setiap anggota untuk memudahkan proses pencairan tunai. Sisa selisih dana (recehan) tersebut tidak hilang, melainkan tetap mengendap dan tercatat sebagai Saldo Kas Koperasi.</div>`;
 
             document.getElementById('areaSHU').style.display = 'block';
         }
@@ -1013,6 +1053,7 @@
             const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;
             const p_sos = Number(document.getElementById('p_sosial').value) || 0;
             const p_opr = Number(document.getElementById('p_operasional').value) || 0;
+            const p_rew = Number(document.getElementById('p_reward').value) || 0;
             const p_ang = Number(document.getElementById('p_anggota').value) || 0;
 
             const danaAnggotaStr = document.getElementById('shuAnggotaTotal').value;
@@ -1032,14 +1073,15 @@
                     <tr><td>3. Dana Pendidikan (${p_pnd}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_pnd/100))}</td></tr>
                     <tr><td>4. Dana Sosial (${p_sos}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_sos/100))}</td></tr>
                     <tr><td>5. Dana Operasional (${p_opr}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_opr/100))}</td></tr>
+                    <tr><td>6. Reward Pegawai (${p_rew}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_rew/100))}</td></tr>
                     <tr><td colspan="3"><hr style="border:0; border-top:1px solid #000;"></td></tr>
-                    <tr><td><strong>6. Dana Dibagikan ke Anggota (${p_ang}%)</strong></td><td><strong>:</strong></td><td class="txt-right" style="font-weight:bold; font-size:14px;">${danaAnggotaStr}</td></tr>
+                    <tr><td><strong>7. Dana Dibagikan ke Anggota (${p_ang}%)</strong></td><td><strong>:</strong></td><td class="txt-right" style="font-weight:bold; font-size:14px;">${danaAnggotaStr}</td></tr>
                 </table>
             </div>`);
 
             jendelaCetak.document.write('<strong>B. Rincian Pembagian per Anggota:</strong>' + isiTabel);
             
-            jendelaCetak.document.write('<div class="catatan-print"><strong>*Catatan Pembulatan:</strong> Terdapat selisih nominal antara <em>Dana Bersih Untuk Anggota</em> (A.6) dengan <em>Total Keseluruhan</em> yang dibagikan pada tabel di atas. Selisih ini terjadi karena sistem menerapkan <strong>pembulatan nilai ke bawah (ke ribuan terdekat)</strong> pada nominal penerimaan tiap anggota untuk memudahkan pencairan tunai. Sisa uang dari selisih pembulatan tersebut tidak hilang, melainkan tetap tersimpan aman dan masuk kembali sebagai Saldo Kas Koperasi.</div>');
+            jendelaCetak.document.write('<div class="catatan-print"><strong>*Catatan Pembulatan:</strong> Terdapat selisih nominal antara <em>Dana Bersih Untuk Anggota</em> (A.7) dengan <em>Total Keseluruhan</em> yang dibagikan pada tabel di atas. Selisih ini terjadi karena sistem menerapkan <strong>pembulatan nilai ke bawah (ke ribuan terdekat)</strong> pada nominal penerimaan tiap anggota untuk memudahkan pencairan tunai. Sisa uang dari selisih pembulatan tersebut tidak hilang, melainkan tetap tersimpan aman dan masuk kembali sebagai Saldo Kas Koperasi.</div>');
             
             jendelaCetak.document.write('<div class="ttd-box"><div><p>Ketua,</p><br><br><br><br><p><strong>( Iwan Aprilianto )</strong></p></div><div><p>Bendahara,</p><br><br><br><br><p><strong>( M. Andika Riansyah )</strong></p></div></div>');
             

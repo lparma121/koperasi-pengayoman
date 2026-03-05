@@ -84,12 +84,11 @@
         .hl-jasa { color: var(--blue); }
         .hl-total { color: var(--success); font-size: 1.05rem; }
 
-        /* Preview Nominal Uang di Bawah Input Persen */
         .nominal-preview { font-size: 0.85rem; color: var(--success); font-weight: 700; margin-top: 6px; display: block; }
         .nominal-preview i { margin-right: 4px; }
 
         @media print {
-            .sidebar, .header, .btn-submit, button, .form-grid { display: none !important; }
+            .sidebar, .header, .btn-submit, button, .form-grid, .control-panel { display: none !important; }
             .main-content { margin: 0; padding: 0; }
             .card { box-shadow: none; border: none; padding: 0; }
             body { background: white; }
@@ -373,13 +372,31 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <div>
                         <h3><i class="fa fa-book"></i> Buku Kas Utama Koperasi</h3>
-                        <p style="font-size:0.85rem; color:#7f8c8d;">Merekap seluruh arus uang (Simpanan, Angsuran, Pencairan, dan Waserda).</p>
+                        <p style="font-size:0.85rem; color:#7f8c8d;">Merekap seluruh arus uang koperasi.</p>
                     </div>
                     <div style="text-align:right;">
                         <p style="font-size:0.8rem; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">Total Uang Kas Tersedia</p>
                         <h2 id="saldoBukuKas" style="color:var(--success);">Rp 0</h2>
                     </div>
                 </div>
+
+                <div class="control-panel" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #edf2f7; align-items: center;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Filter Kategori:</label>
+                        <select id="filterKategoriKas" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-weight:bold; color:var(--dark);">
+                            <option value="Semua">Tampilkan Semua Transaksi</option>
+                            <option value="Simpanan">Khusus Simpanan</option>
+                            <option value="Angsuran">Khusus Angsuran</option>
+                            <option value="Pinjaman">Khusus Pencairan Pinjaman</option>
+                            <option value="Waserda">Khusus Transaksi Waserda</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Pencarian Teks / Nominal:</label>
+                        <input type="text" id="cariKas" placeholder="Ketik nama anggota atau nominal (Contoh: 1573000)..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                </div>
+
                 <div class="table-responsive" style="max-height: 600px;">
                     <table>
                         <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th style="text-align:center;">Jenis</th><th class="txt-right">Nominal (Rp)</th></tr></thead>
@@ -622,7 +639,7 @@
             });
         }
 
-        // --- PAGE: BUKU KAS ---
+        // --- PAGE: BUKU KAS (DENGAN FILTER & SEARCH) ---
         async function muatBukuKas() {
             const tb = document.getElementById('bodyBukuKas');
             tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
@@ -637,7 +654,9 @@
                 const color = t.tipe === 'Masuk' ? 'var(--success)' : 'var(--danger)';
                 const cls = t.tipe === 'Masuk' ? 'status-masuk' : 'status-keluar';
                 const sign = t.tipe === 'Masuk' ? '+' : '-';
-                tb.innerHTML += `<tr>
+                
+                // Tambahkan class baris-kas dan atribut data-kategori untuk filtering
+                tb.innerHTML += `<tr class="baris-kas" data-kategori="${t.kategori.toLowerCase()}">
                     <td>${t.tanggal}</td>
                     <td>${t.keterangan}</td>
                     <td><small style="color:#7f8c8d; font-weight:bold;">${t.kategori}</small></td>
@@ -646,6 +665,34 @@
                 </tr>`;
             });
         }
+
+        // FUNGSI FILTER BUKU KAS
+        function saringBukuKas() {
+            const filterKat = document.getElementById('filterKategoriKas').value.toLowerCase();
+            const filterTeks = document.getElementById('cariKas').value.toLowerCase();
+            const barisKas = document.querySelectorAll('.baris-kas');
+
+            barisKas.forEach(tr => {
+                const kategori = tr.getAttribute('data-kategori');
+                const teksBaris = tr.innerText.toLowerCase();
+
+                // Cek kecocokan Dropdown
+                let cocokKat = false;
+                if(filterKat === 'semua') cocokKat = true;
+                else if(filterKat === 'simpanan' && kategori.includes('simpanan')) cocokKat = true;
+                else if(kategori === filterKat) cocokKat = true;
+
+                // Cek kecocokan Ketik (Search)
+                const cocokTeks = teksBaris.includes(filterTeks);
+
+                if(cocokKat && cocokTeks) tr.style.display = '';
+                else tr.style.display = 'none';
+            });
+        }
+        
+        document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
+        document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
+
 
         // --- PAGE: ANGGOTA ---
         async function muatAnggota() {
@@ -893,7 +940,6 @@
         let calcJasaTotal = 0;
         let calcLabaPinjaman = 0;
 
-        // Listener agar perhitungan realtime saat persentase diketik
         const inputsPersen = document.querySelectorAll('.pct-input');
         inputsPersen.forEach(inp => inp.addEventListener('input', updateSisaAnggota));
 
@@ -943,7 +989,6 @@
             const p_rew = Number(document.getElementById('p_reward').value) || 0;
             const p_ang = Number(document.getElementById('p_anggota').value) || 0;
             
-            // Validasi Total 100% (sekarang termasuk p_rew)
             const totalPct = p_cad + p_png + p_pnd + p_sos + p_opr + p_rew + p_ang;
             const txtTot = document.getElementById('totPct');
             
@@ -955,7 +1000,6 @@
                 txtTot.style.color = "var(--success)";
             }
 
-            // Update Preview Nominal di bawah masing-masing input
             document.getElementById('nom_cadangan').innerText = formatR(calcLabaPinjaman * (p_cad / 100));
             document.getElementById('nom_pengurus').innerText = formatR(calcLabaPinjaman * (p_png / 100));
             document.getElementById('nom_pendidikan').innerText = formatR(calcLabaPinjaman * (p_pnd / 100));
@@ -963,13 +1007,11 @@
             document.getElementById('nom_operasional').innerText = formatR(calcLabaPinjaman * (p_opr / 100));
             document.getElementById('nom_reward').innerText = formatR(calcLabaPinjaman * (p_rew / 100));
 
-            // Hitung Porsi Anggota dalam Rupiah
             const danaAnggota = calcLabaPinjaman * (p_ang / 100);
             document.getElementById('shuAnggotaTotal').value = formatR(danaAnggota < 0 ? 0 : danaAnggota);
         }
 
         window.hitungSHUFormal = function() {
-            // Cek apakah total persentase sudah 100%
             const p_cad = Number(document.getElementById('p_cadangan').value) || 0;
             const p_png = Number(document.getElementById('p_pengurus').value) || 0;
             const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;
@@ -989,7 +1031,6 @@
                 return Swal.fire('Peringatan!', 'Total Porsi Jasa Modal dan Jasa Usaha harus tepat 100%.', 'warning');
             }
 
-            // Ambil Dana Khusus Anggota
             const danaAnggota = calcLabaPinjaman * (p_ang / 100);
             if (danaAnggota <= 0) return Swal.fire('Oops', 'Tidak ada dana SHU yang bisa dibagikan (Laba 0).', 'warning');
 
@@ -1008,7 +1049,6 @@
                 let dapatPinjamanAsli = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
                 if(dapatSimpananAsli < 0) dapatSimpananAsli = 0; 
                 
-                // Pembulatan Ribuan Kebawah
                 let dapatSimpanan = Math.floor(dapatSimpananAsli / 1000) * 1000;
                 let dapatPinjaman = Math.floor(dapatPinjamanAsli / 1000) * 1000;
                 const dapatTotal = dapatSimpanan + dapatPinjaman;
@@ -1037,7 +1077,7 @@
             </tr>`;
 
             const selisih = danaAnggota - sumTotalSHU;
-            document.getElementById('catatanSelisih').innerHTML = `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; border-radius: 6px; font-size: 0.85rem; color: #856404; line-height: 1.5;"><strong><i class="fa fa-info-circle"></i> Penjelasan Selisih Dana:</strong><br>Terdapat perbedaan nilai sebesar <strong>${formatR(selisih)}</strong> antara <em>Dana Bersih Untuk Anggota (${formatR(danaAnggota)})</em> dengan <em>Total Keseluruhan yang riil dibagikan (${formatR(sumTotalSHU)})</em>. Hal ini murni dikarenakan sistem melakukan <strong>pembulatan nominal ke bawah (ke ribuan terdekat)</strong> pada setiap anggota untuk memudahkan proses pencairan tunai. Sisa selisih dana (recehan) tersebut tidak hilang, melainkan tetap mengendap dan tercatat sebagai Saldo Kas Koperasi.</div>`;
+            document.getElementById('catatanSelisih').innerHTML = `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; border-radius: 6px; font-size: 0.85rem; color: #856404; line-height: 1.5;"><strong><i class="fa fa-info-circle"></i> Penjelasan Selisih Dana:</strong><br>Terdapat perbedaan nilai sebesar <strong>${formatR(selisih)}</strong> antara <em>Dana Bersih Untuk Anggota (${formatR(danaAnggota)})</em> dengan <em>Total Keseluruhan yang riil dibagikan (${formatR(sumTotalSHU)})</em>. Hal ini murni dikarenakan sistem melakukan <strong>pembulatan nominal ke bawah (ke ribuan terdekat)</strong> pada setiap anggota untuk memudahkan pencairan tunai. Sisa selisih dana (recehan) tersebut tidak hilang, melainkan tetap mengendap dan tercatat sebagai Saldo Kas Koperasi.</div>`;
 
             document.getElementById('areaSHU').style.display = 'block';
         }
@@ -1047,7 +1087,6 @@
             const totalLabaStr = document.getElementById('shuTotal').value;
             const labaMurni = calcLabaPinjaman;
             
-            // Tangkap semua persentase
             const p_cad = Number(document.getElementById('p_cadangan').value) || 0;
             const p_png = Number(document.getElementById('p_pengurus').value) || 0;
             const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;

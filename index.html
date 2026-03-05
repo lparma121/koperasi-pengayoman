@@ -86,13 +86,8 @@
         .nominal-preview { font-size: 0.85rem; color: var(--success); font-weight: 700; margin-top: 6px; display: block; }
         .nominal-preview i { margin-right: 4px; }
 
-        /* Total Rekap Buku Kas */
-        .rekap-bar { background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .rekap-bar p { margin: 0; font-size: 0.9rem; color: #1565c0; font-weight: bold; }
-        .rekap-bar h3 { margin: 0; color: #0d47a1; font-size: 1.4rem; }
-
         @media print {
-            .sidebar, .header, .btn-submit, button, .form-grid, .control-panel, .rekap-bar { display: none !important; }
+            .sidebar, .header, .btn-submit, button, .form-grid, .control-panel, #boxTotalFilter { display: none !important; }
             .main-content { margin: 0; padding: 0; }
             .card { box-shadow: none; border: none; padding: 0; }
             body { background: white; }
@@ -401,9 +396,9 @@
                     </div>
                 </div>
 
-                <div id="boxTotalFilter" class="rekap-bar" style="display: none;">
-                    <p><i class="fa fa-calculator"></i> Total Nominal (Berdasarkan Filter Tabel):</p>
-                    <h3 id="totalFilterKas">Rp 0</h3>
+                <div id="boxTotalFilter" style="display: none; background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin-bottom: 20px; flex-direction: column;">
+                    <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: #1565c0; font-weight: bold; border-bottom: 1px solid #90caf9; padding-bottom: 8px;"><i class="fa fa-calculator"></i> Rekapitulasi Berdasarkan Filter:</p>
+                    <div id="totalFilterKas" style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;"></div>
                 </div>
 
                 <div class="table-responsive" style="max-height: 500px;">
@@ -648,7 +643,7 @@
             });
         }
 
-        // --- PAGE: BUKU KAS (DENGAN FILTER & TOTAL REKAP) ---
+        // --- PAGE: BUKU KAS (DENGAN FILTER & TOTAL REKAP TERBARU) ---
         async function muatBukuKas() {
             const tb = document.getElementById('bodyBukuKas');
             tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
@@ -664,8 +659,8 @@
                 const cls = t.tipe === 'Masuk' ? 'status-masuk' : 'status-keluar';
                 const sign = t.tipe === 'Masuk' ? '+' : '-';
                 
-                // Tambahkan class baris-kas dan atribut data-nominal
-                tb.innerHTML += `<tr class="baris-kas" data-kategori="${t.kategori.toLowerCase()}" data-nominal="${t.nominal}">
+                // Tambahkan atribut data-tipe
+                tb.innerHTML += `<tr class="baris-kas" data-kategori="${t.kategori.toLowerCase()}" data-nominal="${t.nominal}" data-tipe="${t.tipe}">
                     <td>${t.tanggal}</td>
                     <td>${t.keterangan}</td>
                     <td><small style="color:#7f8c8d; font-weight:bold;">${t.kategori}</small></td>
@@ -674,23 +669,25 @@
                 </tr>`;
             });
 
-            // Jalankan filter awal (Semua)
             saringBukuKas();
         }
 
+        // FUNGSI FILTER CERDAS BUKU KAS
         function saringBukuKas() {
             const filterKat = document.getElementById('filterKategoriKas').value.toLowerCase();
             const filterTeks = document.getElementById('cariKas').value.toLowerCase();
             const barisKas = document.querySelectorAll('.baris-kas');
             const boxTotal = document.getElementById('boxTotalFilter');
 
-            let totalSaring = 0;
+            let totalMasuk = 0;
+            let totalKeluar = 0;
             let isFiltered = filterKat !== 'semua' || filterTeks !== '';
 
             barisKas.forEach(tr => {
                 const kategori = tr.getAttribute('data-kategori');
                 const teksBaris = tr.innerText.toLowerCase();
                 const nom = Number(tr.getAttribute('data-nominal')) || 0;
+                const tipe = tr.getAttribute('data-tipe');
 
                 let cocokKat = false;
                 if(filterKat === 'semua') cocokKat = true;
@@ -701,16 +698,33 @@
 
                 if(cocokKat && cocokTeks) {
                     tr.style.display = '';
-                    totalSaring += nom; // Tambahkan nominal ke subtotal
+                    if(tipe === 'Masuk') {
+                        totalMasuk += nom;
+                    } else {
+                        totalKeluar += nom;
+                    }
                 } else {
                     tr.style.display = 'none';
                 }
             });
 
-            // Tampilkan box subtotal jika sedang melakukan filter
+            // Ubah tampilan rekapitulasi agar sangat jelas antara Masuk, Keluar, dan Saldo Bersih
             if(isFiltered) {
                 boxTotal.style.display = 'flex';
-                document.getElementById('totalFilterKas').innerText = formatR(totalSaring);
+                document.getElementById('totalFilterKas').innerHTML = `
+                    <div style="text-align: left; flex: 1;">
+                        <small style="color:var(--success); font-weight:bold;">Total Uang Masuk</small><br>
+                        <span style="color:var(--success); font-size:1.3rem; font-weight:bold;">+ ${formatR(totalMasuk)}</span>
+                    </div>
+                    <div style="text-align: left; flex: 1; border-left: 2px solid #90caf9; padding-left: 15px;">
+                        <small style="color:var(--danger); font-weight:bold;">Total Uang Keluar</small><br>
+                        <span style="color:var(--danger); font-size:1.3rem; font-weight:bold;">- ${formatR(totalKeluar)}</span>
+                    </div>
+                    <div style="text-align: right; flex: 1.5; border-left: 2px solid #90caf9; padding-left: 15px;">
+                        <small style="color:#0d47a1; font-weight:bold;">Saldo Bersih (Selisih Filter)</small><br>
+                        <span style="color:#0d47a1; font-size:1.6rem; font-weight:bold;">${formatR(totalMasuk - totalKeluar)}</span>
+                    </div>
+                `;
             } else {
                 boxTotal.style.display = 'none';
             }
@@ -718,6 +732,7 @@
         
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
+
 
         // --- PAGE: ANGGOTA ---
         async function muatAnggota() {
@@ -792,13 +807,14 @@
                 document.getElementById('detSisaPinjaman').innerText = formatR(totP < 0 ? 0 : totP);
                 document.getElementById('listTransaksiDetail').innerHTML = html === "" ? '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi</td></tr>' : html;
 
+                // Set Logic Keluarkan
                 btnK.onclick = async () => {
                     if(totP > 0) return Swal.fire('Gagal', `Anggota masih memiliki hutang ${formatR(totP)}`, 'error');
                     if(totS > 0) return Swal.fire('Peringatan', `Anggota masih memiliki simpanan ${formatR(totS)}. Tarik dana di menu Simpanan terlebih dahulu.`, 'warning');
                     if(confirm("Yakin nonaktifkan anggota ini?")) {
                         await updateDoc(doc(db, "anggota", id), { status: "Keluar" });
                         Swal.fire('Sukses', 'Status dinonaktifkan', 'success');
-                        bukaDetail(id); 
+                        bukaDetail(id); // Reload
                     }
                 }
             } catch(e) { document.getElementById('listTransaksiDetail').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Error: ${e.message}</td></tr>`; }

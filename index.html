@@ -83,12 +83,16 @@
         .hl-modal { color: var(--orange); }
         .hl-jasa { color: var(--blue); }
         .hl-total { color: var(--success); font-size: 1.05rem; }
-
         .nominal-preview { font-size: 0.85rem; color: var(--success); font-weight: 700; margin-top: 6px; display: block; }
         .nominal-preview i { margin-right: 4px; }
 
+        /* Total Rekap Buku Kas */
+        .rekap-bar { background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .rekap-bar p { margin: 0; font-size: 0.9rem; color: #1565c0; font-weight: bold; }
+        .rekap-bar h3 { margin: 0; color: #0d47a1; font-size: 1.4rem; }
+
         @media print {
-            .sidebar, .header, .btn-submit, button, .form-grid, .control-panel { display: none !important; }
+            .sidebar, .header, .btn-submit, button, .form-grid, .control-panel, .rekap-bar { display: none !important; }
             .main-content { margin: 0; padding: 0; }
             .card { box-shadow: none; border: none; padding: 0; }
             body { background: white; }
@@ -375,7 +379,7 @@
                         <p style="font-size:0.85rem; color:#7f8c8d;">Merekap seluruh arus uang koperasi.</p>
                     </div>
                     <div style="text-align:right;">
-                        <p style="font-size:0.8rem; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">Total Uang Kas Tersedia</p>
+                        <p style="font-size:0.8rem; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">Total Uang Kas Keseluruhan</p>
                         <h2 id="saldoBukuKas" style="color:var(--success);">Rp 0</h2>
                     </div>
                 </div>
@@ -386,18 +390,23 @@
                         <select id="filterKategoriKas" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-weight:bold; color:var(--dark);">
                             <option value="Semua">Tampilkan Semua Transaksi</option>
                             <option value="Simpanan">Khusus Simpanan</option>
-                            <option value="Angsuran">Khusus Angsuran</option>
+                            <option value="Angsuran">Khusus Angsuran Pokok + Jasa</option>
                             <option value="Pinjaman">Khusus Pencairan Pinjaman</option>
                             <option value="Waserda">Khusus Transaksi Waserda</option>
                         </select>
                     </div>
                     <div style="flex: 1;">
-                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Pencarian Teks / Nominal:</label>
-                        <input type="text" id="cariKas" placeholder="Ketik nama anggota atau nominal (Contoh: 1573000)..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Pencarian Bebas:</label>
+                        <input type="text" id="cariKas" placeholder="Ketik nominal atau nama anggota..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
                     </div>
                 </div>
 
-                <div class="table-responsive" style="max-height: 600px;">
+                <div id="boxTotalFilter" class="rekap-bar" style="display: none;">
+                    <p><i class="fa fa-calculator"></i> Total Nominal (Berdasarkan Filter Tabel):</p>
+                    <h3 id="totalFilterKas">Rp 0</h3>
+                </div>
+
+                <div class="table-responsive" style="max-height: 500px;">
                     <table>
                         <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th style="text-align:center;">Jenis</th><th class="txt-right">Nominal (Rp)</th></tr></thead>
                         <tbody id="bodyBukuKas"></tbody>
@@ -639,7 +648,7 @@
             });
         }
 
-        // --- PAGE: BUKU KAS (DENGAN FILTER & SEARCH) ---
+        // --- PAGE: BUKU KAS (DENGAN FILTER & TOTAL REKAP) ---
         async function muatBukuKas() {
             const tb = document.getElementById('bodyBukuKas');
             tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
@@ -655,8 +664,8 @@
                 const cls = t.tipe === 'Masuk' ? 'status-masuk' : 'status-keluar';
                 const sign = t.tipe === 'Masuk' ? '+' : '-';
                 
-                // Tambahkan class baris-kas dan atribut data-kategori untuk filtering
-                tb.innerHTML += `<tr class="baris-kas" data-kategori="${t.kategori.toLowerCase()}">
+                // Tambahkan class baris-kas dan atribut data-nominal
+                tb.innerHTML += `<tr class="baris-kas" data-kategori="${t.kategori.toLowerCase()}" data-nominal="${t.nominal}">
                     <td>${t.tanggal}</td>
                     <td>${t.keterangan}</td>
                     <td><small style="color:#7f8c8d; font-weight:bold;">${t.kategori}</small></td>
@@ -664,35 +673,51 @@
                     <td class="txt-right" style="color:${color}; font-weight:bold;">${sign} ${formatR(t.nominal)}</td>
                 </tr>`;
             });
+
+            // Jalankan filter awal (Semua)
+            saringBukuKas();
         }
 
-        // FUNGSI FILTER BUKU KAS
         function saringBukuKas() {
             const filterKat = document.getElementById('filterKategoriKas').value.toLowerCase();
             const filterTeks = document.getElementById('cariKas').value.toLowerCase();
             const barisKas = document.querySelectorAll('.baris-kas');
+            const boxTotal = document.getElementById('boxTotalFilter');
+
+            let totalSaring = 0;
+            let isFiltered = filterKat !== 'semua' || filterTeks !== '';
 
             barisKas.forEach(tr => {
                 const kategori = tr.getAttribute('data-kategori');
                 const teksBaris = tr.innerText.toLowerCase();
+                const nom = Number(tr.getAttribute('data-nominal')) || 0;
 
-                // Cek kecocokan Dropdown
                 let cocokKat = false;
                 if(filterKat === 'semua') cocokKat = true;
                 else if(filterKat === 'simpanan' && kategori.includes('simpanan')) cocokKat = true;
                 else if(kategori === filterKat) cocokKat = true;
 
-                // Cek kecocokan Ketik (Search)
                 const cocokTeks = teksBaris.includes(filterTeks);
 
-                if(cocokKat && cocokTeks) tr.style.display = '';
-                else tr.style.display = 'none';
+                if(cocokKat && cocokTeks) {
+                    tr.style.display = '';
+                    totalSaring += nom; // Tambahkan nominal ke subtotal
+                } else {
+                    tr.style.display = 'none';
+                }
             });
+
+            // Tampilkan box subtotal jika sedang melakukan filter
+            if(isFiltered) {
+                boxTotal.style.display = 'flex';
+                document.getElementById('totalFilterKas').innerText = formatR(totalSaring);
+            } else {
+                boxTotal.style.display = 'none';
+            }
         }
         
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
-
 
         // --- PAGE: ANGGOTA ---
         async function muatAnggota() {
@@ -767,14 +792,13 @@
                 document.getElementById('detSisaPinjaman').innerText = formatR(totP < 0 ? 0 : totP);
                 document.getElementById('listTransaksiDetail').innerHTML = html === "" ? '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi</td></tr>' : html;
 
-                // Set Logic Keluarkan
                 btnK.onclick = async () => {
                     if(totP > 0) return Swal.fire('Gagal', `Anggota masih memiliki hutang ${formatR(totP)}`, 'error');
                     if(totS > 0) return Swal.fire('Peringatan', `Anggota masih memiliki simpanan ${formatR(totS)}. Tarik dana di menu Simpanan terlebih dahulu.`, 'warning');
                     if(confirm("Yakin nonaktifkan anggota ini?")) {
                         await updateDoc(doc(db, "anggota", id), { status: "Keluar" });
                         Swal.fire('Sukses', 'Status dinonaktifkan', 'success');
-                        bukaDetail(id); // Reload
+                        bukaDetail(id); 
                     }
                 }
             } catch(e) { document.getElementById('listTransaksiDetail').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Error: ${e.message}</td></tr>`; }
@@ -934,7 +958,7 @@
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: LAPORAN SHU (DIPERBARUI FULL PERSENTASE + NOMINAL) ---
+        // --- PAGE: LAPORAN SHU ---
         let dbDataSHU = {}; 
         let calcSimpananTotal = 0;
         let calcJasaTotal = 0;

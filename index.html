@@ -373,14 +373,15 @@
 
         <div id="bukukas" class="page-section">
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #eee; padding-bottom: 15px;">
                     <div>
                         <h3><i class="fa fa-book"></i> Buku Kas Utama Koperasi</h3>
                         <p style="font-size:0.85rem; color:#7f8c8d;">Merekap seluruh arus uang koperasi.</p>
                     </div>
                     <div style="text-align:right;">
                         <p style="font-size:0.8rem; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">Total Uang Kas Keseluruhan</p>
-                        <h2 id="saldoBukuKas" style="color:var(--success);">Rp 0</h2>
+                        <h2 id="saldoBukuKas" style="color:var(--success); margin-bottom: 8px;">Rp 0</h2>
+                        <button id="btnPenyesuaian" style="background:var(--danger); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(231,76,60,0.3); transition:0.3s;"><i class="fa fa-balance-scale"></i> Buat Jurnal Penyesuaian Saldo</button>
                     </div>
                 </div>
 
@@ -393,6 +394,7 @@
                             <option value="Angsuran">Khusus Angsuran Pokok + Jasa</option>
                             <option value="Pinjaman">Khusus Pencairan Pinjaman</option>
                             <option value="Waserda">Khusus Transaksi Waserda</option>
+                            <option value="Penyesuaian Kas">Khusus Penyesuaian / Operasional Umum</option>
                         </select>
                     </div>
                     <div style="flex: 1;">
@@ -594,9 +596,20 @@
             sWas.forEach(d => {
                 const nom = Number(d.data().nominal) || 0;
                 const isMasuk = d.data().jenis === "Pemasukan";
-                if(isMasuk) { stats.laba_waserda += nom; stats.saldo_akhir += nom; }
-                else { stats.laba_waserda -= nom; stats.saldo_akhir -= nom; }
-                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Waserda: ${d.data().keterangan}`, tipe: isMasuk ? 'Masuk' : 'Keluar', nominal: nom, kategori: 'Waserda' });
+                const tipeData = d.data().tipe_data || "waserda"; // Mendeteksi apakah ini waserda atau penyesuaian kas
+
+                if(isMasuk) { 
+                    stats.saldo_akhir += nom; 
+                    if(tipeData === "waserda") stats.laba_waserda += nom; 
+                } else { 
+                    stats.saldo_akhir -= nom; 
+                    if(tipeData === "waserda") stats.laba_waserda -= nom; 
+                }
+
+                let ketPrefix = tipeData === "waserda" ? "Waserda:" : "Penyesuaian:";
+                let kategoriTx = tipeData === "waserda" ? "Waserda" : "Penyesuaian Kas";
+
+                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `${ketPrefix} ${d.data().keterangan}`, tipe: isMasuk ? 'Masuk' : 'Keluar', nominal: nom, kategori: kategoriTx });
             });
 
             arrTx.sort((a, b) => {
@@ -648,7 +661,7 @@
             });
         }
 
-        // --- PAGE: BUKU KAS ---
+        // --- PAGE: BUKU KAS & PENYESUAIAN ---
         async function muatBukuKas() {
             const tb = document.getElementById('bodyBukuKas');
             tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
@@ -676,14 +689,66 @@
             saringBukuKas();
         }
 
+        // FUNGSI INPUT PENYESUAIAN KAS SAKTI
+        document.getElementById('btnPenyesuaian').addEventListener('click', () => {
+            Swal.fire({
+                title: 'Buat Penyesuaian Kas',
+                html: `
+                    <div style="text-align:left; margin-bottom:15px; font-size:0.85rem; color:#856404; background:#fff3cd; padding:10px; border-left:3px solid #ffeeba;">Gunakan fitur ini HANYA untuk menyamakan saldo aplikasi dengan uang fisik (misal input Uang Keluar karena selisih/beli ATK).</div>
+                    <label style="display:block; text-align:left; font-weight:bold; font-size:0.8rem; margin-bottom:5px;">Tanggal Penyesuaian:</label>
+                    <input type="date" id="adj_tgl" class="swal2-input" value="${new Date().toISOString().split('T')[0]}" style="width:85%; margin-top:0;">
+                    
+                    <label style="display:block; text-align:left; font-weight:bold; font-size:0.8rem; margin-top:15px; margin-bottom:5px;">Jenis Penyesuaian:</label>
+                    <select id="adj_jenis" class="swal2-input" style="width:85%; margin-top:0;">
+                        <option value="Pengeluaran">Uang Keluar (- Mengurangi Kas)</option>
+                        <option value="Pemasukan">Uang Masuk (+ Menambah Kas)</option>
+                    </select>
+                    
+                    <label style="display:block; text-align:left; font-weight:bold; font-size:0.8rem; margin-top:15px; margin-bottom:5px;">Nominal Selisih (Rp):</label>
+                    <input type="number" id="adj_nom" class="swal2-input" placeholder="Ketik angka selisih..." style="width:85%; margin-top:0;">
+                    
+                    <label style="display:block; text-align:left; font-weight:bold; font-size:0.8rem; margin-top:15px; margin-bottom:5px;">Keterangan / Alasan:</label>
+                    <input type="text" id="adj_ket" class="swal2-input" placeholder="Misal: Sinkronisasi data lama" value="Sinkronisasi Selisih Kas" style="width:85%; margin-top:0;">
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: '<i class="fa fa-save"></i> Simpan Penyesuaian',
+                preConfirm: () => {
+                    const tgl = document.getElementById('adj_tgl').value;
+                    const jenis = document.getElementById('adj_jenis').value;
+                    const nom = document.getElementById('adj_nom').value;
+                    const ket = document.getElementById('adj_ket').value;
+                    if(!nom || !ket) { Swal.showValidationMessage('Nominal dan Keterangan wajib diisi!'); return false; }
+                    return { tgl, jenis, nom: Number(nom), ket };
+                }
+            }).then(async (res) => {
+                if(res.isConfirmed) {
+                    try {
+                        const d = res.value;
+                        await addDoc(collection(db, "waserda"), {
+                            tanggal: d.tgl,
+                            jenis: d.jenis,
+                            nominal: d.nom,
+                            keterangan: d.ket,
+                            tipe_data: "penyesuaian", // Flag khusus agar tidak masuk laba waserda
+                            waktu_input: new Date().toISOString()
+                        });
+                        Swal.fire('Sukses', 'Penyesuaian kas berhasil dicatat. Saldo aplikasi kini sudah sinkron!', 'success');
+                        muatBukuKas();
+                    } catch(err) {
+                        Swal.fire('Error', err.message, 'error');
+                    }
+                }
+            });
+        });
+
         function saringBukuKas() {
             const filterKat = document.getElementById('filterKategoriKas').value.toLowerCase();
             const filterTeks = document.getElementById('cariKas').value.toLowerCase();
             const barisKas = document.querySelectorAll('.baris-kas');
             const boxTotal = document.getElementById('boxTotalFilter');
 
-            let totalMasuk = 0;
-            let totalKeluar = 0;
+            let totalMasuk = 0; let totalKeluar = 0;
             let isFiltered = filterKat !== 'semua' || filterTeks !== '';
 
             barisKas.forEach(tr => {
@@ -701,14 +766,9 @@
 
                 if(cocokKat && cocokTeks) {
                     tr.style.display = '';
-                    if(tipe === 'Masuk') {
-                        totalMasuk += nom;
-                    } else {
-                        totalKeluar += nom;
-                    }
-                } else {
-                    tr.style.display = 'none';
-                }
+                    if(tipe === 'Masuk') totalMasuk += nom;
+                    else totalKeluar += nom;
+                } else tr.style.display = 'none';
             });
 
             if(isFiltered) {
@@ -727,9 +787,7 @@
                         <span style="color:#0d47a1; font-size:1.6rem; font-weight:bold;">${formatR(totalMasuk - totalKeluar)}</span>
                     </div>
                 `;
-            } else {
-                boxTotal.style.display = 'none';
-            }
+            } else boxTotal.style.display = 'none';
         }
         
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
@@ -865,7 +923,7 @@
             tb.innerHTML = '';
             if(arrS.length === 0) tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada data</td></tr>';
             
-            arrS.forEach(d => {
+            arrS.slice(0, 30).forEach(d => {
                 const v = Number(d.jumlah)||0;
                 tb.innerHTML += `<tr><td>${d.tanggal_transaksi||'-'}</td><td>${d.info_anggota}</td><td>${d.jenis_simpanan}</td><td class="txt-right" style="color:${v<0?'var(--danger)':'var(--success)'}">${v<0?'<i class="fa fa-arrow-up"></i>':'<i class="fa fa-arrow-down"></i>'} ${formatR(Math.abs(v))}</td></tr>`;
             });
@@ -998,6 +1056,9 @@
             if(arrW.length === 0) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi Waserda</td></tr>'; }
             
             arrW.forEach(d => {
+                // Sembunyikan data penyesuaian dari tabel waserda agar tidak membingungkan
+                if(d.tipe_data === "penyesuaian") return;
+
                 const nom = Number(d.nominal) || 0;
                 const isMasuk = d.jenis === "Pemasukan";
                 

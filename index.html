@@ -86,6 +86,11 @@
         .nominal-preview { font-size: 0.85rem; color: var(--success); font-weight: 700; margin-top: 6px; display: block; }
         .nominal-preview i { margin-right: 4px; }
 
+        /* Total Rekap Buku Kas */
+        .rekap-bar { background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .rekap-bar p { margin: 0; font-size: 0.9rem; color: #1565c0; font-weight: bold; }
+        .rekap-bar h3 { margin: 0; color: #0d47a1; font-size: 1.4rem; }
+
         @media print {
             .sidebar, .header, .btn-submit, button, .form-grid, .control-panel, #boxTotalFilter { display: none !important; }
             .main-content { margin: 0; padding: 0; }
@@ -643,7 +648,7 @@
             });
         }
 
-        // --- PAGE: BUKU KAS (DENGAN FILTER & TOTAL REKAP TERBARU) ---
+        // --- PAGE: BUKU KAS ---
         async function muatBukuKas() {
             const tb = document.getElementById('bodyBukuKas');
             tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
@@ -659,7 +664,6 @@
                 const cls = t.tipe === 'Masuk' ? 'status-masuk' : 'status-keluar';
                 const sign = t.tipe === 'Masuk' ? '+' : '-';
                 
-                // Tambahkan atribut data-tipe
                 tb.innerHTML += `<tr class="baris-kas" data-kategori="${t.kategori.toLowerCase()}" data-nominal="${t.nominal}" data-tipe="${t.tipe}">
                     <td>${t.tanggal}</td>
                     <td>${t.keterangan}</td>
@@ -672,7 +676,6 @@
             saringBukuKas();
         }
 
-        // FUNGSI FILTER CERDAS BUKU KAS
         function saringBukuKas() {
             const filterKat = document.getElementById('filterKategoriKas').value.toLowerCase();
             const filterTeks = document.getElementById('cariKas').value.toLowerCase();
@@ -708,7 +711,6 @@
                 }
             });
 
-            // Ubah tampilan rekapitulasi agar sangat jelas antara Masuk, Keluar, dan Saldo Bersih
             if(isFiltered) {
                 boxTotal.style.display = 'flex';
                 document.getElementById('totalFilterKas').innerHTML = `
@@ -732,7 +734,6 @@
         
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
-
 
         // --- PAGE: ANGGOTA ---
         async function muatAnggota() {
@@ -784,37 +785,58 @@
                 if(pData.status === "Keluar" || pData.status === "Nonaktif") { alertK.style.display = 'block'; btnK.style.display = 'none'; }
                 else { alertK.style.display = 'none'; btnK.style.display = 'inline-block'; }
 
-                let totS = 0; let totP = 0; let html = "";
+                let totS = 0; let totP = 0;
+                let arrDetail = [];
                 const [sS, sP] = await Promise.all([getDocs(query(collection(db, "simpanan"), where("id_anggota", "==", id))), getDocs(query(collection(db, "pinjaman"), where("id_anggota", "==", id)))]);
                 
                 sS.forEach(d => {
                     const v = Number(d.data().jumlah)||0; totS += v;
                     const arah = v < 0 ? '<span style="color:var(--danger)"><i class="fa fa-arrow-up"></i> Tarik</span>' : '<span style="color:var(--success)"><i class="fa fa-arrow-down"></i> Masuk</span>';
-                    html += `<tr><td>${d.data().tanggal_transaksi||'-'}</td><td>Simpanan: ${d.data().jenis_simpanan}</td><td>${arah}</td><td class="txt-right">${formatR(Math.abs(v))}</td></tr>`;
+                    arrDetail.push({
+                        tgl: d.data().tanggal_transaksi || '-',
+                        waktu: d.data().waktu_input || '1970-01-01',
+                        html: `<tr><td>${d.data().tanggal_transaksi||'-'}</td><td>Simpanan: ${d.data().jenis_simpanan}</td><td>${arah}</td><td class="txt-right">${formatR(Math.abs(v))}</td></tr>`
+                    });
                 });
 
                 for(const dP of sP.docs) {
                     const v = Number(dP.data().jumlah)||0; totP += v;
-                    html += `<tr><td>${dP.data().tanggal||'-'}</td><td>Pinjaman (${dP.data().status||'Aktif'})</td><td><span style="color:var(--danger)"><i class="fa fa-arrow-up"></i> Keluar</span></td><td class="txt-right">${formatR(v)}</td></tr>`;
+                    arrDetail.push({
+                        tgl: dP.data().tanggal || '-',
+                        waktu: dP.data().waktu_input || '1970-01-01',
+                        html: `<tr><td>${dP.data().tanggal||'-'}</td><td>Pinjaman (${dP.data().status||'Aktif'})</td><td><span style="color:var(--danger)"><i class="fa fa-arrow-up"></i> Keluar</span></td><td class="txt-right">${formatR(v)}</td></tr>`
+                    });
                     const sA = await getDocs(query(collection(db, "angsuran"), where("id_pinjaman", "==", dP.id)));
                     sA.forEach(dA => {
                         const pk = Number(dA.data().jumlah)||0; const bg = Number(dA.data().bunga)||0; totP -= pk;
-                        html += `<tr style="background:#fcfdfe;"><td>${dA.data().tanggal||'-'}</td><td style="padding-left:30px; border-left:3px solid var(--success);">Angsuran (Pokok: ${formatR(pk)} | Jasa: ${formatR(bg)})</td><td><span style="color:var(--success)"><i class="fa fa-arrow-down"></i> Masuk</span></td><td class="txt-right" style="color:var(--success);">${formatR(pk+bg)}</td></tr>`;
+                        arrDetail.push({
+                            tgl: dA.data().tanggal || '-',
+                            waktu: dA.data().waktu_input || '1970-01-01',
+                            html: `<tr style="background:#fcfdfe;"><td>${dA.data().tanggal||'-'}</td><td style="padding-left:30px; border-left:3px solid var(--success);">Angsuran (Pokok: ${formatR(pk)} | Jasa: ${formatR(bg)})</td><td><span style="color:var(--success)"><i class="fa fa-arrow-down"></i> Masuk</span></td><td class="txt-right" style="color:var(--success);">${formatR(pk+bg)}</td></tr>`
+                        });
                     });
                 }
                 
+                // Urutkan berdasarkan tanggal kalender (terbaru di atas)
+                arrDetail.sort((a,b) => {
+                    if(a.tgl !== b.tgl) return b.tgl.localeCompare(a.tgl);
+                    return new Date(b.waktu) - new Date(a.waktu);
+                });
+
                 document.getElementById('detTotalSimpanan').innerText = formatR(totS);
                 document.getElementById('detSisaPinjaman').innerText = formatR(totP < 0 ? 0 : totP);
-                document.getElementById('listTransaksiDetail').innerHTML = html === "" ? '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi</td></tr>' : html;
+                
+                let finalHtml = "";
+                arrDetail.forEach(item => finalHtml += item.html);
+                document.getElementById('listTransaksiDetail').innerHTML = finalHtml === "" ? '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi</td></tr>' : finalHtml;
 
-                // Set Logic Keluarkan
                 btnK.onclick = async () => {
                     if(totP > 0) return Swal.fire('Gagal', `Anggota masih memiliki hutang ${formatR(totP)}`, 'error');
                     if(totS > 0) return Swal.fire('Peringatan', `Anggota masih memiliki simpanan ${formatR(totS)}. Tarik dana di menu Simpanan terlebih dahulu.`, 'warning');
                     if(confirm("Yakin nonaktifkan anggota ini?")) {
                         await updateDoc(doc(db, "anggota", id), { status: "Keluar" });
                         Swal.fire('Sukses', 'Status dinonaktifkan', 'success');
-                        bukaDetail(id); // Reload
+                        bukaDetail(id); 
                     }
                 }
             } catch(e) { document.getElementById('listTransaksiDetail').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Error: ${e.message}</td></tr>`; }
@@ -828,11 +850,23 @@
         }
         async function muatRiwayatSimpanan() {
             const tb = document.getElementById('bodyRiwayatSimpanan'); tb.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat...</td></tr>';
-            const sS = await getDocs(query(collection(db, "simpanan"), orderBy("waktu_input", "desc"), limit(30)));
+            const sS = await getDocs(collection(db, "simpanan"));
+            let arrS = [];
+            sS.forEach(doc => arrS.push(doc.data()));
+            
+            // Urutkan berdasarkan tanggal kalender
+            arrS.sort((a, b) => {
+                let dA = a.tanggal_transaksi || "1970-01-01";
+                let dB = b.tanggal_transaksi || "1970-01-01";
+                if (dA !== dB) return dB.localeCompare(dA);
+                return new Date(b.waktu_input||0) - new Date(a.waktu_input||0);
+            });
+
             tb.innerHTML = '';
-            if(sS.empty) tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada data</td></tr>';
-            sS.forEach(doc => {
-                const d = doc.data(); const v = Number(d.jumlah)||0;
+            if(arrS.length === 0) tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada data</td></tr>';
+            
+            arrS.forEach(d => {
+                const v = Number(d.jumlah)||0;
                 tb.innerHTML += `<tr><td>${d.tanggal_transaksi||'-'}</td><td>${d.info_anggota}</td><td>${d.jenis_simpanan}</td><td class="txt-right" style="color:${v<0?'var(--danger)':'var(--success)'}">${v<0?'<i class="fa fa-arrow-up"></i>':'<i class="fa fa-arrow-down"></i>'} ${formatR(Math.abs(v))}</td></tr>`;
             });
         }
@@ -877,14 +911,26 @@
         // --- PAGE: PINJAMAN ---
         async function muatPinjaman() {
             const drop = document.getElementById('dropPinjaman');
-            const [sAng, sPin, sAns] = await Promise.all([getDocs(query(collection(db, "anggota"), orderBy("nama"))), getDocs(query(collection(db, "pinjaman"), orderBy("waktu_input", "desc"))), getDocs(collection(db, "angsuran"))]);
+            const [sAng, sPin, sAns] = await Promise.all([getDocs(query(collection(db, "anggota"), orderBy("nama"))), getDocs(collection(db, "pinjaman")), getDocs(collection(db, "angsuran"))]);
             drop.innerHTML = '<option value="">-- Pilih Anggota --</option>';
             sAng.forEach(d => { if(d.data().status !== "Keluar" && d.data().status !== "Nonaktif") drop.innerHTML += `<option value="${d.id}" data-no="${d.data().no_anggota}" data-nama="${d.data().nama}">${d.data().no_anggota} - ${d.data().nama}</option>`; });
 
             const rek = {}; sAns.forEach(d => { const id = d.data().id_pinjaman; if(!rek[id]) rek[id] = {p:0, j:0}; rek[id].p += Number(d.data().jumlah)||0; rek[id].j += Number(d.data().bunga)||0; });
+            
+            let arrP = [];
+            sPin.forEach(d => arrP.push({ id: d.id, ...d.data() }));
+            
+            // Urutkan berdasarkan tanggal kalender
+            arrP.sort((a, b) => {
+                let dA = a.tanggal || "1970-01-01";
+                let dB = b.tanggal || "1970-01-01";
+                if(dA !== dB) return dB.localeCompare(dA);
+                return new Date(b.waktu_input||0) - new Date(a.waktu_input||0);
+            });
+
             const tbody = document.getElementById('bodyPinjaman'); tbody.innerHTML = '';
-            sPin.forEach(d => {
-                const da = d.data(); const id = d.id; const p = Number(da.jumlah)||0; const jt = rek[id]?rek[id].j:0; const pt = rek[id]?rek[id].p:0; const sisa = p - pt;
+            arrP.forEach(da => {
+                const id = da.id; const p = Number(da.jumlah)||0; const jt = rek[id]?rek[id].j:0; const pt = rek[id]?rek[id].p:0; const sisa = p - pt;
                 const statLay = sisa <= 0 ? 'Lunas' : (da.status||'Aktif'); const cls = statLay === 'Aktif' ? 'status-aktif' : 'status-lunas';
                 tbody.innerHTML += `<tr><td>${da.tanggal||'-'}</td><td><strong>${da.info_anggota}</strong></td><td class="txt-right">${formatR(p)}</td><td class="txt-right" style="color:var(--blue)">${formatR(jt)}</td><td class="txt-right" style="color:var(--success)">${formatR(pt)}</td><td class="txt-right ${sisa>0&&statLay==='Aktif'?'saldo-minus':''}">${formatR(sisa<=0?0:sisa)}</td><td style="text-align:center;"><span class="status-badge ${cls}">${statLay}</span></td><td>${statLay==='Aktif'?`<button class="btn-lunas-manual" onclick="tandaiLunas('${id}', '${da.info_anggota}')">✔ Lunas</button>`:`<small>Selesai</small>`}</td></tr>`;
             });
@@ -933,15 +979,25 @@
         async function muatWaserda() {
             const tb = document.getElementById('bodyWaserda');
             tb.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
-            const snap = await getDocs(query(collection(db, "waserda"), orderBy("waktu_input", "desc")));
+            const snap = await getDocs(collection(db, "waserda"));
             
+            let arrW = [];
+            snap.forEach(doc => arrW.push(doc.data()));
+            
+            // Urutkan berdasarkan tanggal kalender
+            arrW.sort((a, b) => {
+                let dA = a.tanggal || "1970-01-01";
+                let dB = b.tanggal || "1970-01-01";
+                if(dA !== dB) return dB.localeCompare(dA);
+                return new Date(b.waktu_input||0) - new Date(a.waktu_input||0);
+            });
+
             tb.innerHTML = '';
             let saldoBersih = 0;
 
-            if(snap.empty) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi Waserda</td></tr>'; }
+            if(arrW.length === 0) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi Waserda</td></tr>'; }
             
-            snap.forEach(doc => {
-                const d = doc.data();
+            arrW.forEach(d => {
                 const nom = Number(d.nominal) || 0;
                 const isMasuk = d.jenis === "Pemasukan";
                 

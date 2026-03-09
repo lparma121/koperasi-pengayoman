@@ -42,14 +42,8 @@
         .header h1 { font-size: 1.5rem; margin: 5px 0; color: var(--primary); }
         .header p { color: var(--secondary); font-size: 0.9rem; }
 
-        /* Loader */
-        #loaderData {
-            text-align: center;
-            padding: 20px;
-            color: var(--primary);
-        }
+        #loaderData { text-align: center; padding: 20px; color: var(--primary); }
 
-        /* Form Styling */
         .form-group { margin-bottom: 15px; position: relative; }
         label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; }
         input {
@@ -75,13 +69,11 @@
         .btn-primary { background: var(--primary); color: white; }
         .btn:active { transform: scale(0.98); }
 
-        /* Card Stats */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         .stat-card { background: var(--light); padding: 15px; border-radius: 15px; border: 1px solid #e2e8f0; }
         .stat-card .label { font-size: 0.75rem; color: var(--secondary); margin-bottom: 5px; }
         .stat-card .value { font-weight: 700; font-size: 1rem; color: var(--dark); }
 
-        /* Table Styling */
         .table-container { margin-top: 20px; }
         .table-title { font-weight: 700; font-size: 1rem; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
         table { width: 100%; border-collapse: collapse; }
@@ -130,15 +122,14 @@
                 <i class="fas fa-eye" onclick="togglePasswordVisibility('inputPin', this)" style="position:absolute; right:15px; top:42px; color:var(--secondary); cursor:pointer;"></i>
             </div>
             <button type="submit" class="btn btn-primary">Lihat Saldo Saya</button>
-            <p id="pesanError" style="color:var(--danger); font-size:0.8rem; text-align:center; margin-top:10px;">Nama atau PIN salah. Silakan coba lagi.</p>
+            <p id="pesanError" style="color:var(--danger); font-size:0.8rem; text-align:center; margin-top:10px;">Nama atau PIN salah.</p>
         </form>
 
         <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
         
         <div class="table-title">Riwayat Arus Kas Terbaru</div>
         <table>
-            <tbody id="bodyRiwayatGlobal">
-                </tbody>
+            <tbody id="bodyRiwayatGlobal"></tbody>
         </table>
     </div>
 
@@ -170,15 +161,14 @@
         </div>
 
         <table>
-            <tbody id="bodyRiwayatPribadi">
-                </tbody>
+            <tbody id="bodyRiwayatPribadi"></tbody>
         </table>
 
         <button onclick="location.reload()" class="btn" style="margin-top:20px; background:#f1f5f9; color:var(--secondary);">Keluar / Kembali</button>
     </div>
 
     <div style="margin-top:25px; text-align:center; font-size:0.7rem; color:var(--text-muted);">
-        &copy; 2026 Koperasi Pengayoman. Data diupdate secara real-time.
+        &copy; 2026 Koperasi Pengayoman.
     </div>
 </div>
 
@@ -197,29 +187,19 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    // Formatter Rupiah
     const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 
-    /**
-     * FUNGSI KRUSIAL: Mengubah string tanggal "26 Februari 2026" menjadi Objek Date
-     * agar bisa dibandingkan/diurutkan secara benar oleh komputer.
-     */
+    // Fungsi Pengubah Teks ke Tanggal (Agar urut sesuai isi data)
     const parseDate = (dateStr) => {
         if (!dateStr || dateStr === "-") return new Date(0);
-        
         const bulanIndo = {
             "Januari": 0, "Februari": 1, "Maret": 2, "April": 3, "Mei": 4, "Juni": 5,
             "Juli": 6, "Agustus": 7, "September": 8, "Oktober": 9, "November": 10, "Desember": 11
         };
-
         const parts = dateStr.split(' ');
         if (parts.length === 3) {
-            // Urutan: Tahun, Bulan (0-11), Tanggal
             return new Date(parseInt(parts[2]), bulanIndo[parts[1]], parseInt(parts[0]));
         }
-        
-        // Jika formatnya sudah yyyy-mm-dd
         return new Date(dateStr);
     };
 
@@ -227,7 +207,6 @@
     let semuaTransaksiGlobal = [];
     let currentUser = null;
 
-    // Toggle Mata Password
     window.togglePasswordVisibility = function(inputId, iconElement) {
         const inputField = document.getElementById(inputId);
         if (inputField.type === "password") {
@@ -239,144 +218,93 @@
         }
     };
 
-    // Load semua data dari Firebase
     async function muatDataAwal() {
         try {
             const [snapA, snapS, snapP, snapAns, snapWas] = await Promise.all([
-                getDocs(collection(db, "anggota")), 
-                getDocs(collection(db, "simpanan")),
-                getDocs(collection(db, "pinjaman")), 
-                getDocs(collection(db, "angsuran")), 
-                getDocs(collection(db, "waserda"))
+                getDocs(collection(db, "anggota")), getDocs(collection(db, "simpanan")),
+                getDocs(collection(db, "pinjaman")), getDocs(collection(db, "angsuran")), getDocs(collection(db, "waserda"))
             ]);
 
             snapA.forEach(d => cacheData.anggota.push({id: d.id, ...d.data()}));
             
-            // Proses Simpanan
             snapS.forEach(d => {
                 const data = d.data(); cacheData.simpanan.push(data);
                 const val = Number(data.jumlah) || 0;
-                let nama = data.info_anggota || "Umum"; 
-                if(nama.includes(" - ")) nama = nama.split(" - ")[1];
-                semuaTransaksiGlobal.push({ 
-                    tanggal: data.tanggal_transaksi || "-", 
-                    ket: `Simpanan: ${nama}`, 
-                    nominal: Math.abs(val), 
-                    isMasuk: val >= 0 
-                });
+                let nama = data.info_anggota || ""; if(nama.includes(" - ")) nama = nama.split(" - ")[1];
+                semuaTransaksiGlobal.push({ tanggal: data.tanggal_transaksi || "-", ket: `Simpanan: ${nama}`, nominal: Math.abs(val), isMasuk: val >= 0 });
             });
 
-            // Proses Pinjaman
             snapP.forEach(d => {
                 const data = d.data(); cacheData.pinjaman.push({id: d.id, ...data});
                 const val = Number(data.jumlah) || 0;
-                let nama = data.info_anggota || "Umum";
-                if(nama.includes(" - ")) nama = nama.split(" - ")[1];
-                semuaTransaksiGlobal.push({ 
-                    tanggal: data.tanggal || "-", 
-                    ket: `Pencairan: ${nama}`, 
-                    nominal: val, 
-                    isMasuk: false 
-                });
+                let nama = data.info_anggota || ""; if(nama.includes(" - ")) nama = nama.split(" - ")[1];
+                semuaTransaksiGlobal.push({ tanggal: data.tanggal || "-", ket: `Pinjaman: ${nama}`, nominal: val, isMasuk: false });
             });
 
-            // Proses Angsuran
             snapAns.forEach(d => {
                 const data = d.data(); cacheData.angsuran.push(data);
                 const pk = Number(data.jumlah) || 0, bg = Number(data.bunga) || 0;
-                let nama = data.info_anggota || "Umum";
-                if(nama.includes(" - ")) nama = nama.split(" - ")[1];
-                semuaTransaksiGlobal.push({ 
-                    tanggal: data.tanggal || "-", 
-                    ket: `Angsuran: ${nama}`, 
-                    nominal: pk+bg, 
-                    isMasuk: true 
-                });
+                let nama = data.info_anggota || ""; if(nama.includes(" - ")) nama = nama.split(" - ")[1];
+                semuaTransaksiGlobal.push({ tanggal: data.tanggal || "-", ket: `Angsuran: ${nama}`, nominal: pk+bg, isMasuk: true });
             });
 
-            // Proses Waserda
             snapWas.forEach(d => {
                 const data = d.data(); cacheData.waserda.push(data);
-                const nom = Number(data.nominal) || 0;
-                const isMasuk = data.jenis === "Pemasukan";
-                semuaTransaksiGlobal.push({ 
-                    tanggal: data.tanggal || "-", 
-                    ket: `Waserda: ${data.keterangan}`, 
-                    nominal: nom, 
-                    isMasuk: isMasuk 
-                });
+                const nom = Number(data.nominal) || 0, isMasuk = data.jenis === "Pemasukan";
+                semuaTransaksiGlobal.push({ tanggal: data.tanggal || "-", ket: `Waserda: ${data.keterangan}`, nominal: nom, isMasuk: isMasuk });
             });
 
-            /**
-             * SORTING DATA GLOBAL BERDASARKAN TANGGAL YANG TERTERA DI DATA
-             * (Terbaru muncul paling atas)
-             */
+            // URUTKAN GLOBAL SESUAI ISI TANGGAL
             semuaTransaksiGlobal.sort((a, b) => parseDate(b.tanggal) - parseDate(a.tanggal));
 
-            // Render Riwayat Global
             const tbodyGlobal = document.getElementById('bodyRiwayatGlobal');
             tbodyGlobal.innerHTML = semuaTransaksiGlobal.slice(0, 10).map(t => `
                 <tr>
                     <td style="color:var(--text-muted); font-size:0.8rem; width:100px;">${t.tanggal}</td>
-                    <td><div style="font-weight:600; color:var(--dark);">${t.ket}</div></td>
+                    <td><div style="font-weight:600;">${t.ket}</div></td>
                     <td class="text-right ${t.isMasuk ? 'text-masuk' : 'text-keluar'}">${t.isMasuk ? '+' : '-'} ${formatRupiah(t.nominal)}</td>
                 </tr>
             `).join('');
 
-            // Isi Saran Nama
             const datalist = document.getElementById('namaSaran');
-            cacheData.anggota.filter(a => a.status !== "Keluar").forEach(a => { 
-                const opt = document.createElement('option'); opt.value = a.nama; datalist.appendChild(opt); 
-            });
+            cacheData.anggota.forEach(a => { if(a.status!=="Keluar"){ const opt = document.createElement('option'); opt.value = a.nama; datalist.appendChild(opt); }});
 
             document.getElementById('loaderData').style.display = 'none';
-        } catch (e) { console.error("Error Muat Data:", e); }
+        } catch (e) { console.error(e); }
     }
     muatDataAwal();
 
-    // Logika Login & Cek Saldo
     document.getElementById('formCekSaldo').addEventListener('submit', (e) => {
         e.preventDefault();
         const inputNama = document.getElementById('inputNama').value.trim().toLowerCase();
         const inputPin = document.getElementById('inputPin').value;
-        
         let found = cacheData.anggota.find(d => d.nama.toLowerCase() === inputNama);
         if (!found || inputPin !== (found.pin || "123456")) {
             document.getElementById('pesanError').style.display = 'block';
             return;
         }
-
         currentUser = found;
         document.getElementById('boxLogin').style.display = 'none'; 
-
+        
         let riwayatPribadi = [];
         let pSimpanan = 0, pPlafon = 0, pAngsuranMasuk = 0, idPinjaman = [];
 
-        // Filter Simpanan Pribadi
         cacheData.simpanan.filter(d => d.id_anggota === currentUser.id).forEach(d => {
             const v = Number(d.jumlah) || 0; pSimpanan += v;
             riwayatPribadi.push({ tanggal: d.tanggal_transaksi||"-", kategori: 'Simpanan', badge: 'b-simpanan', nominal: Math.abs(v), isMasuk: v >= 0 });
         });
-
-        // Filter Pinjaman Pribadi
         cacheData.pinjaman.filter(d => d.id_anggota === currentUser.id).forEach(d => {
             const v = Number(d.jumlah) || 0; pPlafon += v; idPinjaman.push(d.id);
-            riwayatPribadi.push({ tanggal: d.tanggal||"-", kategori: 'Pencairan', badge: 'b-pinjaman', nominal: v, isMasuk: false });
+            riwayatPribadi.push({ tanggal: d.tanggal||"-", kategori: 'Pinjaman', badge: 'b-pinjaman', nominal: v, isMasuk: false });
         });
-
-        // Filter Angsuran dari Pinjaman tersebut
         cacheData.angsuran.filter(d => idPinjaman.includes(d.id_pinjaman)).forEach(d => {
             const pk = Number(d.jumlah) || 0, bg = Number(d.bunga) || 0; pAngsuranMasuk += pk;
             riwayatPribadi.push({ tanggal: d.tanggal||"-", kategori: 'Angsuran', badge: 'b-angsuran', nominal: pk+bg, isMasuk: true });
         });
 
-        /**
-         * SORTING RIWAYAT PRIBADI BERDASARKAN TANGGAL TRANSAKSI
-         * (Terbaru muncul paling atas)
-         */
+        // URUTKAN PRIBADI SESUAI ISI TANGGAL
         riwayatPribadi.sort((a, b) => parseDate(b.tanggal) - parseDate(a.tanggal));
 
-        // Tampilkan Hasil
         document.getElementById('namaAnggotaTampil').innerHTML = `Halo, <span>${currentUser.nama.split(' ')[0]}!</span>`;
         document.getElementById('simpananTampil').innerText = formatRupiah(pSimpanan);
         document.getElementById('pinjamanTampil').innerText = formatRupiah(Math.max(0, pPlafon - pAngsuranMasuk));
@@ -389,11 +317,9 @@
                 <td class="text-right ${t.isMasuk ? 'text-masuk' : 'text-keluar'}">${t.isMasuk ? '+' : '-'} ${formatRupiah(t.nominal)}</td>
             </tr>
         `).join('');
-
         document.getElementById('areaHasil').style.display = 'block';
     });
 
-    // Ubah PIN
     window.toggleUbahPin = function() {
         const el = document.getElementById('areaUbahPin');
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
@@ -403,13 +329,10 @@
         e.preventDefault();
         const p1 = document.getElementById('pinBaru').value, p2 = document.getElementById('pinKonfirm').value;
         if(p1 !== p2) return alert('PIN tidak cocok!');
-        try {
-            await updateDoc(doc(db, "anggota", currentUser.id), { pin: p1 });
-            alert('PIN berhasil diubah!');
-            toggleUbahPin();
-        } catch (err) { alert("Gagal ubah PIN"); }
+        await updateDoc(doc(db, "anggota", currentUser.id), { pin: p1 });
+        alert('PIN berhasil diubah!');
+        toggleUbahPin();
     });
 </script>
-
 </body>
 </html>

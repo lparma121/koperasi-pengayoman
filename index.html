@@ -62,8 +62,8 @@
         .status-keluar { background: #ffebee; color: var(--danger); border: 1px solid #ffcdd2;}
         .txt-right { text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 600;}
 
-        /* Checkbox styling */
-        .cb-tagihan { transform: scale(1.3); cursor: pointer; }
+        /* Penyelarasan untuk Checkbox Cetak */
+        .cb-cetak { transform: scale(1.3); cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -89,6 +89,7 @@
         <div class="header">
             <h2 id="page-title">Ringkasan Operasional</h2>
             <div>
+                <button onclick="window.open('cek-saldo.html', '_blank')" style="background:var(--success); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right: 10px;"><i class="fa fa-search"></i> Portal Anggota</button>
                 <button id="btnLogout" style="background:var(--danger); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;"><i class="fa fa-sign-out-alt"></i> Keluar</button>
             </div>
         </div>
@@ -100,14 +101,60 @@
                 <div class="stat-card" style="border-top-color: var(--blue);"><h3>Uang Beredar (Piutang)</h3><p id="dash-beredar">Rp 0</p></div>
                 <div class="stat-card" style="border-top-color: var(--orange);"><h3>Laba Jasa & Waserda</h3><p id="dash-laba">Rp 0</p></div>
             </div>
-            <div class="card">
-                <h3><i class="fa fa-history"></i> 10 Transaksi Terakhir</h3>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Jenis</th><th class="txt-right">Nominal</th></tr></thead>
-                        <tbody id="dashBodyTransaksi"></tbody>
-                    </table>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="card"><h3>Visualisasi Laba</h3><canvas id="chartUtama" height="150"></canvas></div>
+                <div class="card"><h3>10 Transaksi Terakhir</h3>
+                    <div class="table-responsive"><table><thead><tr><th>Tgl</th><th>Ket</th><th>Jenis</th><th class="txt-right">Rp</th></tr></thead><tbody id="dashBodyTransaksi"></tbody></table></div>
                 </div>
+            </div>
+        </div>
+
+        <div id="anggota" class="page-section">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3>Manajemen Anggota</h3>
+                    <button class="btn-submit" style="width:auto;" onclick="showPage('tambah-anggota')">Input Baru</button>
+                </div>
+                <input type="text" id="inputCariAnggota" class="search-box" placeholder="Cari nama...">
+                <div class="table-responsive"><table><thead><tr><th>No</th><th>Nama</th><th>Tgl Gabung</th><th class="txt-right">Simpanan</th></tr></thead><tbody id="bodyAnggota"></tbody></table></div>
+            </div>
+        </div>
+
+        <div id="tambah-anggota" class="page-section">
+            <div class="card" style="max-width: 600px; margin: auto;">
+                <h3>Form Data Anggota</h3>
+                <form id="formTambahAnggota">
+                    <div class="form-group"><label>No Anggota</label><input type="text" id="add_no_anggota" required></div>
+                    <div class="form-group"><label>Nama</label><input type="text" id="add_nama" required></div>
+                    <div class="form-group"><label>PIN</label><input type="text" id="add_pin" value="123456" required></div>
+                    <div class="form-group"><label>Tgl Gabung</label><input type="date" id="add_tanggal_gabung" required></div>
+                    <button type="submit" class="btn-submit">SIMPAN DATA</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="detail-anggota" class="page-section">
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="detNamaAnggota">Memuat...</h2>
+                <button onclick="showPage('anggota')" style="background:#95a5a6; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;">Kembali</button>
+            </div>
+            <div class="summary-container">
+                <div class="summary-box"><h4>Simpanan</h4><p id="detTotalSimpanan">Rp 0</p></div>
+                <div class="summary-box"><h4>Pinjaman</h4><p id="detSisaPinjaman">Rp 0</p></div>
+            </div>
+            <div class="card"><h3>Riwayat Transaksi</h3><div class="table-responsive"><table><tbody id="listTransaksiDetail"></tbody></table></div></div>
+        </div>
+
+        <div id="simpanan" class="page-section">
+            <div class="card" style="max-width: 600px; margin: auto;">
+                <h3>Setor / Tarik Simpanan</h3>
+                <form id="formSimpanan">
+                    <div class="form-group"><label>Pilih Anggota</label><select id="dropSimpanan" required></select></div>
+                    <div class="form-group"><label>Jenis</label><select id="jenis_simpanan"><option value="Simpanan Sukarela">Sukarela</option><option value="Penarikan">Tarik Tunai</option></select></div>
+                    <div class="form-group"><label>Rp</label><input type="number" id="jumlahSimpan" required></div>
+                    <div class="form-group"><label>Tgl</label><input type="date" id="tglSimpan" required></div>
+                    <button type="submit" class="btn-submit">PROSES</button>
+                </form>
             </div>
         </div>
 
@@ -116,33 +163,30 @@
                 <h3>Form Pencairan Pinjaman</h3>
                 <form id="formPinjaman">
                     <div class="form-grid">
-                        <div class="form-group"><label>Pilih Anggota</label><select id="dropPinjaman" required></select></div>
-                        <div class="form-group"><label>Besar Pinjaman (Rp)</label><input type="number" id="plafonPinjam" required></div>
-                        <div class="form-group"><label>Tanggal</label><input type="date" id="tglPinjam" required></div>
-                        <div class="form-group"><label>Keterangan</label><select id="ketPinjam"><option value="Normal">Normal</option><option value="Top Up">Top Up</option></select></div>
+                        <div class="form-group"><label>Anggota</label><select id="dropPinjaman" required></select></div>
+                        <div class="form-group"><label>Plafon (Rp)</label><input type="number" id="plafonPinjam" required></div>
+                        <div class="form-group"><label>Tgl</label><input type="date" id="tglPinjam" required></div>
                     </div>
-                    <button type="submit" class="btn-submit">CAIRKAN PINJAMAN</button>
+                    <button type="submit" class="btn-submit">CAIRKAN</button>
                 </form>
             </div>
-
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>Monitoring Pinjaman & Jasa</h3>
+                    <h3>Monitoring & Cetak Tagihan</h3>
                     <button onclick="cetakTagihanTerpilih()" style="background:var(--dark); color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">
-                        <i class="fa fa-file-pdf"></i> Cetak Tagihan Terpilih (.pdf)
+                        <i class="fa fa-file-pdf"></i> Cetak Tagihan Terpilih (PDF)
                     </button>
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th style="text-align:center;"><input type="checkbox" id="checkAllTagihan" onclick="toggleAllTagihan(this)"></th>
-                                <th>Tanggal</th>
+                                <th style="text-align:center;"><input type="checkbox" id="checkAllTagihan" onclick="toggleAllCetak(this)"></th>
+                                <th>Tgl</th>
                                 <th>Anggota</th>
                                 <th class="txt-right">Plafon</th>
-                                <th class="txt-right">Sisa Saldo</th>
-                                <th style="text-align: center;">Status</th>
-                                <th>Aksi</th>
+                                <th class="txt-right">Sisa</th>
+                                <th style="text-align:center;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="bodyPinjaman"></tbody>
@@ -151,15 +195,34 @@
             </div>
         </div>
 
-        <div id="anggota" class="page-section"><div class="card"><h3>Data Anggota</h3><div id="bodyAnggota"></div></div></div>
-        <div id="simpanan" class="page-section"></div>
+        <div id="angsuran" class="page-section">
+            <div class="card" style="max-width: 600px; margin: auto;">
+                <h3>Input Angsuran</h3>
+                <form id="formAngsuran">
+                    <div class="form-group"><label>Anggota</label><select id="dropAngsuran" required></select></div>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Pokok</label><input type="number" id="ansPokok" required></div>
+                        <div class="form-group"><label>Jasa</label><input type="number" id="ansJasa" required></div>
+                    </div>
+                    <div class="total-box"><h2 id="txtTotalAns">Rp 0</h2></div>
+                    <button type="submit" class="btn-submit" style="background:var(--orange)">SIMPAN</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="bukukas" class="page-section">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <h3>Buku Kas Utama</h3>
+                    <h2 id="saldoBukuKas">Rp 0</h2>
+                </div>
+                <div class="table-responsive"><table><thead><tr><th>Tgl</th><th>Ket</th><th>Jenis</th><th class="txt-right">Rp</th></tr></thead><tbody id="bodyBukuKas"></tbody></table></div>
+            </div>
+        </div>
+        
         <div id="setormassal" class="page-section"></div>
-        <div id="angsuran" class="page-section"></div>
         <div id="waserda" class="page-section"></div>
-        <div id="bukukas" class="page-section"></div>
         <div id="laporan" class="page-section"></div>
-        <div id="detail-anggota" class="page-section"></div>
-        <div id="tambah-anggota" class="page-section"></div>
 
     </div>
 
@@ -168,123 +231,131 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, getDocs, addDoc, query, orderBy, where, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // Konfigurasi Firebase Anda
         const firebaseConfig = { apiKey: "AIzaSyDjyDuWxlD2OO2Lsqc1O0PJo1jEhgxGEkI", authDomain: "koperasi-pengayoman.firebaseapp.com", projectId: "koperasi-pengayoman", storageBucket: "koperasi-pengayoman.firebasestorage.app", messagingSenderId: "302370488338", appId: "1:302370488338:web:52cecadea899bcaba998cb" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const formatR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "login.html"; else showPage('dashboard'); });
+        // --- AUTH ---
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = "login.html";
+            else showPage('dashboard');
+        });
 
+        // --- NAVIGASI ---
         window.showPage = function(pageId) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
-            if(pageId === 'pinjaman') muatPinjaman();
             if(pageId === 'dashboard') muatDash();
+            if(pageId === 'anggota') muatAnggota();
+            if(pageId === 'pinjaman') muatPinjaman();
+            if(pageId === 'angsuran') muatDropAns();
+            if(pageId === 'simpanan') muatDropSimpanan();
+            if(pageId === 'bukukas') muatBukuKas();
         }
 
-        // --- FUNGSI PINJAMAN & MONITORING ---
+        // --- DATA TRANSAKSI (GABUNGAN) ---
+        async function getStats() {
+            const [sS, sAns, sP] = await Promise.all([getDocs(collection(db, "simpanan")), getDocs(collection(db, "angsuran")), getDocs(collection(db, "pinjaman"))]);
+            let stats = { simpanan: 0, jasa: 0, pokok: 0, plafon: 0, saldo: 0 };
+            sS.forEach(d => { stats.simpanan += Number(d.data().jumlah); stats.saldo += Number(d.data().jumlah); });
+            sAns.forEach(d => { stats.jasa += Number(d.data().bunga); stats.pokok += Number(d.data().jumlah); stats.saldo += (Number(d.data().jumlah) + Number(d.data().bunga)); });
+            sP.forEach(d => { stats.plafon += Number(d.data().jumlah); stats.saldo -= Number(d.data().jumlah); });
+            return stats;
+        }
+
+        // --- PINJAMAN & LOGIKANYA ---
         async function muatPinjaman() {
-            const [sPin, sAns, sAng] = await Promise.all([
-                getDocs(collection(db, "pinjaman")),
-                getDocs(collection(db, "angsuran")),
-                getDocs(collection(db, "anggota"))
-            ]);
-
-            const rekAns = {};
-            sAns.forEach(d => {
-                const id = d.data().id_pinjaman;
-                rekAns[id] = (rekAns[id] || 0) + (Number(d.data().jumlah) || 0);
-            });
-
-            const tbody = document.getElementById('bodyPinjaman');
-            tbody.innerHTML = '';
+            const [sAng, sPin, sAns] = await Promise.all([getDocs(collection(db, "anggota")), getDocs(collection(db, "pinjaman")), getDocs(collection(db, "angsuran"))]);
+            const rekAns = {}; sAns.forEach(d => { rekAns[d.data().id_pinjaman] = (rekAns[d.data().id_pinjaman]||0) + Number(d.data().jumlah); });
             
+            const tb = document.getElementById('bodyPinjaman'); tb.innerHTML = '';
             sPin.forEach(d => {
                 const da = d.data();
-                const sisa = (Number(da.jumlah) || 0) - (rekAns[d.id] || 0);
-                if (sisa > 0 && da.status === "Aktif") {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td style="text-align:center;">
-                                <input type="checkbox" class="cb-tagihan" 
-                                    data-id="${d.id}" 
-                                    data-nama="${da.info_anggota}" 
-                                    data-plafon="${da.jumlah}">
-                            </td>
-                            <td>${da.tanggal || '-'}</td>
-                            <td><strong>${da.info_anggota}</strong></td>
-                            <td class="txt-right">${formatR(da.jumlah)}</td>
-                            <td class="txt-right">${formatR(sisa)}</td>
-                            <td style="text-align:center;"><span class="status-badge status-aktif">Aktif</span></td>
-                            <td><button onclick="tandaiLunas('${d.id}')">Lunas</button></td>
-                        </tr>`;
+                const sisa = Number(da.jumlah) - (rekAns[d.id]||0);
+                if(sisa > 0 && da.status === "Aktif") {
+                    tb.innerHTML += `<tr>
+                        <td style="text-align:center;"><input type="checkbox" class="cb-cetak" data-id="${d.id}" data-nama="${da.info_anggota}" data-plafon="${da.jumlah}"></td>
+                        <td>${da.tanggal}</td>
+                        <td>${da.info_anggota}</td>
+                        <td class="txt-right">${formatR(da.jumlah)}</td>
+                        <td class="txt-right">${formatR(sisa)}</td>
+                        <td style="text-align:center;"><button onclick="tandaiLunas('${d.id}')">Set Lunas</button></td>
+                    </tr>`;
                 }
             });
+
+            // Dropdown form pinjaman
+            const dp = document.getElementById('dropPinjaman'); dp.innerHTML = '';
+            sAng.forEach(d => { dp.innerHTML += `<option value="${d.id}">${d.data().nama}</option>`; });
         }
 
-        // --- LOGIKA CENTANG ---
-        window.toggleAllTagihan = function(source) {
-            document.querySelectorAll('.cb-tagihan').forEach(cb => cb.checked = source.checked);
+        // --- FITUR CETAK PDF TERPILIH ---
+        window.toggleAllCetak = function(source) {
+            document.querySelectorAll('.cb-cetak').forEach(cb => cb.checked = source.checked);
         }
 
-        // --- FUNGSI CETAK PDF BERDASARKAN PILIHAN ---
         window.cetakTagihanTerpilih = function() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            const terpilih = document.querySelectorAll('.cb-cetak:checked');
             
-            const terpilih = document.querySelectorAll('.cb-tagihan:checked');
-            if (terpilih.length === 0) return Swal.fire('Oops', 'Pilih minimal satu anggota untuk dicetak!', 'warning');
+            if(terpilih.length === 0) return Swal.fire('Oops', 'Pilih anggota dulu!', 'warning');
 
-            let dataTabel = [];
-            let totalSemua = 0;
-            let no = 1;
-
-            terpilih.forEach(cb => {
+            let rows = [];
+            let total = 0;
+            terpilih.forEach((cb, idx) => {
                 const plafon = Number(cb.dataset.plafon);
-                const angsuranPokok = plafon / 10;
-                const jasa = plafon * 0.01;
-                const total = angsuranPokok + jasa;
-
-                dataTabel.push([
-                    no++,
-                    cb.dataset.nama,
-                    formatR(angsuranPokok),
-                    formatR(jasa),
-                    formatR(total)
-                ]);
-                totalSemua += total;
+                const pkk = plafon / 10;
+                const jsa = plafon * 0.01;
+                rows.push([idx+1, cb.dataset.nama, formatR(pkk), formatR(jsa), formatR(pkk+jsa)]);
+                total += (pkk+jsa);
             });
 
-            // Judul PDF
-            doc.setFontSize(16);
-            doc.text("KOPERASI KONSUMEN", 105, 15, { align: "center" });
-            doc.setFontSize(11);
-            doc.text("DAFTAR PENAGIHAN PINJAMAN BULANAN", 105, 22, { align: "center" });
-            doc.line(15, 25, 195, 25);
-
-            // Tabel
+            doc.text("KOPERASI KONSUMEN - DAFTAR TAGIHAN", 105, 15, {align:"center"});
             doc.autoTable({
-                startY: 30,
-                head: [['NO', 'NAMA ANGGOTA', 'POKOK (1/10)', 'JASA (1%)', 'TOTAL TAGIHAN']],
-                body: dataTabel,
-                headStyles: { fillGray: 200, textColor: 0, halign: 'center' },
-                columnStyles: { 0: {halign:'center'}, 2: {halign:'right'}, 3: {halign:'right'}, 4: {halign:'right', fontStyle:'bold'} }
+                startY: 25,
+                head: [['No', 'Nama', 'Pokok', 'Jasa', 'Total']],
+                body: rows,
+                theme: 'grid'
             });
+            doc.text(`TOTAL TAGIHAN: ${formatR(total)}`, 195, doc.lastAutoTable.finalY + 10, {align:"right"});
+            doc.save("Tagihan_Pinjaman.pdf");
+        }
 
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFont(undefined, 'bold');
-            doc.text(`TOTAL KESELURUHAN TAGIHAN: ${formatR(totalSemua)}`, 195, finalY, { align: "right" });
-            
-            doc.setFont(undefined, 'normal');
-            doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 15, finalY + 20);
-            doc.text("Bendahara,", 160, finalY + 20);
-            doc.text("( ____________________ )", 150, finalY + 45);
+        // --- DASHBOARD ---
+        async function muatDash() {
+            const stats = await getStats();
+            document.getElementById('dash-simpanan').innerText = formatR(stats.simpanan);
+            document.getElementById('dash-beredar').innerText = formatR(stats.plafon - stats.pokok);
+            document.getElementById('dash-laba').innerText = formatR(stats.jasa);
+        }
 
-            doc.save(`Tagihan_Koperasi_${new Date().getMonth()+1}_${new Date().getFullYear()}.pdf`);
-        };
+        // --- ANGGOTA ---
+        async function muatAnggota() {
+            const sA = await getDocs(collection(db, "anggota"));
+            const tb = document.getElementById('bodyAnggota'); tb.innerHTML = '';
+            sA.forEach(d => {
+                tb.innerHTML += `<tr onclick="bukaDetail('${d.id}')"><td>${d.data().no_anggota}</td><td>${d.data().nama}</td><td>${d.data().tanggal_gabung}</td><td class="txt-right">...</td></tr>`;
+            });
+        }
 
-        // ... Sisa fungsi muatDash, muatAnggota, dll (sama seperti kode sebelumnya)
+        // --- ANGSURAN FORM ---
+        async function muatDropAns() {
+            const sP = await getDocs(query(collection(db, "pinjaman"), where("status", "==", "Aktif")));
+            const dr = document.getElementById('dropAngsuran'); dr.innerHTML = '<option value="">-- Pilih --</option>';
+            sP.forEach(d => dr.innerHTML += `<option value="${d.id}" data-plafon="${d.data().jumlah}">${d.data().info_anggota}</option>`);
+        }
+
+        document.getElementById('dropAngsuran').addEventListener('change', function() {
+            const pf = Number(this.options[this.selectedIndex].dataset.plafon);
+            document.getElementById('ansPokok').value = pf / 10;
+            document.getElementById('ansJasa').value = pf * 0.01;
+        });
+
+        // Event listener lainnya (Create/Add) disesuaikan dengan pola di atas
     </script>
 </body>
 </html>

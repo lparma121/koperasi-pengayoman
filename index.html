@@ -1049,11 +1049,20 @@
             if(terpilih.length === 0) return Swal.fire('Oops', 'Pilih minimal 1 pinjaman anggota untuk dicetak tagihannya!', 'warning');
 
             let data = [];
+            let grandTotalPokok = 0;
+            let grandTotalJasa = 0;
+            let grandTotalSemua = 0;
+
             terpilih.forEach((cb, idx) => {
                 const p = Number(cb.dataset.plafon) || 0;
                 const pokok = p / 10;
                 const jasa = p * 0.01;
                 const total = pokok + jasa;
+                
+                // Menjumlahkan total keseluruhan
+                grandTotalPokok += pokok;
+                grandTotalJasa += jasa;
+                grandTotalSemua += total;
                 
                 let namaBersih = cb.dataset.nama;
                 if(namaBersih.includes(" - ")) namaBersih = namaBersih.split(" - ")[1].trim();
@@ -1069,14 +1078,21 @@
             doc.autoTable({
                 head: [['No', 'Nama Anggota', 'Angsuran Pokok', 'Bunga / Jasa', 'Total Tagihan']],
                 body: data,
+                foot: [['', 'TOTAL KESELURUHAN', formatR(grandTotalPokok), formatR(grandTotalJasa), formatR(grandTotalSemua)]],
                 startY: 28,
                 theme: 'grid',
-                headStyles: { fillColor: [26, 188, 156] }
+                headStyles: { fillColor: [26, 188, 156], halign: 'center' },
+                footStyles: { fillColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 15 },
+                    2: { halign: 'right' },
+                    3: { halign: 'right' },
+                    4: { halign: 'right', fontStyle: 'bold' }
+                }
             });
 
             doc.save("Tagihan_Pinjaman_Bulan_Ini.pdf");
         };
-
         document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
             e.preventDefault();
             const sel = document.getElementById('dropPinjaman'); const opt = sel.options[sel.selectedIndex]; const idA = sel.value; const ket = document.getElementById('ketPinjam').value;
@@ -1371,3 +1387,4 @@
     </script>
 </body>
 </html>
+

@@ -1091,7 +1091,15 @@
                 }
             });
 
-            doc.save("Tagihan_Pinjaman_Bulan_Ini.pdf");
+            // Mengambil bulan dan tahun saat ini (Otomatis Bahasa Indonesia)
+            const tanggalSekarang = new Date();
+            const namaBulan = tanggalSekarang.toLocaleString('id-ID', { month: 'long' });
+            const tahun = tanggalSekarang.getFullYear();
+            
+            // Membuat nama file dinamis
+            const namaFile = `Tagihan_Pinjaman_Bulan_${namaBulan}_${tahun}.pdf`;
+
+            doc.save(namaFile);
         };
         document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1387,4 +1395,5 @@
     </script>
 </body>
 </html>
+
 

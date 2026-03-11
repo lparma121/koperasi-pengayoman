@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         :root { --primary: #1abc9c; --dark: #2c3e50; --light: #f4f7f6; --danger: #e74c3c; --success: #27ae60; --orange: #e67e22; --blue: #3498db; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -300,7 +304,12 @@
                 </form>
             </div>
             <div class="card">
-                <h3>Monitoring Pinjaman & Jasa</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Monitoring Pinjaman & Jasa</h3>
+                    <button onclick="cetakTagihanPinjaman()" style="background:var(--dark); color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">
+                        <i class="fa fa-file-pdf"></i> Cetak Tagihan PDF
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead><tr><th>Tanggal</th><th>Anggota</th><th class="txt-right">Plafon</th><th class="txt-right">Jasa Terbayar</th><th class="txt-right">Total Angsuran</th><th class="txt-right">Sisa Saldo</th><th style="text-align: center;">Status</th><th>Aksi</th></tr></thead>
@@ -596,7 +605,7 @@
             sWas.forEach(d => {
                 const nom = Number(d.data().nominal) || 0;
                 const isMasuk = d.data().jenis === "Pemasukan";
-                const tipeData = d.data().tipe_data || "waserda"; // Mendeteksi apakah ini waserda atau penyesuaian kas
+                const tipeData = d.data().tipe_data || "waserda";
 
                 if(isMasuk) { 
                     stats.saldo_akhir += nom; 
@@ -661,7 +670,7 @@
             });
         }
 
-        // --- PAGE: BUKU KAS & PENYESUAIAN ---
+        // --- PAGE: BUKU KAS ---
         async function muatBukuKas() {
             const tb = document.getElementById('bodyBukuKas');
             tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
@@ -689,7 +698,7 @@
             saringBukuKas();
         }
 
-        // FUNGSI INPUT PENYESUAIAN KAS SAKTI
+        // FUNGSI INPUT PENYESUAIAN KAS
         document.getElementById('btnPenyesuaian').addEventListener('click', () => {
             Swal.fire({
                 title: 'Buat Penyesuaian Kas',
@@ -730,7 +739,7 @@
                             jenis: d.jenis,
                             nominal: d.nom,
                             keterangan: d.ket,
-                            tipe_data: "penyesuaian", // Flag khusus agar tidak masuk laba waserda
+                            tipe_data: "penyesuaian",
                             waktu_input: new Date().toISOString()
                         });
                         Swal.fire('Sukses', 'Penyesuaian kas berhasil dicatat. Saldo aplikasi kini sudah sinkron!', 'success');
@@ -809,7 +818,7 @@
             document.querySelectorAll('.baris-angg').forEach(tr => tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none');
         });
 
-        // --- PAGE: TAMBAH ANGGOTA ---
+        // --- TAMBAH ANGGOTA ---
         document.getElementById('formTambahAnggota').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
@@ -827,7 +836,7 @@
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: DETAIL ANGGOTA ---
+        // --- DETAIL ANGGOTA ---
         window.bukaDetail = async function(id) {
             globalIdAnggotaDetail = id;
             showPage('detail-anggota');
@@ -875,7 +884,6 @@
                     });
                 }
                 
-                // Urutkan berdasarkan tanggal kalender (terbaru di atas)
                 arrDetail.sort((a,b) => {
                     if(a.tgl !== b.tgl) return b.tgl.localeCompare(a.tgl);
                     return new Date(b.waktu) - new Date(a.waktu);
@@ -890,7 +898,7 @@
 
                 btnK.onclick = async () => {
                     if(totP > 0) return Swal.fire('Gagal', `Anggota masih memiliki hutang ${formatR(totP)}`, 'error');
-                    if(totS > 0) return Swal.fire('Peringatan', `Anggota masih memiliki simpanan ${formatR(totS)}. Tarik dana di menu Simpanan terlebih dahulu.`, 'warning');
+                    if(totS > 0) return Swal.fire('Peringatan', `Anggota masih memiliki simpanan ${formatR(totS)}.`, 'warning');
                     if(confirm("Yakin nonaktifkan anggota ini?")) {
                         await updateDoc(doc(db, "anggota", id), { status: "Keluar" });
                         Swal.fire('Sukses', 'Status dinonaktifkan', 'success');
@@ -900,19 +908,18 @@
             } catch(e) { document.getElementById('listTransaksiDetail').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Error: ${e.message}</td></tr>`; }
         }
 
-        // --- PAGE: SIMPANAN ---
+        // --- SIMPANAN ---
         async function muatDropSimpanan() {
             const dr = document.getElementById('dropSimpanan'); dr.innerHTML = '<option value="">-- Pilih Anggota --</option>';
             const sA = await getDocs(query(collection(db, "anggota"), orderBy("nama")));
-            sA.forEach(d => { if(d.data().status !== "Keluar" && d.data().status !== "Nonaktif") dr.innerHTML += `<option value="${d.id}">${d.data().no_anggota} - ${d.data().nama}</option>`; });
+            sA.forEach(d => { if(d.data().status !== "Keluar") dr.innerHTML += `<option value="${d.id}">${d.data().no_anggota} - ${d.data().nama}</option>`; });
         }
         async function muatRiwayatSimpanan() {
-            const tb = document.getElementById('bodyRiwayatSimpanan'); tb.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat...</td></tr>';
+            const tb = document.getElementById('bodyRiwayatSimpanan'); tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat...</td></tr>';
             const sS = await getDocs(collection(db, "simpanan"));
             let arrS = [];
             sS.forEach(doc => arrS.push(doc.data()));
             
-            // Urutkan berdasarkan tanggal kalender
             arrS.sort((a, b) => {
                 let dA = a.tanggal_transaksi || "1970-01-01";
                 let dB = b.tanggal_transaksi || "1970-01-01";
@@ -921,11 +928,9 @@
             });
 
             tb.innerHTML = '';
-            if(arrS.length === 0) tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada data</td></tr>';
-            
             arrS.slice(0, 30).forEach(d => {
                 const v = Number(d.jumlah)||0;
-                tb.innerHTML += `<tr><td>${d.tanggal_transaksi||'-'}</td><td>${d.info_anggota}</td><td>${d.jenis_simpanan}</td><td class="txt-right" style="color:${v<0?'var(--danger)':'var(--success)'}">${v<0?'<i class="fa fa-arrow-up"></i>':'<i class="fa fa-arrow-down"></i>'} ${formatR(Math.abs(v))}</td></tr>`;
+                tb.innerHTML += `<tr><td>${d.tanggal_transaksi||'-'}</td><td>${d.info_anggota}</td><td>${d.jenis_simpanan}</td><td class="txt-right" style="color:${v<0?'var(--danger)':'var(--success)'}">${v<0?'-':'+'} ${formatR(Math.abs(v))}</td></tr>`;
             });
         }
         document.getElementById('formSimpanan').addEventListener('submit', async (e) => {
@@ -936,19 +941,19 @@
             if (jenis === "Penarikan") nom = -nom;
             try {
                 await addDoc(collection(db, "simpanan"), { id_anggota: sel.value, info_anggota: sel.options[sel.selectedIndex].text, jenis_simpanan: jenis, jumlah: nom, tanggal_transaksi: document.getElementById('tglSimpan').value, waktu_input: new Date().toISOString() });
-                Swal.fire('Sukses', 'Transaksi Simpanan Berhasil', 'success');
+                Swal.fire('Sukses', 'Simpanan Berhasil', 'success');
                 document.getElementById('formSimpanan').reset();
                 muatRiwayatSimpanan();
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: SETOR MASSAL ---
+        // --- SETOR MASSAL ---
         async function muatAnggotaMassal() {
             const tb = document.getElementById('bodySetorMassal'); tb.innerHTML = '';
             const sA = await getDocs(query(collection(db, "anggota"), orderBy("no_anggota", "asc")));
             sA.forEach(doc => {
                 const d = doc.data();
-                if(d.status !== "Keluar" && d.status !== "Nonaktif") {
+                if(d.status !== "Keluar") {
                     tb.innerHTML += `<tr><td style="text-align:center;"><input type="checkbox" class="cb-massal" data-id="${doc.id}" data-no="${d.no_anggota}" data-nama="${d.nama}" checked></td><td>${d.no_anggota}</td><td>${d.nama}</td><td>Simpanan Wajib</td></tr>`;
                 }
             });
@@ -958,27 +963,26 @@
             const bln = document.getElementById('bulanSetoran').value; const thn = document.getElementById('tahunSetoran').value; const nom = Number(document.getElementById('nominalWajib').value);
             const t = document.querySelectorAll('.cb-massal:checked');
             if(t.length === 0) return Swal.fire('Oops', 'Pilih minimal 1 anggota', 'warning');
-            Swal.fire({ title: 'Proses Massal?', text: `Setor Rp ${nom.toLocaleString()} untuk ${t.length} anggota?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Proses' }).then(async (res) => {
+            Swal.fire({ title: 'Proses Massal?', text: `Setor Rp ${nom.toLocaleString()}?`, icon: 'question', showCancelButton: true }).then(async (res) => {
                 if(res.isConfirmed) {
                     let s=0; for(let cb of t) { try { await addDoc(collection(db, "simpanan"), { id_anggota: cb.dataset.id, info_anggota: `${cb.dataset.no} - ${cb.dataset.nama}`, jenis_simpanan: "Simpanan Wajib", jumlah: nom, tanggal_transaksi: new Date().toISOString().split('T')[0], keterangan: `Wajib ${bln} ${thn}`, waktu_input: new Date().toISOString() }); s++; } catch(e){} }
-                    Swal.fire('Selesai', `Berhasil memproses ${s} data`, 'success');
+                    Swal.fire('Selesai', `Berhasil ${s} data`, 'success');
                 }
             });
         });
 
-        // --- PAGE: PINJAMAN ---
+        // --- PINJAMAN ---
         async function muatPinjaman() {
             const drop = document.getElementById('dropPinjaman');
             const [sAng, sPin, sAns] = await Promise.all([getDocs(query(collection(db, "anggota"), orderBy("nama"))), getDocs(collection(db, "pinjaman")), getDocs(collection(db, "angsuran"))]);
             drop.innerHTML = '<option value="">-- Pilih Anggota --</option>';
-            sAng.forEach(d => { if(d.data().status !== "Keluar" && d.data().status !== "Nonaktif") drop.innerHTML += `<option value="${d.id}" data-no="${d.data().no_anggota}" data-nama="${d.data().nama}">${d.data().no_anggota} - ${d.data().nama}</option>`; });
+            sAng.forEach(d => { if(d.data().status !== "Keluar") drop.innerHTML += `<option value="${d.id}" data-no="${d.data().no_anggota}" data-nama="${d.data().nama}">${d.data().no_anggota} - ${d.data().nama}</option>`; });
 
             const rek = {}; sAns.forEach(d => { const id = d.data().id_pinjaman; if(!rek[id]) rek[id] = {p:0, j:0}; rek[id].p += Number(d.data().jumlah)||0; rek[id].j += Number(d.data().bunga)||0; });
             
             let arrP = [];
             sPin.forEach(d => arrP.push({ id: d.id, ...d.data() }));
             
-            // Urutkan berdasarkan tanggal kalender
             arrP.sort((a, b) => {
                 let dA = a.tanggal || "1970-01-01";
                 let dB = b.tanggal || "1970-01-01";
@@ -990,10 +994,10 @@
             arrP.forEach(da => {
                 const id = da.id; const p = Number(da.jumlah)||0; const jt = rek[id]?rek[id].j:0; const pt = rek[id]?rek[id].p:0; const sisa = p - pt;
                 const statLay = sisa <= 0 ? 'Lunas' : (da.status||'Aktif'); const cls = statLay === 'Aktif' ? 'status-aktif' : 'status-lunas';
-                tbody.innerHTML += `<tr><td>${da.tanggal||'-'}</td><td><strong>${da.info_anggota}</strong></td><td class="txt-right">${formatR(p)}</td><td class="txt-right" style="color:var(--blue)">${formatR(jt)}</td><td class="txt-right" style="color:var(--success)">${formatR(pt)}</td><td class="txt-right ${sisa>0&&statLay==='Aktif'?'saldo-minus':''}">${formatR(sisa<=0?0:sisa)}</td><td style="text-align:center;"><span class="status-badge ${cls}">${statLay}</span></td><td>${statLay==='Aktif'?`<button class="btn-lunas-manual" onclick="tandaiLunas('${id}', '${da.info_anggota}')">✔ Lunas</button>`:`<small>Selesai</small>`}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${da.tanggal||'-'}</td><td><strong>${da.info_anggota}</strong></td><td class="txt-right">${formatR(p)}</td><td class="txt-right">${formatR(jt)}</td><td class="txt-right">${formatR(pt)}</td><td class="txt-right">${formatR(sisa<=0?0:sisa)}</td><td style="text-align:center;"><span class="status-badge ${cls}">${statLay}</span></td><td>${statLay==='Aktif'?`<button onclick="tandaiLunas('${id}', '${da.info_anggota}')">✔ Lunas</button>`:`-`}</td></tr>`;
             });
         }
-        window.tandaiLunas = function(id, nama) { Swal.fire({ title:'Set Lunas?', text:`Tandai pinjaman ${nama} lunas manual?`, icon:'warning', showCancelButton:true }).then(async r => { if(r.isConfirmed){ await updateDoc(doc(db, "pinjaman", id), {status:"Lunas (Manual)"}); muatPinjaman(); }}); }
+        window.tandaiLunas = function(id, nama) { Swal.fire({ title:'Set Lunas?', icon:'warning', showCancelButton:true }).then(async r => { if(r.isConfirmed){ await updateDoc(doc(db, "pinjaman", id), {status:"Lunas"}); muatPinjaman(); }}); }
         
         document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1005,12 +1009,86 @@
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: ANGSURAN ---
+        // --- FUNGSI CETAK TAGIHAN PDF (BARU) ---
+        window.cetakTagihanPinjaman = async function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const [sPin, sAns] = await Promise.all([
+                getDocs(collection(db, "pinjaman")), 
+                getDocs(collection(db, "angsuran"))
+            ]);
+
+            const rekAns = {};
+            sAns.forEach(d => {
+                const id = d.data().id_pinjaman;
+                if(!rekAns[id]) rekAns[id] = 0;
+                rekAns[id] += Number(d.data().jumlah) || 0;
+            });
+
+            let dataTabel = [];
+            let totalSeluruhTagihan = 0;
+            let no = 1;
+
+            sPin.forEach(d => {
+                const da = d.data();
+                const plafon = Number(da.jumlah) || 0;
+                const terbayar = rekAns[d.id] || 0;
+                const sisaPokok = plafon - terbayar;
+
+                if (sisaPokok > 0 && da.status === "Aktif") {
+                    const angsuranPokok = plafon / 10; 
+                    const jasa = plafon * 0.01;      
+                    const totalTagihan = angsuranPokok + jasa;
+
+                    dataTabel.push([
+                        no++,
+                        da.info_anggota,
+                        formatR(angsuranPokok),
+                        formatR(jasa),
+                        formatR(totalTagihan)
+                    ]);
+                    totalSeluruhTagihan += totalTagihan;
+                }
+            });
+
+            doc.setFontSize(18);
+            doc.text("KOPERASI KONSUMEN", 105, 15, { align: "center" });
+            doc.setFontSize(12);
+            doc.text("DAFTAR TAGIHAN PINJAMAN ANGGOTA", 105, 22, { align: "center" });
+            doc.text(`Periode: ${new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date())}`, 105, 28, { align: "center" });
+            doc.line(15, 32, 195, 32); 
+
+            doc.autoTable({
+                startY: 38,
+                head: [['NO', 'NAMA ANGGOTA', 'POKOK (1/10)', 'JASA (1%)', 'TOTAL TAGIHAN']],
+                body: dataTabel,
+                theme: 'grid',
+                headStyles: { fillGray: 200, textColor: 0, halign: 'center' },
+                columnStyles: {
+                    0: { halign: 'center' },
+                    2: { halign: 'right' },
+                    3: { halign: 'right' },
+                    4: { halign: 'right', fontStyle: 'bold' }
+                },
+            });
+
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFont(undefined, 'bold');
+            doc.text(`TOTAL KESELURUHAN: ${formatR(totalSeluruhTagihan)}`, 195, finalY, { align: "right" });
+            doc.setFont(undefined, 'normal');
+            doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 15, finalY + 20);
+            doc.text("Bendahara,", 160, finalY + 30);
+            doc.text("( ____________________ )", 150, finalY + 55);
+
+            doc.save(`Tagihan_Pinjaman_${new Date().toLocaleDateString()}.pdf`);
+        };
+
+        // --- ANGSURAN ---
         async function muatDropAns() {
-            const dr = document.getElementById('dropAngsuran'); dr.innerHTML = '<option value="">-- Memuat data pinjaman aktif... --</option>';
+            const dr = document.getElementById('dropAngsuran'); dr.innerHTML = '<option value="">-- Pilih --</option>';
             const sP = await getDocs(query(collection(db,"pinjaman"), where("status", "==", "Aktif")));
-            dr.innerHTML = '<option value="">-- Pilih Anggota --</option>';
-            sP.forEach(d => dr.innerHTML += `<option value="${d.id}" data-nama="${d.data().info_anggota}" data-plafon="${d.data().jumlah}">${d.data().info_anggota} (Sisa: ${formatR(d.data().jumlah)})</option>`);
+            sP.forEach(d => dr.innerHTML += `<option value="${d.id}" data-nama="${d.data().info_anggota}" data-plafon="${d.data().jumlah}">${d.data().info_anggota}</option>`);
         }
         
         const inPok = document.getElementById('ansPokok'); const inBng = document.getElementById('ansJasa'); const txtTot = document.getElementById('txtTotalAns');
@@ -1018,8 +1096,8 @@
             const opt = this.options[this.selectedIndex]; const pf = Number(opt.dataset.plafon)||0;
             if(pf > 0) {
                 inPok.value = pf / 10; inBng.value = pf * 0.01;
-                document.getElementById('boxInfoAns').style.display = 'block'; document.getElementById('infoPlafonAns').innerText = "Plafon Asli: " + formatR(pf);
-            } else { inPok.value = ''; inBng.value = ''; document.getElementById('boxInfoAns').style.display = 'none'; }
+                document.getElementById('boxInfoAns').style.display = 'block'; document.getElementById('infoPlafonAns').innerText = "Plafon: " + formatR(pf);
+            } else { document.getElementById('boxInfoAns').style.display = 'none'; }
             updTotAns();
         });
         function updTotAns() { txtTot.innerText = formatR((Number(inPok.value)||0) + (Number(inBng.value)||0)); }
@@ -1029,49 +1107,26 @@
             e.preventDefault(); const sel = document.getElementById('dropAngsuran');
             try {
                 await addDoc(collection(db, "angsuran"), { id_pinjaman: sel.value, info_anggota: sel.options[sel.selectedIndex].dataset.nama, jumlah: Number(inPok.value), bunga: Number(inBng.value), tanggal: document.getElementById('tglAns').value, waktu_input: new Date().toISOString() });
-                Swal.fire('Sukses', 'Angsuran berhasil dicatat', 'success'); document.getElementById('formAngsuran').reset(); document.getElementById('boxInfoAns').style.display = 'none'; updTotAns();
+                Swal.fire('Sukses', 'Berhasil', 'success'); document.getElementById('formAngsuran').reset(); document.getElementById('boxInfoAns').style.display = 'none'; updTotAns();
             } catch(err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: WASERDA ---
+        // --- WASERDA ---
         async function muatWaserda() {
-            const tb = document.getElementById('bodyWaserda');
-            tb.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+            const tb = document.getElementById('bodyWaserda'); tb.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
             const snap = await getDocs(collection(db, "waserda"));
-            
-            let arrW = [];
-            snap.forEach(doc => arrW.push(doc.data()));
-            
-            // Urutkan berdasarkan tanggal kalender
-            arrW.sort((a, b) => {
-                let dA = a.tanggal || "1970-01-01";
-                let dB = b.tanggal || "1970-01-01";
-                if(dA !== dB) return dB.localeCompare(dA);
-                return new Date(b.waktu_input||0) - new Date(a.waktu_input||0);
-            });
+            let arrW = []; snap.forEach(doc => arrW.push(doc.data()));
+            arrW.sort((a, b) => (b.tanggal||"").localeCompare(a.tanggal||""));
 
-            tb.innerHTML = '';
-            let saldoBersih = 0;
-
-            if(arrW.length === 0) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi Waserda</td></tr>'; }
-            
+            tb.innerHTML = ''; let saldoBersih = 0;
             arrW.forEach(d => {
-                // Sembunyikan data penyesuaian dari tabel waserda agar tidak membingungkan
                 if(d.tipe_data === "penyesuaian") return;
-
                 const nom = Number(d.nominal) || 0;
                 const isMasuk = d.jenis === "Pemasukan";
-                
                 if(isMasuk) saldoBersih += nom; else saldoBersih -= nom;
-
-                tb.innerHTML += `<tr>
-                    <td>${d.tanggal}</td>
-                    <td>${d.keterangan}</td>
-                    <td style="text-align:center;"><span class="status-badge" style="background:${isMasuk?'#e8f5e9':'#ffebee'}; color:${isMasuk?'var(--success)':'var(--danger)'}">${d.jenis}</span></td>
-                    <td class="txt-right" style="color:${isMasuk?'var(--success)':'var(--danger)'}">${isMasuk?'+':'-'} ${formatR(nom)}</td>
-                </tr>`;
+                tb.innerHTML += `<tr><td>${d.tanggal}</td><td>${d.keterangan}</td><td style="text-align:center;">${d.jenis}</td><td class="txt-right">${formatR(nom)}</td></tr>`;
             });
-            document.getElementById('saldoWaserda').innerText = `Laba Bersih Waserda: ${formatR(saldoBersih)}`;
+            document.getElementById('saldoWaserda').innerText = `Laba Waserda: ${formatR(saldoBersih)}`;
         }
 
         document.getElementById('formWaserda').addEventListener('submit', async (e) => {
@@ -1084,207 +1139,55 @@
                     keterangan: document.getElementById('ketWaserda').value,
                     waktu_input: new Date().toISOString()
                 });
-                Swal.fire('Sukses', 'Transaksi Waserda tersimpan', 'success');
+                Swal.fire('Sukses', 'Tersimpan', 'success');
                 document.getElementById('formWaserda').reset();
-                document.getElementById('tglWaserda').valueAsDate = new Date();
                 muatWaserda();
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: LAPORAN SHU ---
-        let dbDataSHU = {}; 
-        let calcSimpananTotal = 0;
-        let calcJasaTotal = 0;
-        let calcLabaPinjaman = 0;
-
-        const inputsPersen = document.querySelectorAll('.pct-input');
-        inputsPersen.forEach(inp => inp.addEventListener('input', updateSisaAnggota));
+        // --- LAPORAN SHU ---
+        let dbDataSHU = {}; let calcSimpananTotal = 0; let calcJasaTotal = 0; let calcLabaPinjaman = 0;
 
         async function muatLabaFormal() {
-            try {
-                const sAngg = await getDocs(collection(db, "anggota"));
-                let mapIdKeNamaReal = {};
-                sAngg.forEach(d => { mapIdKeNamaReal[d.id] = d.data().nama.trim(); });
-
-                const [sSimp, sAns] = await Promise.all([
-                    getDocs(collection(db, "simpanan")),
-                    getDocs(collection(db, "angsuran"))
-                ]);
-
-                dbDataSHU = {}; calcSimpananTotal = 0; calcJasaTotal = 0; calcLabaPinjaman = 0;
-
-                sSimp.forEach(d => {
-                    const val = Number(d.data().jumlah) || 0;
-                    const idAnggotaSimpanan = d.data().id_anggota;
-                    let namaFixed = mapIdKeNamaReal[idAnggotaSimpanan] || d.data().info_anggota || "Tanpa Nama";
-                    if(namaFixed.includes(" - ")) namaFixed = namaFixed.split(" - ")[1].trim();
-                    if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
-                    dbDataSHU[namaFixed].simpanan += val; calcSimpananTotal += val;
-                });
-
-                sAns.forEach(d => {
-                    const val = Number(d.data().bunga) || 0;
-                    let namaRaw = d.data().info_anggota || "Tanpa Nama";
-                    let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1].trim() : namaRaw.trim();
-                    if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
-                    dbDataSHU[namaFixed].jasa += val; calcJasaTotal += val;
-                });
-
-                calcLabaPinjaman = calcJasaTotal; 
-                document.getElementById('shuTotal').value = formatR(calcLabaPinjaman);
-                
-                updateSisaAnggota();
-            } catch (error) { document.getElementById('shuTotal').value = "Error memuat data"; }
+            const sAngg = await getDocs(collection(db, "anggota"));
+            let mapIdKeNamaReal = {}; sAngg.forEach(d => { mapIdKeNamaReal[d.id] = d.data().nama.trim(); });
+            const [sSimp, sAns] = await Promise.all([getDocs(collection(db, "simpanan")), getDocs(collection(db, "angsuran"))]);
+            dbDataSHU = {}; calcSimpananTotal = 0; calcJasaTotal = 0;
+            sSimp.forEach(d => {
+                const val = Number(d.data().jumlah) || 0; const idA = d.data().id_anggota;
+                let nama = mapIdKeNamaReal[idA] || d.data().info_anggota || "Umum";
+                if(nama.includes("-")) nama = nama.split("-")[1].trim();
+                if(!dbDataSHU[nama]) dbDataSHU[nama] = { simpanan: 0, jasa: 0 };
+                dbDataSHU[nama].simpanan += val; calcSimpananTotal += val;
+            });
+            sAns.forEach(d => {
+                const val = Number(d.data().bunga) || 0; let nama = d.data().info_anggota || "Umum";
+                if(nama.includes("-")) nama = nama.split("-")[1].trim();
+                if(!dbDataSHU[nama]) dbDataSHU[nama] = { simpanan: 0, jasa: 0 };
+                dbDataSHU[nama].jasa += val; calcJasaTotal += val;
+            });
+            calcLabaPinjaman = calcJasaTotal;
+            document.getElementById('shuTotal').value = formatR(calcLabaPinjaman);
+            updateSisaAnggota();
         }
 
         function updateSisaAnggota() {
-            const p_cad = Number(document.getElementById('p_cadangan').value) || 0;
-            const p_png = Number(document.getElementById('p_pengurus').value) || 0;
-            const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;
-            const p_sos = Number(document.getElementById('p_sosial').value) || 0;
-            const p_opr = Number(document.getElementById('p_operasional').value) || 0;
-            const p_rew = Number(document.getElementById('p_reward').value) || 0;
-            const p_ang = Number(document.getElementById('p_anggota').value) || 0;
-            
-            const totalPct = p_cad + p_png + p_pnd + p_sos + p_opr + p_rew + p_ang;
-            const txtTot = document.getElementById('totPct');
-            
-            if(totalPct !== 100) {
-                txtTot.innerText = `(Total saat ini: ${totalPct}% - HARUS PAS 100%)`;
-                txtTot.style.color = "var(--danger)";
-            } else {
-                txtTot.innerText = `(Total: 100% - Valid)`;
-                txtTot.style.color = "var(--success)";
-            }
-
-            document.getElementById('nom_cadangan').innerText = formatR(calcLabaPinjaman * (p_cad / 100));
-            document.getElementById('nom_pengurus').innerText = formatR(calcLabaPinjaman * (p_png / 100));
-            document.getElementById('nom_pendidikan').innerText = formatR(calcLabaPinjaman * (p_pnd / 100));
-            document.getElementById('nom_sosial').innerText = formatR(calcLabaPinjaman * (p_sos / 100));
-            document.getElementById('nom_operasional').innerText = formatR(calcLabaPinjaman * (p_opr / 100));
-            document.getElementById('nom_reward').innerText = formatR(calcLabaPinjaman * (p_rew / 100));
-
-            const danaAnggota = calcLabaPinjaman * (p_ang / 100);
-            document.getElementById('shuAnggotaTotal').value = formatR(danaAnggota < 0 ? 0 : danaAnggota);
+            const danaAnggota = calcLabaPinjaman * (Number(document.getElementById('p_anggota').value)/100);
+            document.getElementById('shuAnggotaTotal').value = formatR(danaAnggota);
         }
 
         window.hitungSHUFormal = function() {
-            const p_cad = Number(document.getElementById('p_cadangan').value) || 0;
-            const p_png = Number(document.getElementById('p_pengurus').value) || 0;
-            const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;
-            const p_sos = Number(document.getElementById('p_sosial').value) || 0;
-            const p_opr = Number(document.getElementById('p_operasional').value) || 0;
-            const p_rew = Number(document.getElementById('p_reward').value) || 0;
-            const p_ang = Number(document.getElementById('p_anggota').value) || 0;
-
-            if((p_cad + p_png + p_pnd + p_sos + p_opr + p_rew + p_ang) !== 100) {
-                return Swal.fire('Peringatan!', 'Total seluruh persentase (Cadangan s/d Anggota) harus tepat 100%. Silakan atur kembali angkanya.', 'warning');
-            }
-
-            const pSimpanan = Number(document.getElementById('porsiSimpanan').value) || 0;
-            const pPinjaman = Number(document.getElementById('porsiPinjaman').value) || 0;
-
-            if (pSimpanan + pPinjaman !== 100) {
-                return Swal.fire('Peringatan!', 'Total Porsi Jasa Modal dan Jasa Usaha harus tepat 100%.', 'warning');
-            }
-
-            const danaAnggota = calcLabaPinjaman * (p_ang / 100);
-            if (danaAnggota <= 0) return Swal.fire('Oops', 'Tidak ada dana SHU yang bisa dibagikan (Laba 0).', 'warning');
-
-            const danaBagiSimpanan = danaAnggota * (pSimpanan / 100);
-            const danaBagiPinjaman = danaAnggota * (pPinjaman / 100);
-
-            const tb = document.getElementById('bodySHU'); 
-            tb.innerHTML = '';
-
-            let sumSimpanan = 0; let sumJasa = 0; let sumSHUModal = 0; let sumSHUUsaha = 0; let sumTotalSHU = 0;
-
+            const danaAnggota = calcLabaPinjaman * (Number(document.getElementById('p_anggota').value)/100);
+            const pSim = Number(document.getElementById('porsiSimpanan').value)/100;
+            const pUs = Number(document.getElementById('porsiPinjaman').value)/100;
+            const tb = document.getElementById('bodySHU'); tb.innerHTML = '';
             for(let n in dbDataSHU) {
-                const data = dbDataSHU[n];
-                
-                let dapatSimpananAsli = calcSimpananTotal > 0 ? (data.simpanan / calcSimpananTotal) * danaBagiSimpanan : 0;
-                let dapatPinjamanAsli = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
-                if(dapatSimpananAsli < 0) dapatSimpananAsli = 0; 
-                
-                let dapatSimpanan = Math.floor(dapatSimpananAsli / 1000) * 1000;
-                let dapatPinjaman = Math.floor(dapatPinjamanAsli / 1000) * 1000;
-                const dapatTotal = dapatSimpanan + dapatPinjaman;
-
-                if (data.simpanan > 0 || data.jasa > 0) {
-                    sumSimpanan += data.simpanan; sumJasa += data.jasa; sumSHUModal += dapatSimpanan; sumSHUUsaha += dapatPinjaman; sumTotalSHU += dapatTotal;
-
-                    tb.innerHTML += `<tr>
-                        <td><strong>${n}</strong></td>
-                        <td class="txt-right">${formatR(data.simpanan)}</td>
-                        <td class="txt-right">${formatR(data.jasa)}</td>
-                        <td class="txt-right hl-modal">${formatR(dapatSimpanan)}</td>
-                        <td class="txt-right hl-jasa">${formatR(dapatPinjaman)}</td>
-                        <td class="txt-right hl-total"><b>${formatR(dapatTotal)}</b></td>
-                    </tr>`;
-                }
+                const d = dbDataSHU[n];
+                const sMod = calcSimpananTotal > 0 ? (d.simpanan/calcSimpananTotal)*(danaAnggota*pSim) : 0;
+                const sUs = calcJasaTotal > 0 ? (d.jasa/calcJasaTotal)*(danaAnggota*pUs) : 0;
+                tb.innerHTML += `<tr><td>${n}</td><td class="txt-right">${formatR(d.simpanan)}</td><td class="txt-right">${formatR(d.jasa)}</td><td class="txt-right">${formatR(sMod)}</td><td class="txt-right">${formatR(sUs)}</td><td class="txt-right">${formatR(sMod+sUs)}</td></tr>`;
             }
-
-            tb.innerHTML += `<tr style="background-color: #e8f5e9; border-top: 2px solid var(--success);">
-                <td style="text-align: center; font-weight: bold; color: var(--dark);">TOTAL KESELURUHAN</td>
-                <td class="txt-right" style="font-weight: bold;">${formatR(sumSimpanan)}</td>
-                <td class="txt-right" style="font-weight: bold;">${formatR(sumJasa)}</td>
-                <td class="txt-right hl-modal" style="font-weight: bold;">${formatR(sumSHUModal)}</td>
-                <td class="txt-right hl-jasa" style="font-weight: bold;">${formatR(sumSHUUsaha)}</td>
-                <td class="txt-right hl-total" style="font-weight: bold; color: var(--dark);">${formatR(sumTotalSHU)}</td>
-            </tr>`;
-
-            const selisih = danaAnggota - sumTotalSHU;
-            document.getElementById('catatanSelisih').innerHTML = `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; border-radius: 6px; font-size: 0.85rem; color: #856404; line-height: 1.5;"><strong><i class="fa fa-info-circle"></i> Penjelasan Selisih Dana:</strong><br>Terdapat perbedaan nilai sebesar <strong>${formatR(selisih)}</strong> antara <em>Dana Bersih Untuk Anggota (${formatR(danaAnggota)})</em> dengan <em>Total Keseluruhan yang riil dibagikan (${formatR(sumTotalSHU)})</em>. Hal ini murni dikarenakan sistem melakukan <strong>pembulatan nominal ke bawah (ke ribuan terdekat)</strong> pada setiap anggota untuk memudahkan pencairan tunai. Sisa selisih dana (recehan) tersebut tidak hilang, melainkan tetap mengendap dan tercatat sebagai Saldo Kas Koperasi.</div>`;
-
             document.getElementById('areaSHU').style.display = 'block';
-        }
-
-        window.cetakLaporan = function() {
-            const isiTabel = document.getElementById('tabelSHU').outerHTML;
-            const totalLabaStr = document.getElementById('shuTotal').value;
-            const labaMurni = calcLabaPinjaman;
-            
-            const p_cad = Number(document.getElementById('p_cadangan').value) || 0;
-            const p_png = Number(document.getElementById('p_pengurus').value) || 0;
-            const p_pnd = Number(document.getElementById('p_pendidikan').value) || 0;
-            const p_sos = Number(document.getElementById('p_sosial').value) || 0;
-            const p_opr = Number(document.getElementById('p_operasional').value) || 0;
-            const p_rew = Number(document.getElementById('p_reward').value) || 0;
-            const p_ang = Number(document.getElementById('p_anggota').value) || 0;
-
-            const danaAnggotaStr = document.getElementById('shuAnggotaTotal').value;
-
-            const jendelaCetak = window.open('', '', 'height=800,width=1000');
-            jendelaCetak.document.write('<html><head><title>Laporan SHU - Koperasi Konsumen</title><style>body { font-family: "Times New Roman", Times, serif; padding: 30px; color: black; } .kop-surat { text-align: center; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 25px; } .kop-surat h1 { margin: 0; font-size: 22px; text-transform: uppercase; } .kop-surat p { margin: 5px 0 0 0; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; } th, td { border: 1px solid black; padding: 8px; } th { background-color: #f2f2f2; text-align: center; font-weight: bold; } .txt-right { text-align: right; } .rincian-dana { margin-bottom: 20px; font-size: 13px; } .rincian-dana table { width: 60%; border: none; margin-top: 10px; } .rincian-dana td { border: none; padding: 5px; } .ttd-box { margin-top: 50px; width: 100%; display: flex; justify-content: space-between; text-align: center; } .catatan-print { margin-top: 20px; font-size: 11px; border: 1px dashed black; padding: 10px; text-align: justify; line-height: 1.4; }</style></head><body>');
-            
-            jendelaCetak.document.write('<div class="kop-surat"><h1>KOPERASI KONSUMEN</h1><p>Laporan Alokasi Sisa Hasil Usaha (SHU) Anggota</p><p>Tahun Buku: ' + new Date().getFullYear() + '</p></div>');
-            
-            jendelaCetak.document.write('<div class="rincian-dana"><strong>A. Rincian Alokasi Dana SHU:</strong>');
-            jendelaCetak.document.write(`
-                <table>
-                    <tr><td>Total Laba Jasa Pinjaman</td><td>:</td><td class="txt-right" style="font-weight:bold;">${totalLabaStr}</td></tr>
-                    <tr><td colspan="3"><hr style="border:0; border-top:1px dashed #ccc;"></td></tr>
-                    <tr><td>1. Cadangan Koperasi (${p_cad}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_cad/100))}</td></tr>
-                    <tr><td>2. Honor Pengurus (${p_png}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_png/100))}</td></tr>
-                    <tr><td>3. Dana Pendidikan (${p_pnd}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_pnd/100))}</td></tr>
-                    <tr><td>4. Dana Sosial (${p_sos}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_sos/100))}</td></tr>
-                    <tr><td>5. Dana Operasional (${p_opr}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_opr/100))}</td></tr>
-                    <tr><td>6. Reward Pegawai (${p_rew}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_rew/100))}</td></tr>
-                    <tr><td colspan="3"><hr style="border:0; border-top:1px solid #000;"></td></tr>
-                    <tr><td><strong>7. Dana Dibagikan ke Anggota (${p_ang}%)</strong></td><td><strong>:</strong></td><td class="txt-right" style="font-weight:bold; font-size:14px;">${danaAnggotaStr}</td></tr>
-                </table>
-            </div>`);
-
-            jendelaCetak.document.write('<strong>B. Rincian Pembagian per Anggota:</strong>' + isiTabel);
-            
-            jendelaCetak.document.write('<div class="catatan-print"><strong>*Catatan Pembulatan:</strong> Terdapat selisih nominal antara <em>Dana Bersih Untuk Anggota</em> (A.7) dengan <em>Total Keseluruhan</em> yang dibagikan pada tabel di atas. Selisih ini terjadi karena sistem menerapkan <strong>pembulatan nilai ke bawah (ke ribuan terdekat)</strong> pada nominal penerimaan tiap anggota untuk memudahkan pencairan tunai. Sisa uang dari selisih pembulatan tersebut tidak hilang, melainkan tetap tersimpan aman dan masuk kembali sebagai Saldo Kas Koperasi.</div>');
-            
-            jendelaCetak.document.write('<div class="ttd-box"><div><p>Ketua,</p><br><br><br><br><p><strong>( Iwan Aprilianto )</strong></p></div><div><p>Bendahara,</p><br><br><br><br><p><strong>( M. Andika Riansyah )</strong></p></div></div>');
-            
-            jendelaCetak.document.write('</body></html>');
-            jendelaCetak.document.close();
-            jendelaCetak.focus();
-            setTimeout(() => { jendelaCetak.print(); jendelaCetak.close(); }, 500);
         }
     </script>
 </body>

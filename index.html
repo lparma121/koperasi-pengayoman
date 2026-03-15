@@ -869,6 +869,7 @@
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
 
         // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Format Akuntansi Standar)
+        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Mendukung Saldo Awal & Akuntansi)
         window.cetakBukuKasPDF = function() {
             if (!window.jspdf || !window.jspdf.jsPDF) {
                 return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
@@ -877,76 +878,101 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape'); // Menggunakan orientasi landscape
 
+            const filterThn = document.getElementById('filterTahunKas').value;
+            const filterBln = document.getElementById('filterBulanKas').value;
+            const filterKat = document.getElementById('filterKategoriKas').value.toLowerCase();
+            const filterTeks = document.getElementById('cariKas').value.toLowerCase();
+
+            // 1. Menentukan Tanggal Cutoff untuk Saldo Awal
+            let cutoffDate = '0000-00-00';
+            if (filterThn !== 'Semua' && filterBln !== 'Semua') {
+                cutoffDate = filterThn + '-' + filterBln + '-01';
+            } else if (filterThn !== 'Semua') {
+                cutoffDate = filterThn + '-01-01';
+            }
+
+            // Ambil semua baris di tabel, lalu balik (reverse) agar kronologis dari yang terlama ke terbaru
+            let allRows = Array.from(document.querySelectorAll('#bodyBukuKas tr.baris-kas'));
+            allRows.reverse();
+
+            let saldoAwal = 0;
+
+            // 2. Hitung Saldo Awal (Bulan / Periode Lalu)
+            allRows.forEach(tr => {
+                let tgl = tr.cells[0].innerText;
+                let nomVal = Number(tr.getAttribute('data-nominal')) || 0;
+                let tipe = tr.getAttribute('data-tipe');
+                let kat = tr.getAttribute('data-kategori');
+                let text = tr.innerText.toLowerCase();
+
+                // Cek apakah transaksi ini terjadi SEBELUM bulan/tahun yang difilter
+                let isOlderThanCutoff = tgl < cutoffDate;
+
+                // Pastikan transaksi ini juga lolos filter kategori & pencarian teks
+                let cocokKat = (filterKat === 'semua' || (filterKat === 'simpanan' && kat.includes('simpanan')) || kat === filterKat);
+                let cocokTeks = text.includes(filterTeks);
+
+                if (isOlderThanCutoff && cocokKat && cocokTeks) {
+                    if (tipe === 'Masuk') saldoAwal += nomVal;
+                    else saldoAwal -= nomVal;
+                }
+            });
+
+            // 3. Menyusun Data Tabel untuk PDF
             let dataPDF = [];
             let totalDebit = 0;
             let totalKredit = 0;
-            let runningSaldo = 0;
+            let runningSaldo = saldoAwal; // Saldo dimulai dari Saldo Awal
 
-            // Mengambil baris yang sedang TAMPIL saja di tabel Buku Kas
-            const barisKas = document.querySelectorAll('#bodyBukuKas tr.baris-kas');
-            let visibleRows = [];
-            
-            barisKas.forEach((tr) => {
-                if (tr.style.display !== 'none') {
-                    visibleRows.push(tr);
-                }
-            });
-
-            if (visibleRows.length === 0) {
-                return Swal.fire('Oops', 'Tidak ada data transaksi yang dapat dicetak dengan filter saat ini.', 'warning');
+            // Jika ada filter periode, masukkan baris Saldo Awal ke paling atas
+            if (cutoffDate !== '0000-00-00') {
+                dataPDF.push(['-', '-', 'SALDO AWAL (Dari Periode Sebelumnya)', '-', '-', formatR(saldoAwal)]);
             }
 
-            // DIBALIK (Reverse): Agar di PDF urutannya kronologis (dari tanggal terlama ke terbaru)
-            // Ini penting agar hitungan Saldo Berjalan (Running Balance) akurat dari atas ke bawah.
-            visibleRows.reverse();
-
             let visibleCount = 0;
+            allRows.forEach(tr => {
+                // Hanya proses baris yang TAMPIL di layar saat ini
+                if (tr.style.display !== 'none') {
+                    visibleCount++;
+                    let tgl = tr.cells[0].innerText;
+                    let ket = tr.cells[1].innerText + "\n(" + tr.cells[2].innerText + ")";
+                    let nomVal = Number(tr.getAttribute('data-nominal')) || 0;
+                    let tipe = tr.getAttribute('data-tipe');
 
-            visibleRows.forEach((tr) => {
-                visibleCount++;
-                const cells = tr.querySelectorAll('td');
-                const tgl = cells[0].innerText;
-                
-                // Menggabungkan Keterangan dengan Kategori agar informasinya utuh
-                const ket = cells[1].innerText + "\n(" + cells[2].innerText + ")"; 
-                
-                const nomVal = Number(tr.getAttribute('data-nominal')) || 0;
-                const tipe = tr.getAttribute('data-tipe');
+                    let strDebit = "-";
+                    let strKredit = "-";
 
-                let strDebit = "-";
-                let strKredit = "-";
+                    if (tipe === 'Masuk') {
+                        totalDebit += nomVal;
+                        runningSaldo += nomVal;
+                        strDebit = formatR(nomVal);
+                    } else {
+                        totalKredit += nomVal;
+                        runningSaldo -= nomVal;
+                        strKredit = formatR(nomVal);
+                    }
 
-                // Logika Debit & Kredit
-                if (tipe === 'Masuk') {
-                    totalDebit += nomVal;
-                    runningSaldo += nomVal;
-                    strDebit = formatR(nomVal);
-                } else {
-                    totalKredit += nomVal;
-                    runningSaldo -= nomVal;
-                    strKredit = formatR(nomVal);
+                    dataPDF.push([tgl, visibleCount, ket, strDebit, strKredit, formatR(runningSaldo)]);
                 }
-
-                // Format sesuai permintaan: Tanggal, No, Keterangan, Debit, Kredit, Saldo
-                dataPDF.push([tgl, visibleCount, ket, strDebit, strKredit, formatR(runningSaldo)]);
             });
 
-            // Judul PDF
+            if (dataPDF.length === 0 || (dataPDF.length === 1 && cutoffDate !== '0000-00-00')) {
+                return Swal.fire('Oops', 'Tidak ada transaksi pada periode/filter ini.', 'warning');
+            }
+
+            // 4. Proses Desain PDF
             doc.setFontSize(16);
-            doc.text("LAPORAN BUKU KAS UTAMA KOPERASI", 148, 15, { align: "center" });
+            doc.text("LAPORAN MUTASI BUKU KAS KOPERASI", 148, 15, { align: "center" });
             
-            // Info Filter Saat Ini di PDF
             doc.setFontSize(10);
             const namaFilterKat = document.getElementById('filterKategoriKas').options[document.getElementById('filterKategoriKas').selectedIndex].text;
             const optBln = document.getElementById('filterBulanKas').options[document.getElementById('filterBulanKas').selectedIndex].text;
-            const optThn = document.getElementById('filterTahunKas').value;
-            const kataKunci = document.getElementById('cariKas').value || "Tidak ada";
+            const optThn = filterThn;
+            const kataKunci = filterTeks || "Tidak ada";
             
-            const periodeTxt = (optBln === 'Semua Bulan' && optThn === 'Semua Tahun') ? 'Semua Waktu' : `${optBln} ${optThn}`;
-            
-            doc.text(`Periode Mutasi: ${periodeTxt} | Kategori: ${namaFilterKat} | Filter Teks: ${kataKunci}`, 148, 22, { align: "center" });
+            const periodeTxt = (optBln === 'Semua Bulan' && optThn === 'Semua') ? 'Semua Waktu' : `${optBln} ${optThn}`;
+            doc.text(`Periode: ${periodeTxt} | Kategori: ${namaFilterKat} | Filter Teks: ${kataKunci}`, 148, 22, { align: "center" });
 
-            // Membuat Tabel PDF
             doc.autoTable({
                 head: [['Tanggal Transaksi', 'No', 'Keterangan', 'Debit (Masuk)', 'Kredit (Keluar)', 'Saldo']],
                 body: dataPDF,
@@ -954,23 +980,22 @@
                 theme: 'grid',
                 headStyles: { fillColor: [44, 62, 80], halign: 'center' },
                 columnStyles: {
-                    0: { halign: 'center', cellWidth: 35 }, // Tanggal
-                    1: { halign: 'center', cellWidth: 15 }, // No
-                    2: { cellWidth: 90 }, // Keterangan
-                    3: { halign: 'right', cellWidth: 42, textColor: [39, 174, 96] }, // Debit (Hijau)
-                    4: { halign: 'right', cellWidth: 42, textColor: [231, 76, 60] }, // Kredit (Merah)
-                    5: { halign: 'right', fontStyle: 'bold', cellWidth: 45 } // Saldo
+                    0: { halign: 'center', cellWidth: 35 },
+                    1: { halign: 'center', cellWidth: 15 },
+                    2: { cellWidth: 90 }, 
+                    3: { halign: 'right', cellWidth: 42, textColor: [39, 174, 96] }, 
+                    4: { halign: 'right', cellWidth: 42, textColor: [231, 76, 60] }, 
+                    5: { halign: 'right', fontStyle: 'bold', cellWidth: 45 } 
                 },
-                // Total diletakkan di bagian paling bawah (foot)
+                // Total di bagian paling bawah
                 foot: [
-                    ['', '', 'TOTAL KESELURUHAN', formatR(totalDebit), formatR(totalKredit), formatR(runningSaldo)]
+                    ['', '', 'TOTAL MUTASI PERIODE INI', formatR(totalDebit), formatR(totalKredit), formatR(runningSaldo)]
                 ],
                 footStyles: { fillColor: [236, 240, 241], textColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' }
             });
 
-            // Men-download dengan nama file dinamis
             const tglSekarang = new Date().toISOString().split('T')[0];
-            doc.save(`Buku_Kas_Akuntansi_${tglSekarang}.pdf`);
+            doc.save(`Mutasi_Kas_Koperasi_${tglSekarang}.pdf`);
         };
 
         // --- PAGE: ANGGOTA ---

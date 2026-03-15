@@ -244,6 +244,7 @@
                     </div>
                     <div class="form-group"><label>Jumlah (Rp)</label><input type="number" id="jumlahSimpan" required></div>
                     <div class="form-group"><label>Tanggal</label><input type="date" id="tglSimpan" required></div>
+                    <div class="form-group"><label>Keterangan Tambahan</label><input type="text" id="ketSimpanan" placeholder="Misal: Setor tunai / Koreksi lapas"></div>
                     <button type="submit" class="btn-submit" style="background:var(--blue)">SIMPAN TRANSAKSI</button>
                 </form>
             </div>
@@ -407,6 +408,7 @@
                     <div style="text-align:right;">
                         <p style="font-size:0.8rem; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">Total Uang Kas Keseluruhan</p>
                         <h2 id="saldoBukuKas" style="color:var(--success); margin-bottom: 8px;">Rp 0</h2>
+                        <button onclick="cetakBukuKasPDF()" style="background:var(--dark); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer; font-weight:bold; margin-right: 5px;"><i class="fa fa-file-pdf"></i> Cetak Kas PDF</button>
                         <button id="btnPenyesuaian" style="background:var(--danger); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(231,76,60,0.3); transition:0.3s;"><i class="fa fa-balance-scale"></i> Buat Jurnal Penyesuaian Saldo</button>
                     </div>
                 </div>
@@ -600,7 +602,9 @@
                 const val = Number(d.data().jumlah) || 0;
                 stats.simpanan += val;
                 stats.saldo_akhir += val;
-                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal_transaksi || "1970-01-01", tanggal: d.data().tanggal_transaksi || "-", keterangan: `Simpanan: ${d.data().info_anggota}`, tipe: val < 0 ? 'Keluar' : 'Masuk', nominal: Math.abs(val), kategori: d.data().jenis_simpanan || 'Simpanan' });
+                // PENAMBAHAN: Membaca keterangan tambahan jika ada
+                const ketSimpanan = d.data().keterangan ? ` - ${d.data().keterangan}` : "";
+                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal_transaksi || "1970-01-01", tanggal: d.data().tanggal_transaksi || "-", keterangan: `Simpanan: ${d.data().info_anggota}${ketSimpanan}`, tipe: val < 0 ? 'Keluar' : 'Masuk', nominal: Math.abs(val), kategori: d.data().jenis_simpanan || 'Simpanan' });
             });
             
             sAns.forEach(d => {
@@ -622,7 +626,7 @@
             sWas.forEach(d => {
                 const nom = Number(d.data().nominal) || 0;
                 const isMasuk = d.data().jenis === "Pemasukan";
-                const tipeData = d.data().tipe_data || "waserda"; // Mendeteksi apakah ini waserda atau penyesuaian kas
+                const tipeData = d.data().tipe_data || "waserda"; 
 
                 if(isMasuk) { 
                     stats.saldo_akhir += nom; 
@@ -715,7 +719,6 @@
             saringBukuKas();
         }
 
-        // FUNGSI INPUT PENYESUAIAN KAS SAKTI
         document.getElementById('btnPenyesuaian').addEventListener('click', () => {
             Swal.fire({
                 title: 'Buat Penyesuaian Kas',
@@ -756,7 +759,7 @@
                             jenis: d.jenis,
                             nominal: d.nom,
                             keterangan: d.ket,
-                            tipe_data: "penyesuaian", // Flag khusus agar tidak masuk laba waserda
+                            tipe_data: "penyesuaian",
                             waktu_input: new Date().toISOString()
                         });
                         Swal.fire('Sukses', 'Penyesuaian kas berhasil dicatat. Saldo aplikasi kini sudah sinkron!', 'success');
@@ -818,6 +821,87 @@
         
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
+
+        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Mendukung Filter Otomatis + Landscape)
+        window.cetakBukuKasPDF = function() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape'); // Menggunakan orientasi landscape
+
+            let dataPDF = [];
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+
+            // Mengambil baris yang sedang TAMPIL saja di tabel Buku Kas
+            const barisKas = document.querySelectorAll('#bodyBukuKas tr.baris-kas');
+            let visibleCount = 0;
+
+            barisKas.forEach((tr) => {
+                if (tr.style.display !== 'none') {
+                    visibleCount++;
+                    const cells = tr.querySelectorAll('td');
+                    const tgl = cells[0].innerText;
+                    const ket = cells[1].innerText;
+                    const kat = cells[2].innerText;
+                    const jenis = cells[3].innerText;
+                    const nomTxt = cells[4].innerText;
+                    
+                    const nomVal = Number(tr.getAttribute('data-nominal')) || 0;
+                    const tipe = tr.getAttribute('data-tipe');
+
+                    if (tipe === 'Masuk') totalMasuk += nomVal;
+                    else totalKeluar += nomVal;
+
+                    dataPDF.push([visibleCount, tgl, ket, kat, jenis, nomTxt]);
+                }
+            });
+
+            if (dataPDF.length === 0) {
+                return Swal.fire('Oops', 'Tidak ada data transaksi yang dapat dicetak dengan filter saat ini.', 'warning');
+            }
+
+            const saldoBersih = totalMasuk - totalKeluar;
+
+            // Judul PDF
+            doc.setFontSize(16);
+            doc.text("LAPORAN BUKU KAS UTAMA KOPERASI", 148, 15, { align: "center" });
+            
+            // Info Filter Saat Ini
+            doc.setFontSize(10);
+            const namaFilterKat = document.getElementById('filterKategoriKas').options[document.getElementById('filterKategoriKas').selectedIndex].text;
+            const kataKunci = document.getElementById('cariKas').value || "Semua (Tidak ada)";
+            doc.text(`Kategori Terpilih: ${namaFilterKat} | Pencarian Nama/Angka: ${kataKunci}`, 148, 22, { align: "center" });
+
+            // Membuat Tabel
+            doc.autoTable({
+                head: [['No', 'Tanggal', 'Keterangan', 'Kategori', 'Jenis', 'Nominal (Rp)']],
+                body: dataPDF,
+                startY: 28,
+                theme: 'grid',
+                headStyles: { fillColor: [44, 62, 80], halign: 'center' },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 12 },
+                    1: { halign: 'center', cellWidth: 28 },
+                    2: { cellWidth: 115 }, // Kolom keterangan lebar maksimal (karena format landscape)
+                    3: { halign: 'center', cellWidth: 45 },
+                    4: { halign: 'center', cellWidth: 25 },
+                    5: { halign: 'right', fontStyle: 'bold', cellWidth: 45 }
+                },
+                foot: [
+                    ['', '', '', '', 'TOTAL PEMASUKAN', `+ ${formatR(totalMasuk)}`],
+                    ['', '', '', '', 'TOTAL PENGELUARAN', `- ${formatR(totalKeluar)}`],
+                    ['', '', '', '', 'SALDO BERSIH REKAPITULASI', `${formatR(saldoBersih)}`]
+                ],
+                footStyles: { fillColor: [236, 240, 241], textColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' }
+            });
+
+            // Men-download dengan nama file dinamis
+            const tglSekarang = new Date().toISOString().split('T')[0];
+            doc.save(`Buku_Kas_Koperasi_${tglSekarang}.pdf`);
+        };
 
         // --- PAGE: ANGGOTA ---
         async function muatAnggota() {
@@ -954,6 +1038,7 @@
                 tb.innerHTML += `<tr><td>${d.tanggal_transaksi||'-'}</td><td>${d.info_anggota}</td><td>${d.jenis_simpanan}</td><td class="txt-right" style="color:${v<0?'var(--danger)':'var(--success)'}">${v<0?'<i class="fa fa-arrow-up"></i>':'<i class="fa fa-arrow-down"></i>'} ${formatR(Math.abs(v))}</td></tr>`;
             });
         }
+        
         document.getElementById('formSimpanan').addEventListener('submit', async (e) => {
             e.preventDefault();
             const sel = document.getElementById('dropSimpanan');
@@ -961,7 +1046,16 @@
             let nom = Math.abs(Number(document.getElementById('jumlahSimpan').value));
             if (jenis === "Penarikan") nom = -nom;
             try {
-                await addDoc(collection(db, "simpanan"), { id_anggota: sel.value, info_anggota: sel.options[sel.selectedIndex].text, jenis_simpanan: jenis, jumlah: nom, tanggal_transaksi: document.getElementById('tglSimpan').value, waktu_input: new Date().toISOString() });
+                // PENAMBAHAN: Keterangan (ketSimpanan) kini ikut masuk ke Firebase
+                await addDoc(collection(db, "simpanan"), { 
+                    id_anggota: sel.value, 
+                    info_anggota: sel.options[sel.selectedIndex].text, 
+                    jenis_simpanan: jenis, 
+                    jumlah: nom, 
+                    keterangan: document.getElementById('ketSimpanan').value,
+                    tanggal_transaksi: document.getElementById('tglSimpan').value, 
+                    waktu_input: new Date().toISOString() 
+                });
                 Swal.fire('Sukses', 'Transaksi Simpanan Berhasil', 'success');
                 document.getElementById('formSimpanan').reset();
                 muatRiwayatSimpanan();
@@ -1048,6 +1142,7 @@
             const namaFile = `Daftar_Potongan_Simpanan_${bulan}_${tahun}.pdf`;
             doc.save(namaFile);
         };
+        
         // --- PAGE: PINJAMAN & PDF TAGIHAN ---
         async function muatPinjaman() {
             const drop = document.getElementById('dropPinjaman');
@@ -1160,6 +1255,7 @@
 
             doc.save(namaFile);
         };
+        
         document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
             e.preventDefault();
             const sel = document.getElementById('dropPinjaman'); const opt = sel.options[sel.selectedIndex]; const idA = sel.value; const ket = document.getElementById('ketPinjam').value;
@@ -1454,5 +1550,3 @@
     </script>
 </body>
 </html>
-
-

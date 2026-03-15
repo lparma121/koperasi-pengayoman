@@ -868,8 +868,7 @@
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
 
-        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Format Akuntansi Standar)
-        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Mendukung Saldo Awal & Akuntansi)
+        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Tabel Terpisah Kas Utama & Waserda)
         window.cetakBukuKasPDF = function() {
             if (!window.jspdf || !window.jspdf.jsPDF) {
                 return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
@@ -891,13 +890,15 @@
                 cutoffDate = filterThn + '-01-01';
             }
 
-            // Ambil semua baris di tabel, lalu balik (reverse) agar kronologis dari yang terlama ke terbaru
+            // Ambil semua baris di tabel, lalu balik (reverse) agar kronologis
             let allRows = Array.from(document.querySelectorAll('#bodyBukuKas tr.baris-kas'));
             allRows.reverse();
 
-            let saldoAwal = 0;
+            // Variabel Pemisah
+            let saldoAwalUtama = 0;
+            let saldoAwalWaserda = 0;
 
-            // 2. Hitung Saldo Awal (Bulan / Periode Lalu)
+            // 2. Hitung Saldo Awal Terpisah
             allRows.forEach(tr => {
                 let tgl = tr.cells[0].innerText;
                 let nomVal = Number(tr.getAttribute('data-nominal')) || 0;
@@ -905,36 +906,42 @@
                 let kat = tr.getAttribute('data-kategori');
                 let text = tr.innerText.toLowerCase();
 
-                // Cek apakah transaksi ini terjadi SEBELUM bulan/tahun yang difilter
                 let isOlderThanCutoff = tgl < cutoffDate;
-
-                // Pastikan transaksi ini juga lolos filter kategori & pencarian teks
                 let cocokKat = (filterKat === 'semua' || (filterKat === 'simpanan' && kat.includes('simpanan')) || kat === filterKat);
                 let cocokTeks = text.includes(filterTeks);
 
                 if (isOlderThanCutoff && cocokKat && cocokTeks) {
-                    if (tipe === 'Masuk') saldoAwal += nomVal;
-                    else saldoAwal -= nomVal;
+                    if (kat === 'waserda') {
+                        if (tipe === 'Masuk') saldoAwalWaserda += nomVal;
+                        else saldoAwalWaserda -= nomVal;
+                    } else {
+                        if (tipe === 'Masuk') saldoAwalUtama += nomVal;
+                        else saldoAwalUtama -= nomVal;
+                    }
                 }
             });
 
-            // 3. Menyusun Data Tabel untuk PDF
-            let dataPDF = [];
-            let totalDebit = 0;
-            let totalKredit = 0;
-            let runningSaldo = saldoAwal; // Saldo dimulai dari Saldo Awal
+            // 3. Menyusun Data Tabel untuk PDF (Terpisah)
+            let dataUtama = [];
+            let dataWaserda = [];
+            
+            let totalDebitUtama = 0, totalKreditUtama = 0, runningUtama = saldoAwalUtama;
+            let totalDebitWaserda = 0, totalKreditWaserda = 0, runningWaserda = saldoAwalWaserda;
 
-            // Jika ada filter periode, masukkan baris Saldo Awal ke paling atas
+            // Masukkan Saldo Awal ke masing-masing tabel jika difilter per bulan
             if (cutoffDate !== '0000-00-00') {
-                dataPDF.push(['-', '-', 'SALDO AWAL (Dari Periode Sebelumnya)', '-', '-', formatR(saldoAwal)]);
+                dataUtama.push(['-', '-', 'SALDO AWAL KAS UTAMA', '-', '-', formatR(saldoAwalUtama)]);
+                dataWaserda.push(['-', '-', 'SALDO AWAL WASERDA', '-', '-', formatR(saldoAwalWaserda)]);
             }
 
-            let visibleCount = 0;
+            let countUtama = 0;
+            let countWaserda = 0;
+
             allRows.forEach(tr => {
-                // Hanya proses baris yang TAMPIL di layar saat ini
+                // Hanya proses baris yang TAMPIL di layar
                 if (tr.style.display !== 'none') {
-                    visibleCount++;
                     let tgl = tr.cells[0].innerText;
+                    let kat = tr.getAttribute('data-kategori');
                     let ket = tr.cells[1].innerText + "\n(" + tr.cells[2].innerText + ")";
                     let nomVal = Number(tr.getAttribute('data-nominal')) || 0;
                     let tipe = tr.getAttribute('data-tipe');
@@ -942,27 +949,38 @@
                     let strDebit = "-";
                     let strKredit = "-";
 
-                    if (tipe === 'Masuk') {
-                        totalDebit += nomVal;
-                        runningSaldo += nomVal;
-                        strDebit = formatR(nomVal);
+                    // Pisahkan berdasarkan kategori "Waserda" vs "Lainnya"
+                    if (kat === 'waserda') {
+                        countWaserda++;
+                        if (tipe === 'Masuk') {
+                            totalDebitWaserda += nomVal; runningWaserda += nomVal; strDebit = formatR(nomVal);
+                        } else {
+                            totalKreditWaserda += nomVal; runningWaserda -= nomVal; strKredit = formatR(nomVal);
+                        }
+                        dataWaserda.push([tgl, countWaserda, ket, strDebit, strKredit, formatR(runningWaserda)]);
                     } else {
-                        totalKredit += nomVal;
-                        runningSaldo -= nomVal;
-                        strKredit = formatR(nomVal);
+                        countUtama++;
+                        if (tipe === 'Masuk') {
+                            totalDebitUtama += nomVal; runningUtama += nomVal; strDebit = formatR(nomVal);
+                        } else {
+                            totalKreditUtama += nomVal; runningUtama -= nomVal; strKredit = formatR(nomVal);
+                        }
+                        dataUtama.push([tgl, countUtama, ket, strDebit, strKredit, formatR(runningUtama)]);
                     }
-
-                    dataPDF.push([tgl, visibleCount, ket, strDebit, strKredit, formatR(runningSaldo)]);
                 }
             });
 
-            if (dataPDF.length === 0 || (dataPDF.length === 1 && cutoffDate !== '0000-00-00')) {
+            if (countUtama === 0 && countWaserda === 0) {
                 return Swal.fire('Oops', 'Tidak ada transaksi pada periode/filter ini.', 'warning');
             }
 
+            // Pesan kosong jika salah satu tabel tidak ada transaksi
+            if (countUtama === 0 && cutoffDate === '0000-00-00') dataUtama.push(['-', '-', 'Tidak ada mutasi Kas Utama', '-', '-', '-']);
+            if (countWaserda === 0 && cutoffDate === '0000-00-00') dataWaserda.push(['-', '-', 'Tidak ada mutasi Waserda', '-', '-', '-']);
+
             // 4. Proses Desain PDF
             doc.setFontSize(16);
-            doc.text("LAPORAN MUTASI BUKU KAS KOPERASI", 148, 15, { align: "center" });
+            doc.text("LAPORAN MUTASI KAS KOPERASI", 148, 15, { align: "center" });
             
             doc.setFontSize(10);
             const namaFilterKat = document.getElementById('filterKategoriKas').options[document.getElementById('filterKategoriKas').selectedIndex].text;
@@ -973,12 +991,16 @@
             const periodeTxt = (optBln === 'Semua Bulan' && optThn === 'Semua') ? 'Semua Waktu' : `${optBln} ${optThn}`;
             doc.text(`Periode: ${periodeTxt} | Kategori: ${namaFilterKat} | Filter Teks: ${kataKunci}`, 148, 22, { align: "center" });
 
+            // ======= TABEL 1: KAS UTAMA =======
+            doc.setFontSize(12);
+            doc.text("A. Tabel Mutasi Kas Utama (Simpanan, Pinjaman, Angsuran)", 14, 32);
+            
             doc.autoTable({
                 head: [['Tanggal Transaksi', 'No', 'Keterangan', 'Debit (Masuk)', 'Kredit (Keluar)', 'Saldo']],
-                body: dataPDF,
-                startY: 28,
+                body: dataUtama,
+                startY: 35,
                 theme: 'grid',
-                headStyles: { fillColor: [44, 62, 80], halign: 'center' },
+                headStyles: { fillColor: [41, 128, 185], halign: 'center' }, // Header warna biru
                 columnStyles: {
                     0: { halign: 'center', cellWidth: 35 },
                     1: { halign: 'center', cellWidth: 15 },
@@ -987,15 +1009,44 @@
                     4: { halign: 'right', cellWidth: 42, textColor: [231, 76, 60] }, 
                     5: { halign: 'right', fontStyle: 'bold', cellWidth: 45 } 
                 },
-                // Total di bagian paling bawah
-                foot: [
-                    ['', '', 'TOTAL MUTASI PERIODE INI', formatR(totalDebit), formatR(totalKredit), formatR(runningSaldo)]
-                ],
+                foot: [['', '', 'TOTAL MUTASI KAS UTAMA PERIODE INI', formatR(totalDebitUtama), formatR(totalKreditUtama), formatR(runningUtama)]],
                 footStyles: { fillColor: [236, 240, 241], textColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' }
             });
 
+            // Hitung posisi Y terakhir dari Tabel 1 untuk jarak Tabel 2
+            let finalY = doc.lastAutoTable.finalY + 15;
+
+            // Jika posisi Y terlalu ke bawah, pindahkan Tabel Waserda ke Halaman Baru
+            if (finalY > 165) {
+                doc.addPage();
+                finalY = 20;
+            }
+
+            // ======= TABEL 2: KAS WASERDA =======
+            doc.setFontSize(12);
+            doc.text("B. Tabel Mutasi Waserda", 14, finalY);
+
+            doc.autoTable({
+                head: [['Tanggal Transaksi', 'No', 'Keterangan', 'Debit (Masuk)', 'Kredit (Keluar)', 'Saldo']],
+                body: dataWaserda,
+                startY: finalY + 3,
+                theme: 'grid',
+                headStyles: { fillColor: [22, 160, 133], halign: 'center' }, // Header warna Hijau
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 35 },
+                    1: { halign: 'center', cellWidth: 15 },
+                    2: { cellWidth: 90 }, 
+                    3: { halign: 'right', cellWidth: 42, textColor: [39, 174, 96] }, 
+                    4: { halign: 'right', cellWidth: 42, textColor: [231, 76, 60] }, 
+                    5: { halign: 'right', fontStyle: 'bold', cellWidth: 45 } 
+                },
+                foot: [['', '', 'TOTAL MUTASI WASERDA PERIODE INI', formatR(totalDebitWaserda), formatR(totalKreditWaserda), formatR(runningWaserda)]],
+                footStyles: { fillColor: [236, 240, 241], textColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' }
+            });
+
+            // Save PDF
             const tglSekarang = new Date().toISOString().split('T')[0];
-            doc.save(`Mutasi_Kas_Koperasi_${tglSekarang}.pdf`);
+            doc.save(`Mutasi_Buku_Kas_Lengkap_${tglSekarang}.pdf`);
         };
 
         // --- PAGE: ANGGOTA ---

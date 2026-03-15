@@ -261,8 +261,11 @@
         <div id="setormassal" class="page-section">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>Setoran Simpanan Wajib Massal</h3>
-                    <button id="btnProsesMassal" style="background:var(--orange); color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">Proses Setoran Terpilih</button>
+                    <h3>Daftar Potongan Simpanan Massal</h3>
+                    <div>
+                        <button onclick="cetakTagihanSimpananPDF()" style="background:var(--dark); color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:10px;"><i class="fa fa-file-pdf"></i> Cetak Tagihan PDF</button>
+                        <button id="btnProsesMassal" style="background:var(--orange); color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">Proses Setoran Terpilih</button>
+                    </div>
                 </div>
                 <div class="control-panel">
                     <div class="form-group">
@@ -989,6 +992,62 @@
             });
         });
 
+        // Fungsi Cetak PDF Tagihan Simpanan (Untuk Bendahara Lapas)
+        window.cetakTagihanSimpananPDF = function() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Mengambil anggota yang dicentang saja
+            const terpilih = document.querySelectorAll('.cb-massal:checked');
+            const nominalSimpanan = Number(document.getElementById('nominalWajib').value) || 0;
+            const bulan = document.getElementById('bulanSetoran').value;
+            const tahun = document.getElementById('tahunSetoran').value;
+
+            if(terpilih.length === 0) return Swal.fire('Oops', 'Pilih minimal 1 anggota untuk dicetak daftarnya!', 'warning');
+            if(nominalSimpanan <= 0) return Swal.fire('Oops', 'Nominal simpanan tidak boleh kosong/nol!', 'warning');
+
+            let data = [];
+            let grandTotal = 0;
+
+            // Looping data yang dicentang
+            terpilih.forEach((cb, idx) => {
+                let noAnggota = cb.dataset.no;
+                let nama = cb.dataset.nama;
+                
+                grandTotal += nominalSimpanan;
+                data.push([idx + 1, noAnggota, nama, formatR(nominalSimpanan)]);
+            });
+
+            // Membuat Header PDF
+            doc.setFontSize(14);
+            doc.text("DAFTAR POTONGAN SIMPANAN ANGGOTA KOPERASI", 105, 15, { align: "center" });
+            doc.setFontSize(10);
+            doc.text(`Periode: ${bulan} ${tahun} | Lampiran Bendahara Lapas`, 105, 21, { align: "center" });
+
+            // Membuat Tabel PDF
+            doc.autoTable({
+                head: [['No', 'Nomor Anggota', 'Nama Anggota', 'Nominal Potongan']],
+                body: data,
+                foot: [['', '', 'TOTAL KESELURUHAN', formatR(grandTotal)]],
+                startY: 28,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219], halign: 'center' }, // Warna header biru
+                footStyles: { fillColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 15 },
+                    1: { halign: 'center', cellWidth: 40 },
+                    3: { halign: 'right', fontStyle: 'bold' }
+                }
+            });
+
+            // Nama file dinamis
+            const namaFile = `Daftar_Potongan_Simpanan_${bulan}_${tahun}.pdf`;
+            doc.save(namaFile);
+        };
         // --- PAGE: PINJAMAN & PDF TAGIHAN ---
         async function muatPinjaman() {
             const drop = document.getElementById('dropPinjaman');

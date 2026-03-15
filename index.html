@@ -822,7 +822,7 @@
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
 
-        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Mendukung Filter Otomatis + Landscape)
+        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Format Akuntansi Standar)
         window.cetakBukuKasPDF = function() {
             if (!window.jspdf || !window.jspdf.jsPDF) {
                 return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
@@ -832,38 +832,58 @@
             const doc = new jsPDF('landscape'); // Menggunakan orientasi landscape
 
             let dataPDF = [];
-            let totalMasuk = 0;
-            let totalKeluar = 0;
+            let totalDebit = 0;
+            let totalKredit = 0;
+            let runningSaldo = 0;
 
             // Mengambil baris yang sedang TAMPIL saja di tabel Buku Kas
             const barisKas = document.querySelectorAll('#bodyBukuKas tr.baris-kas');
-            let visibleCount = 0;
-
+            let visibleRows = [];
+            
             barisKas.forEach((tr) => {
                 if (tr.style.display !== 'none') {
-                    visibleCount++;
-                    const cells = tr.querySelectorAll('td');
-                    const tgl = cells[0].innerText;
-                    const ket = cells[1].innerText;
-                    const kat = cells[2].innerText;
-                    const jenis = cells[3].innerText;
-                    const nomTxt = cells[4].innerText;
-                    
-                    const nomVal = Number(tr.getAttribute('data-nominal')) || 0;
-                    const tipe = tr.getAttribute('data-tipe');
-
-                    if (tipe === 'Masuk') totalMasuk += nomVal;
-                    else totalKeluar += nomVal;
-
-                    dataPDF.push([visibleCount, tgl, ket, kat, jenis, nomTxt]);
+                    visibleRows.push(tr);
                 }
             });
 
-            if (dataPDF.length === 0) {
+            if (visibleRows.length === 0) {
                 return Swal.fire('Oops', 'Tidak ada data transaksi yang dapat dicetak dengan filter saat ini.', 'warning');
             }
 
-            const saldoBersih = totalMasuk - totalKeluar;
+            // DIBALIK (Reverse): Agar di PDF urutannya kronologis (dari tanggal terlama ke terbaru)
+            // Ini penting agar hitungan Saldo Berjalan (Running Balance) akurat dari atas ke bawah.
+            visibleRows.reverse();
+
+            let visibleCount = 0;
+
+            visibleRows.forEach((tr) => {
+                visibleCount++;
+                const cells = tr.querySelectorAll('td');
+                const tgl = cells[0].innerText;
+                
+                // Menggabungkan Keterangan dengan Kategori agar informasinya utuh
+                const ket = cells[1].innerText + "\n(" + cells[2].innerText + ")"; 
+                
+                const nomVal = Number(tr.getAttribute('data-nominal')) || 0;
+                const tipe = tr.getAttribute('data-tipe');
+
+                let strDebit = "-";
+                let strKredit = "-";
+
+                // Logika Debit & Kredit
+                if (tipe === 'Masuk') {
+                    totalDebit += nomVal;
+                    runningSaldo += nomVal;
+                    strDebit = formatR(nomVal);
+                } else {
+                    totalKredit += nomVal;
+                    runningSaldo -= nomVal;
+                    strKredit = formatR(nomVal);
+                }
+
+                // Format sesuai permintaan: Tanggal, No, Keterangan, Debit, Kredit, Saldo
+                dataPDF.push([tgl, visibleCount, ket, strDebit, strKredit, formatR(runningSaldo)]);
+            });
 
             // Judul PDF
             doc.setFontSize(16);
@@ -873,34 +893,33 @@
             doc.setFontSize(10);
             const namaFilterKat = document.getElementById('filterKategoriKas').options[document.getElementById('filterKategoriKas').selectedIndex].text;
             const kataKunci = document.getElementById('cariKas').value || "Semua (Tidak ada)";
-            doc.text(`Kategori Terpilih: ${namaFilterKat} | Pencarian Nama/Angka: ${kataKunci}`, 148, 22, { align: "center" });
+            doc.text(`Kategori Terpilih: ${namaFilterKat} | Pencarian: ${kataKunci}`, 148, 22, { align: "center" });
 
-            // Membuat Tabel
+            // Membuat Tabel PDF
             doc.autoTable({
-                head: [['No', 'Tanggal', 'Keterangan', 'Kategori', 'Jenis', 'Nominal (Rp)']],
+                head: [['Tanggal Transaksi', 'No', 'Keterangan', 'Debit (Masuk)', 'Kredit (Keluar)', 'Saldo']],
                 body: dataPDF,
                 startY: 28,
                 theme: 'grid',
                 headStyles: { fillColor: [44, 62, 80], halign: 'center' },
                 columnStyles: {
-                    0: { halign: 'center', cellWidth: 12 },
-                    1: { halign: 'center', cellWidth: 28 },
-                    2: { cellWidth: 115 }, // Kolom keterangan lebar maksimal (karena format landscape)
-                    3: { halign: 'center', cellWidth: 45 },
-                    4: { halign: 'center', cellWidth: 25 },
-                    5: { halign: 'right', fontStyle: 'bold', cellWidth: 45 }
+                    0: { halign: 'center', cellWidth: 35 }, // Tanggal
+                    1: { halign: 'center', cellWidth: 15 }, // No
+                    2: { cellWidth: 90 }, // Keterangan
+                    3: { halign: 'right', cellWidth: 42, textColor: [39, 174, 96] }, // Debit (Hijau)
+                    4: { halign: 'right', cellWidth: 42, textColor: [231, 76, 60] }, // Kredit (Merah)
+                    5: { halign: 'right', fontStyle: 'bold', cellWidth: 45 } // Saldo
                 },
+                // Total diletakkan di bagian paling bawah (foot)
                 foot: [
-                    ['', '', '', '', 'TOTAL PEMASUKAN', `+ ${formatR(totalMasuk)}`],
-                    ['', '', '', '', 'TOTAL PENGELUARAN', `- ${formatR(totalKeluar)}`],
-                    ['', '', '', '', 'SALDO BERSIH REKAPITULASI', `${formatR(saldoBersih)}`]
+                    ['', '', 'TOTAL KESELURUHAN', formatR(totalDebit), formatR(totalKredit), formatR(runningSaldo)]
                 ],
                 footStyles: { fillColor: [236, 240, 241], textColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' }
             });
 
             // Men-download dengan nama file dinamis
             const tglSekarang = new Date().toISOString().split('T')[0];
-            doc.save(`Buku_Kas_Koperasi_${tglSekarang}.pdf`);
+            doc.save(`Buku_Kas_Akuntansi_${tglSekarang}.pdf`);
         };
 
         // --- PAGE: ANGGOTA ---

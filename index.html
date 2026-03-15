@@ -413,24 +413,50 @@
                     </div>
                 </div>
 
-                <div class="control-panel" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #edf2f7; align-items: center;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Filter Kategori:</label>
-                        <select id="filterKategoriKas" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-weight:bold; color:var(--dark);">
-                            <option value="Semua">Tampilkan Semua Transaksi</option>
-                            <option value="Simpanan">Khusus Simpanan</option>
-                            <option value="Angsuran">Khusus Angsuran Pokok + Jasa</option>
-                            <option value="Pinjaman">Khusus Pencairan Pinjaman</option>
-                            <option value="Waserda">Khusus Transaksi Waserda</option>
-                            <option value="Penyesuaian Kas">Khusus Penyesuaian / Operasional Umum</option>
+                <div class="control-panel" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #edf2f7; align-items: center; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div>
+                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Tahun Mutasi:</label>
+                        <select id="filterTahunKas" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-weight:bold; color:var(--dark);">
+                            <option value="Semua">Semua Tahun</option>
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
                         </select>
                     </div>
-                    <div style="flex: 1;">
+                    <div>
+                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Bulan Mutasi:</label>
+                        <select id="filterBulanKas" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-weight:bold; color:var(--dark);">
+                            <option value="Semua">Semua Bulan</option>
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Filter Kategori:</label>
+                        <select id="filterKategoriKas" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-weight:bold; color:var(--dark);">
+                            <option value="Semua">Tampilkan Semua</option>
+                            <option value="Simpanan">Khusus Simpanan</option>
+                            <option value="Angsuran">Angsuran Pokok + Jasa</option>
+                            <option value="Pinjaman">Pencairan Pinjaman</option>
+                            <option value="Waserda">Waserda</option>
+                            <option value="Penyesuaian Kas">Penyesuaian / Operasional</option>
+                        </select>
+                    </div>
+                    <div>
                         <label style="font-size: 0.8rem; color: #7f8c8d; font-weight: bold; margin-bottom:5px; display:block;">Pencarian Bebas:</label>
-                        <input type="text" id="cariKas" placeholder="Ketik nominal atau nama anggota..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <input type="text" id="cariKas" placeholder="Nama / Nominal..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
                     </div>
                 </div>
-
                 <div id="boxTotalFilter" style="display: none; background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin-bottom: 20px; flex-direction: column;">
                     <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: #1565c0; font-weight: bold; border-bottom: 1px solid #90caf9; padding-bottom: 8px;"><i class="fa fa-calculator"></i> Rekapitulasi Berdasarkan Filter:</p>
                     <div id="totalFilterKas" style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;"></div>
@@ -772,20 +798,32 @@
         });
 
         function saringBukuKas() {
+            const filterThn = document.getElementById('filterTahunKas').value;
+            const filterBln = document.getElementById('filterBulanKas').value;
             const filterKat = document.getElementById('filterKategoriKas').value.toLowerCase();
             const filterTeks = document.getElementById('cariKas').value.toLowerCase();
             const barisKas = document.querySelectorAll('.baris-kas');
             const boxTotal = document.getElementById('boxTotalFilter');
 
             let totalMasuk = 0; let totalKeluar = 0;
-            let isFiltered = filterKat !== 'semua' || filterTeks !== '';
+            // Filter dianggap aktif jika ada salah satu pilihan yang diubah dari 'Semua' atau form pencarian diketik
+            let isFiltered = filterKat !== 'semua' || filterTeks !== '' || filterThn !== 'Semua' || filterBln !== 'Semua';
 
             barisKas.forEach(tr => {
+                // Mengambil string tanggal dari kolom pertama, format: YYYY-MM-DD
+                const selTgl = tr.cells[0].innerText; 
+                const txThn = selTgl.substring(0, 4);
+                const txBln = selTgl.substring(5, 7);
+                
                 const kategori = tr.getAttribute('data-kategori');
                 const teksBaris = tr.innerText.toLowerCase();
                 const nom = Number(tr.getAttribute('data-nominal')) || 0;
                 const tipe = tr.getAttribute('data-tipe');
 
+                // Cek kecocokan tahun dan bulan
+                let cocokThn = (filterThn === 'Semua' || txThn === filterThn);
+                let cocokBln = (filterBln === 'Semua' || txBln === filterBln);
+                
                 let cocokKat = false;
                 if(filterKat === 'semua') cocokKat = true;
                 else if(filterKat === 'simpanan' && kategori.includes('simpanan')) cocokKat = true;
@@ -793,32 +831,40 @@
 
                 const cocokTeks = teksBaris.includes(filterTeks);
 
-                if(cocokKat && cocokTeks) {
+                // Baris hanya ditampilkan jika lolos SEMUA filter
+                if(cocokThn && cocokBln && cocokKat && cocokTeks) {
                     tr.style.display = '';
                     if(tipe === 'Masuk') totalMasuk += nom;
                     else totalKeluar += nom;
-                } else tr.style.display = 'none';
+                } else {
+                    tr.style.display = 'none';
+                }
             });
 
             if(isFiltered) {
                 boxTotal.style.display = 'flex';
                 document.getElementById('totalFilterKas').innerHTML = `
                     <div style="text-align: left; flex: 1;">
-                        <small style="color:var(--success); font-weight:bold;">Total Uang Masuk</small><br>
+                        <small style="color:var(--success); font-weight:bold;">Total Pemasukan (Debit)</small><br>
                         <span style="color:var(--success); font-size:1.3rem; font-weight:bold;">+ ${formatR(totalMasuk)}</span>
                     </div>
                     <div style="text-align: left; flex: 1; border-left: 2px solid #90caf9; padding-left: 15px;">
-                        <small style="color:var(--danger); font-weight:bold;">Total Uang Keluar</small><br>
+                        <small style="color:var(--danger); font-weight:bold;">Total Pengeluaran (Kredit)</small><br>
                         <span style="color:var(--danger); font-size:1.3rem; font-weight:bold;">- ${formatR(totalKeluar)}</span>
                     </div>
                     <div style="text-align: right; flex: 1.5; border-left: 2px solid #90caf9; padding-left: 15px;">
-                        <small style="color:#0d47a1; font-weight:bold;">Saldo Bersih (Selisih Filter)</small><br>
+                        <small style="color:#0d47a1; font-weight:bold;">Mutasi Bersih Periode Ini</small><br>
                         <span style="color:#0d47a1; font-size:1.6rem; font-weight:bold;">${formatR(totalMasuk - totalKeluar)}</span>
                     </div>
                 `;
-            } else boxTotal.style.display = 'none';
+            } else {
+                boxTotal.style.display = 'none';
+            }
         }
         
+        // Daftarkan listener baru
+        document.getElementById('filterTahunKas').addEventListener('change', saringBukuKas);
+        document.getElementById('filterBulanKas').addEventListener('change', saringBukuKas);
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
 
@@ -889,11 +935,16 @@
             doc.setFontSize(16);
             doc.text("LAPORAN BUKU KAS UTAMA KOPERASI", 148, 15, { align: "center" });
             
-            // Info Filter Saat Ini
+            // Info Filter Saat Ini di PDF
             doc.setFontSize(10);
             const namaFilterKat = document.getElementById('filterKategoriKas').options[document.getElementById('filterKategoriKas').selectedIndex].text;
-            const kataKunci = document.getElementById('cariKas').value || "Semua (Tidak ada)";
-            doc.text(`Kategori Terpilih: ${namaFilterKat} | Pencarian: ${kataKunci}`, 148, 22, { align: "center" });
+            const optBln = document.getElementById('filterBulanKas').options[document.getElementById('filterBulanKas').selectedIndex].text;
+            const optThn = document.getElementById('filterTahunKas').value;
+            const kataKunci = document.getElementById('cariKas').value || "Tidak ada";
+            
+            const periodeTxt = (optBln === 'Semua Bulan' && optThn === 'Semua Tahun') ? 'Semua Waktu' : `${optBln} ${optThn}`;
+            
+            doc.text(`Periode Mutasi: ${periodeTxt} | Kategori: ${namaFilterKat} | Filter Teks: ${kataKunci}`, 148, 22, { align: "center" });
 
             // Membuat Tabel PDF
             doc.autoTable({

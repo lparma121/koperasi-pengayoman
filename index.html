@@ -1329,7 +1329,45 @@
                 </tr>`;
             });
         }
-        window.tandaiLunas = function(id, nama) { Swal.fire({ title:'Set Lunas?', text:`Tandai pinjaman ${nama} lunas manual?`, icon:'warning', showCancelButton:true }).then(async r => { if(r.isConfirmed){ await updateDoc(doc(db, "pinjaman", id), {status:"Lunas (Manual)"}); muatPinjaman(); }}); }
+        window.window.tandaiLunas = function(id, nama) { 
+    Swal.fire({ 
+        title: 'Konfirmasi Pelunasan', 
+        text: `Tandai pinjaman ${nama} lunas secara manual?`, 
+        icon: 'warning', 
+        showCancelButton: true,
+        confirmButtonColor: '#27ae60',
+        confirmButtonText: 'Ya, Lunas!'
+    }).then(async r => { 
+        if(r.isConfirmed) { 
+            // Update database ke Lunas
+            await updateDoc(doc(db, "pinjaman", id), {status:"Lunas (Manual)"}); 
+            
+            // Tampilkan Kartu Ucapan Terima Kasih (Pop-up Cantik)
+            Swal.fire({
+                title: '🎉 SELAMAT & TERIMA KASIH! 🎉',
+                html: `
+                    <div style="text-align: center; padding: 10px;">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1904/1904118.png" alt="Lunas" style="width: 100px; margin-bottom: 20px;">
+                        <h3 style="color: var(--dark); margin-bottom: 10px;">Pinjaman Lunas</h3>
+                        <p style="font-size: 0.95rem; color: #7f8c8d; line-height: 1.5; margin-bottom: 15px;">
+                            Terima kasih <b>${nama}</b> atas kedisiplinannya dalam menyelesaikan kewajiban di Koperasi Konsumen.
+                        </p>
+                        <div style="background: #e8f8f5; border: 1px dashed #1abc9c; padding: 10px; border-radius: 8px; color: #16a085; font-weight: bold;">
+                            "Semoga rezeki Anda semakin lancar dan berkah bersama kami!"
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: 'Tutup Notifikasi',
+                confirmButtonColor: '#1abc9c',
+                width: '450px'
+            });
+
+            // Muat ulang tabel
+            muatPinjaman(); 
+        }
+    }); 
+}
         
         // Fungsi Select All Tagihan
         window.toggleAllCheck = function(src) { 

@@ -1316,6 +1316,14 @@
                 // Tambahkan checkbox jika pinjaman masih aktif
                 const cbHTML = statLay === 'Aktif' ? `<input type="checkbox" class="cb-tagihan" data-nama="${da.info_anggota}" data-plafon="${p}">` : '';
 
+                // Logika Tombol Aksi (Jika aktif muncul Lunas, jika Selesai muncul tombol Gambar Kartu)
+                let tombolAksi = '';
+                if (statLay === 'Aktif') {
+                    tombolAksi = `<button class="btn-lunas-manual" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="tandaiLunas('${id}', '${da.info_anggota}')">✔ Lunas</button>`;
+                } else {
+                    tombolAksi = `<button style="background:var(--blue); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="tampilkanKartuLunas('${da.info_anggota}')" title="Buka Kartu Ucapan"><i class="fa fa-image"></i> Kartu Ucapan</button>`;
+                }
+
                 tbody.innerHTML += `<tr>
                     <td style="text-align:center;">${cbHTML}</td>
                     <td>${da.tanggal||'-'}</td>
@@ -1325,49 +1333,48 @@
                     <td class="txt-right" style="color:var(--success)">${formatR(pt)}</td>
                     <td class="txt-right ${sisa>0&&statLay==='Aktif'?'saldo-minus':''}">${formatR(sisa<=0?0:sisa)}</td>
                     <td style="text-align:center;"><span class="status-badge ${cls}">${statLay}</span></td>
-                    <td>${statLay==='Aktif'?`<button class="btn-lunas-manual" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="tandaiLunas('${id}', '${da.info_anggota}')">✔ Lunas</button>`:`<small>Selesai</small>`}</td>
+                    <td>${tombolAksi}</td>
                 </tr>`;
             });
         }
-        window.window.tandaiLunas = function(id, nama) { 
-    Swal.fire({ 
-        title: 'Konfirmasi Pelunasan', 
-        text: `Tandai pinjaman ${nama} lunas secara manual?`, 
-        icon: 'warning', 
-        showCancelButton: true,
-        confirmButtonColor: '#27ae60',
-        confirmButtonText: 'Ya, Lunas!'
-    }).then(async r => { 
-        if(r.isConfirmed) { 
-            // Update database ke Lunas
-            await updateDoc(doc(db, "pinjaman", id), {status:"Lunas (Manual)"}); 
-            
-            // Tampilkan Kartu Ucapan Terima Kasih (Pop-up Cantik)
+        
+        window.tandaiLunas = function(id, nama) { Swal.fire({ title:'Set Lunas?', text:`Tandai pinjaman ${nama} lunas manual?`, icon:'warning', showCancelButton:true }).then(async r => { if(r.isConfirmed){ await updateDoc(doc(db, "pinjaman", id), {status:"Lunas (Manual)"}); muatPinjaman(); tampilkanKartuLunas(nama); }}); }
+        
+        // FUNGSI BARU: Menampilkan Kartu Ucapan Lunas
+        window.tampilkanKartuLunas = function(nama) {
+            let namaBersih = nama;
+            if(nama.includes(" - ")) namaBersih = nama.split(" - ")[1].trim();
+
             Swal.fire({
-                title: '🎉 SELAMAT & TERIMA KASIH! 🎉',
+                title: '',
                 html: `
-                    <div style="text-align: center; padding: 10px;">
-                        <img src="https://cdn-icons-png.flaticon.com/512/1904/1904118.png" alt="Lunas" style="width: 100px; margin-bottom: 20px;">
-                        <h3 style="color: var(--dark); margin-bottom: 10px;">Pinjaman Lunas</h3>
-                        <p style="font-size: 0.95rem; color: #7f8c8d; line-height: 1.5; margin-bottom: 15px;">
-                            Terima kasih <b>${nama}</b> atas kedisiplinannya dalam menyelesaikan kewajiban di Koperasi Konsumen.
+                    <div id="kartu-ucapan" style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 30px; border-radius: 15px; color: white; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.2); position: relative; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                        <div style="position: absolute; top: -20px; left: -20px; font-size: 100px; opacity: 0.1;"><i class="fa fa-award"></i></div>
+                        <div style="position: absolute; bottom: -20px; right: -20px; font-size: 100px; opacity: 0.1;"><i class="fa fa-handshake"></i></div>
+                        
+                        <img src="https://cdn-icons-png.flaticon.com/512/1904/1904118.png" alt="Lunas" style="width: 80px; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+                        
+                        <h2 style="margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px; display: inline-block;">PINJAMAN LUNAS</h2>
+                        
+                        <h3 style="margin: 20px 0 10px 0; font-size: 1.2rem; font-weight: normal;">Terima Kasih,</h3>
+                        <h1 style="margin: 0 0 20px 0; font-size: 2.2rem; color: #f1c40f; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${namaBersih}</h1>
+                        
+                        <p style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 0; opacity: 0.95;">
+                            Atas kedisiplinan dan kepercayaannya dalam menyelesaikan kewajiban di Koperasi Pengayoman.<br><br>
+                            <i>"Semoga rezeki Anda senantiasa lancar dan berkah. Kami tunggu partisipasi Anda selanjutnya!"</i>
                         </p>
-                        <div style="background: #e8f8f5; border: 1px dashed #1abc9c; padding: 10px; border-radius: 8px; color: #16a085; font-weight: bold;">
-                            "Semoga rezeki Anda semakin lancar dan berkah bersama kami!"
-                        </div>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 0.85rem; color: #7f8c8d;">
+                        <i class="fa fa-mobile-alt"></i> Screenshot layar ini dan kirimkan ke WhatsApp anggota.
                     </div>
                 `,
                 showConfirmButton: true,
-                confirmButtonText: 'Tutup Notifikasi',
-                confirmButtonColor: '#1abc9c',
-                width: '450px'
+                confirmButtonText: '<i class="fa fa-times"></i> Tutup',
+                confirmButtonColor: '#2c3e50',
+                width: '550px',
+                padding: '20px'
             });
-
-            // Muat ulang tabel
-            muatPinjaman(); 
         }
-    }); 
-}
         
         // Fungsi Select All Tagihan
         window.toggleAllCheck = function(src) { 

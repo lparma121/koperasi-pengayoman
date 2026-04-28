@@ -925,36 +925,70 @@
             let countUtama = 0;
             let countWaserda = 0;
 
+            // ===== LOGIKA PENGGABUNGAN SIMPANAN WAJIB =====
+            let tempUtama = [];
+            let tempWaserda = [];
+
             allRows.forEach(tr => {
                 if (tr.style.display !== 'none') {
                     let tgl = tr.cells[0].innerText;
+                    let ketRaw = tr.cells[1].innerText;
+                    let ketType = tr.cells[2].innerText;
                     let kat = tr.getAttribute('data-kategori');
-                    let ket = tr.cells[1].innerText + "\n(" + tr.cells[2].innerText + ")";
                     let nomVal = Number(tr.getAttribute('data-nominal')) || 0;
                     let tipe = tr.getAttribute('data-tipe');
 
-                    let strDebit = "-";
-                    let strKredit = "-";
-
                     if (kat === 'waserda') {
-                        countWaserda++;
-                        if (tipe === 'Masuk') {
-                            totalDebitWaserda += nomVal; runningWaserda += nomVal; strDebit = formatR(nomVal);
-                        } else {
-                            totalKreditWaserda += nomVal; runningWaserda -= nomVal; strKredit = formatR(nomVal);
-                        }
-                        dataWaserda.push([tgl, countWaserda, ket, strDebit, strKredit, formatR(runningWaserda)]);
+                        tempWaserda.push({tgl, kat, ketRaw, ketType, nomVal, tipe});
                     } else {
-                        countUtama++;
-                        if (tipe === 'Masuk') {
-                            totalDebitUtama += nomVal; runningUtama += nomVal; strDebit = formatR(nomVal);
+                        // Jika Kategori adalah Simpanan Wajib & Tipe Masuk, kita gabungkan (Group by Date)
+                        if (kat.includes('wajib') && tipe === 'Masuk') {
+                            let existIdx = tempUtama.findIndex(item => item.tgl === tgl && item.kat.includes('wajib') && item.tipe === 'Masuk');
+                            
+                            if (existIdx !== -1) {
+                                tempUtama[existIdx].nomVal += nomVal; // Tambah total uangnya
+                                tempUtama[existIdx].ketRaw = "Total Setoran Simpanan Wajib Anggota (Akumulasi)"; // Ubah judul
+                            } else {
+                                // Jika belum ada di tanggal tsb, push data baru
+                                tempUtama.push({tgl, kat, ketRaw: "Total Setoran Simpanan Wajib Anggota (Akumulasi)", ketType, nomVal, tipe});
+                            }
                         } else {
-                            totalKreditUtama += nomVal; runningUtama -= nomVal; strKredit = formatR(nomVal);
+                            tempUtama.push({tgl, kat, ketRaw, ketType, nomVal, tipe});
                         }
-                        dataUtama.push([tgl, countUtama, ket, strDebit, strKredit, formatR(runningUtama)]);
                     }
                 }
             });
+
+            // Menyusun ke Data Utama PDF
+            tempUtama.forEach(item => {
+                countUtama++;
+                let strDebit = "-";
+                let strKredit = "-";
+                let ket = item.ketRaw + "\n(" + item.ketType + ")";
+
+                if (item.tipe === 'Masuk') {
+                    totalDebitUtama += item.nomVal; runningUtama += item.nomVal; strDebit = formatR(item.nomVal);
+                } else {
+                    totalKreditUtama += item.nomVal; runningUtama -= item.nomVal; strKredit = formatR(item.nomVal);
+                }
+                dataUtama.push([item.tgl, countUtama, ket, strDebit, strKredit, formatR(runningUtama)]);
+            });
+
+            // Menyusun ke Data Waserda PDF
+            tempWaserda.forEach(item => {
+                countWaserda++;
+                let strDebit = "-";
+                let strKredit = "-";
+                let ket = item.ketRaw + "\n(" + item.ketType + ")";
+
+                if (item.tipe === 'Masuk') {
+                    totalDebitWaserda += item.nomVal; runningWaserda += item.nomVal; strDebit = formatR(item.nomVal);
+                } else {
+                    totalKreditWaserda += item.nomVal; runningWaserda -= item.nomVal; strKredit = formatR(item.nomVal);
+                }
+                dataWaserda.push([item.tgl, countWaserda, ket, strDebit, strKredit, formatR(runningWaserda)]);
+            });
+            // ===============================================
 
             if (countUtama === 0 && countWaserda === 0) {
                 return Swal.fire('Oops', 'Tidak ada transaksi pada periode/filter ini.', 'warning');

@@ -925,7 +925,7 @@
             let countUtama = 0;
             let countWaserda = 0;
 
-            // ===== LOGIKA PENGGABUNGAN SIMPANAN WAJIB =====
+            // ===== LOGIKA PENGGABUNGAN SIMPANAN WAJIB SETOR MASSAL =====
             let tempUtama = [];
             let tempWaserda = [];
 
@@ -941,19 +941,34 @@
                     if (kat === 'waserda') {
                         tempWaserda.push({tgl, kat, ketRaw, ketType, nomVal, tipe});
                     } else {
-                        // Jika Kategori adalah Simpanan Wajib & Tipe Masuk, kita gabungkan (Group by Date)
-                        if (kat.includes('wajib') && tipe === 'Masuk') {
-                            let existIdx = tempUtama.findIndex(item => item.tgl === tgl && item.kat.includes('wajib') && item.tipe === 'Masuk');
+                        // Deteksi Setor Massal (mencari pola "Wajib Bulan Tahun" di Keterangan)
+                        // Contoh string target: Wajib Maret 2026
+                        let matchBulan = ketRaw.match(/wajib\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+\d{4}/i);
+                        
+                        let isMassal = kat && kat.toLowerCase().includes('wajib') && tipe === 'Masuk' && matchBulan;
+
+                        if (isMassal) {
+                            let labelBulan = matchBulan[0]; // cth: "Wajib Januari 2026"
+                            let existIdx = tempUtama.findIndex(item => item.tgl === tgl && item.labelBulan === labelBulan && item.isMassal === true);
                             
                             if (existIdx !== -1) {
                                 tempUtama[existIdx].nomVal += nomVal; // Tambah total uangnya
-                                tempUtama[existIdx].ketRaw = "Total Setoran Simpanan Wajib Anggota (Akumulasi)"; // Ubah judul
                             } else {
-                                // Jika belum ada di tanggal tsb, push data baru
-                                tempUtama.push({tgl, kat, ketRaw: "Total Setoran Simpanan Wajib Anggota (Akumulasi)", ketType, nomVal, tipe});
+                                // Jika belum ada di tanggal tsb, push data baru dengan format akumulasi
+                                tempUtama.push({
+                                    tgl, 
+                                    kat, 
+                                    ketRaw: `Total Setoran Simpanan Wajib Anggota (Akumulasi ${labelBulan})`, 
+                                    ketType, 
+                                    nomVal, 
+                                    tipe, 
+                                    isMassal: true,
+                                    labelBulan: labelBulan
+                                });
                             }
                         } else {
-                            tempUtama.push({tgl, kat, ketRaw, ketType, nomVal, tipe});
+                            // Data manual / bukan dari Setor Massal akan dipush satu persatu sesuai request Anda
+                            tempUtama.push({tgl, kat, ketRaw, ketType, nomVal, tipe, isMassal: false});
                         }
                     }
                 }

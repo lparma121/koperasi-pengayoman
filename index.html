@@ -1335,11 +1335,13 @@
                 
                 const cbHTML = statLay === 'Aktif' ? `<input type="checkbox" class="cb-tagihan" data-nama="${da.info_anggota}" data-plafon="${p}">` : '';
 
+                let btnCetakDetil = `<button style="background:var(--dark); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="cetakRiwayatAngsuranPDF('${id}', '${da.info_anggota}', ${p})" title="Cetak Detil Angsuran"><i class="fa fa-print"></i> Detil</button>`;
+
                 let tombolAksi = '';
                 if (statLay === 'Aktif') {
-                    tombolAksi = `<button class="btn-lunas-manual" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="tandaiLunas('${id}', '${da.info_anggota}')">✔ Lunas</button>`;
+                    tombolAksi = `<button class="btn-lunas-manual" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="tandaiLunas('${id}', '${da.info_anggota}')">✔ Lunas</button>` + btnCetakDetil;
                 } else {
-                    tombolAksi = `<button style="background:var(--blue); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="tampilkanKartuLunas('${da.info_anggota}')" title="Buka Kartu Ucapan"><i class="fa fa-image"></i> Kartu Ucapan</button>`;
+                    tombolAksi = `<button style="background:var(--blue); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="tampilkanKartuLunas('${da.info_anggota}')" title="Buka Kartu Ucapan"><i class="fa fa-image"></i> Kartu Ucapan</button>` + btnCetakDetil;
                 }
 
                 tbody.innerHTML += `<tr>
@@ -1468,6 +1470,93 @@
                 Swal.fire('Sukses', 'Pinjaman Dicairkan', 'success'); document.getElementById('formPinjaman').reset(); muatPinjaman();
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
+
+        // --- FITUR BARU: CETAK DETIL ANGSURAN ---
+        window.cetakRiwayatAngsuranPDF = async function(id_pinjaman, info_anggota, plafon) {
+            try {
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                    return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
+                }
+                
+                // Tampilkan loading spinner agar user tahu sistem sedang memproses
+                Swal.fire({ title: 'Menyiapkan Data...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Ambil data angsuran khusus untuk ID Pinjaman ini
+                const q = query(collection(db, "angsuran"), where("id_pinjaman", "==", id_pinjaman));
+                const snap = await getDocs(q);
+
+                let arrAns = [];
+                snap.forEach(d => arrAns.push(d.data()));
+
+                // Urutkan berdasarkan tanggal (dari yang paling lama ke terbaru)
+                arrAns.sort((a, b) => {
+                    let dA = a.tanggal || "1970-01-01";
+                    let dB = b.tanggal || "1970-01-01";
+                    if (dA !== dB) return dA.localeCompare(dB);
+                    return new Date(a.waktu_input||0) - new Date(b.waktu_input||0);
+                });
+
+                let dataTable = [];
+                let runningSaldo = Number(plafon) || 0;
+                let totalPokok = 0;
+                let totalJasa = 0;
+
+                // Baris pertama: Saldo Awal (Pencairan)
+                dataTable.push(['-', 'Pencairan Awal', '-', '-', formatR(runningSaldo)]);
+
+                // Looping data angsuran
+                arrAns.forEach((d, idx) => {
+                    const pokok = Number(d.jumlah) || 0;
+                    const jasa = Number(d.bunga) || 0;
+                    runningSaldo -= pokok;
+                    totalPokok += pokok;
+                    totalJasa += jasa;
+
+                    dataTable.push([
+                        d.tanggal || '-',
+                        `Angsuran Ke-${idx + 1}`,
+                        formatR(pokok),
+                        formatR(jasa),
+                        formatR(runningSaldo < 0 ? 0 : runningSaldo)
+                    ]);
+                });
+
+                // Bersihkan nama dari format "No_Anggota - Nama"
+                let namaBersih = info_anggota;
+                if(namaBersih.includes(" - ")) namaBersih = namaBersih.split(" - ")[1].trim();
+
+                Swal.close(); // Tutup loading
+
+                doc.setFontSize(14);
+                doc.text("RINCIAN RIWAYAT ANGSURAN PINJAMAN", 105, 15, { align: "center" });
+                doc.setFontSize(11);
+                doc.text(`Nama Anggota : ${namaBersih}`, 14, 25);
+                doc.text(`Total Plafon   : ${formatR(plafon)}`, 14, 31);
+
+                doc.autoTable({
+                    head: [['Tanggal', 'Keterangan', 'Angsuran Pokok', 'Jasa Pinjaman', 'Sisa Saldo']],
+                    body: dataTable,
+                    foot: [['', 'TOTAL TERBAYAR', formatR(totalPokok), formatR(totalJasa), '-']],
+                    startY: 36,
+                    theme: 'grid',
+                    headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+                    footStyles: { fillColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' },
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 30 },
+                        2: { halign: 'right' },
+                        3: { halign: 'right' },
+                        4: { halign: 'right', fontStyle: 'bold' }
+                    }
+                });
+
+                doc.save(`Riwayat_Angsuran_${namaBersih.replace(/\s+/g, '_')}.pdf`);
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        };
 
         // --- PAGE: ANGSURAN (UPDATE TERBARU) ---
         async function muatDropAns() {

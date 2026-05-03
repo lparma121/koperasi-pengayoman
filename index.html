@@ -314,7 +314,10 @@
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h3 style="margin:0;">Monitoring Pinjaman & Jasa</h3>
-                    <button onclick="cetakTagihanPDF()" style="background:var(--dark); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;"><i class="fa fa-file-pdf"></i> Cetak Tagihan PDF</button>
+                    <div>
+                        <button onclick="cetakRekapJasaPDF()" style="background:var(--blue); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:10px;"><i class="fa fa-print"></i> Cetak Rekap Jasa</button>
+                        <button onclick="cetakTagihanPDF()" style="background:var(--dark); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;"><i class="fa fa-file-pdf"></i> Cetak Tagihan PDF</button>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -1460,38 +1463,120 @@
 
             doc.save(namaFile);
         };
-        
-        document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const sel = document.getElementById('dropPinjaman'); const opt = sel.options[sel.selectedIndex]; const idA = sel.value; const ket = document.getElementById('ketPinjam').value;
-            try {
-                if(ket === "Top Up") { const sL = await getDocs(query(collection(db, "pinjaman"), where("id_anggota", "==", idA), where("status", "==", "Aktif"))); const prm=[]; sL.forEach(dl => prm.push(updateDoc(doc(db, "pinjaman", dl.id), {status: "Lunas (Top Up)"}))); await Promise.all(prm); }
-                await addDoc(collection(db, "pinjaman"), { id_anggota: idA, info_anggota: `${opt.dataset.no} - ${opt.dataset.nama}`, jumlah: Number(document.getElementById('plafonPinjam').value), tanggal: document.getElementById('tglPinjam').value, keterangan: ket, status: "Aktif", waktu_input: new Date().toISOString() });
-                Swal.fire('Sukses', 'Pinjaman Dicairkan', 'success'); document.getElementById('formPinjaman').reset(); muatPinjaman();
-            } catch (err) { Swal.fire('Error', err.message, 'error'); }
-        });
 
-        // --- FITUR BARU: CETAK DETIL ANGSURAN ---
+        // --- FITUR BARU: CETAK REKAP JASA PINJAMAN KESELURUHAN ---
+        window.cetakRekapJasaPDF = async function() {
+            try {
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                    return Swal.fire('Error', 'Library PDF belum termuat sempurna.', 'error');
+                }
+                
+                Swal.fire({ title: 'Menyiapkan Data...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                const [sPin, sAns] = await Promise.all([
+                    getDocs(collection(db, "pinjaman")), 
+                    getDocs(collection(db, "angsuran"))
+                ]);
+
+                // Map pinjaman
+                let mapPinjaman = {};
+                sPin.forEach(d => {
+                    mapPinjaman[d.id] = { 
+                        nama: d.data().info_anggota, 
+                        plafon: Number(d.data().jumlah) || 0,
+                        status: d.data().status || 'Aktif'
+                    };
+                });
+
+                // Hitung Jasa per Pinjaman
+                let rekapJasa = {};
+                let grandTotalJasa = 0;
+                
+                sAns.forEach(d => {
+                    const id = d.data().id_pinjaman;
+                    const jasa = Number(d.data().bunga) || 0;
+                    if(mapPinjaman[id]) {
+                        if(!rekapJasa[id]) {
+                            rekapJasa[id] = { nama: mapPinjaman[id].nama, plafon: mapPinjaman[id].plafon, status: mapPinjaman[id].status, totalJasa: 0 };
+                        }
+                        rekapJasa[id].totalJasa += jasa;
+                        grandTotalJasa += jasa;
+                    }
+                });
+
+                let dataTable = [];
+                let idx = 1;
+                for (let id in rekapJasa) {
+                    let row = rekapJasa[id];
+                    let namaBersih = row.nama;
+                    if(namaBersih.includes(" - ")) namaBersih = namaBersih.split(" - ")[1].trim();
+                    
+                    dataTable.push([
+                        idx++,
+                        namaBersih,
+                        formatR(row.plafon),
+                        row.status,
+                        formatR(row.totalJasa)
+                    ]);
+                }
+
+                // Urutkan tabel berdasarkan nama
+                dataTable.sort((a, b) => a[1].localeCompare(b[1]));
+                // Reset nomor urut setelah di-sort
+                dataTable.forEach((row, i) => row[0] = i + 1);
+
+                Swal.close(); // Tutup loading
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(14);
+                doc.text("REKAPITULASI JASA PINJAMAN ANGGOTA", 105, 15, { align: "center" });
+                doc.setFontSize(10);
+                doc.text(`Total Keseluruhan Jasa Diterima: ${formatR(grandTotalJasa)}`, 105, 21, { align: "center" });
+
+                doc.autoTable({
+                    head: [['No', 'Nama Anggota', 'Plafon Pinjaman', 'Status', 'Total Jasa Terbayar']],
+                    body: dataTable,
+                    foot: [['', 'TOTAL KESELURUHAN', '', '', formatR(grandTotalJasa)]],
+                    startY: 28,
+                    theme: 'grid',
+                    headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+                    footStyles: { fillColor: [44, 62, 80], fontStyle: 'bold', halign: 'right' },
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 15 },
+                        2: { halign: 'right' },
+                        3: { halign: 'center' },
+                        4: { halign: 'right', fontStyle: 'bold', textColor: [39, 174, 96] }
+                    }
+                });
+
+                const tglSekarang = new Date().toISOString().split('T')[0];
+                doc.save(`Rekap_Jasa_Pinjaman_Keseluruhan_${tglSekarang}.pdf`);
+
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        };
+
+        // --- FITUR BARU: CETAK DETIL ANGSURAN (PER ANGGOTA) ---
         window.cetakRiwayatAngsuranPDF = async function(id_pinjaman, info_anggota, plafon) {
             try {
                 if (!window.jspdf || !window.jspdf.jsPDF) {
                     return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
                 }
                 
-                // Tampilkan loading spinner agar user tahu sistem sedang memproses
                 Swal.fire({ title: 'Menyiapkan Data...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
-                // Ambil data angsuran khusus untuk ID Pinjaman ini
                 const q = query(collection(db, "angsuran"), where("id_pinjaman", "==", id_pinjaman));
                 const snap = await getDocs(q);
 
                 let arrAns = [];
                 snap.forEach(d => arrAns.push(d.data()));
 
-                // Urutkan berdasarkan tanggal (dari yang paling lama ke terbaru)
                 arrAns.sort((a, b) => {
                     let dA = a.tanggal || "1970-01-01";
                     let dB = b.tanggal || "1970-01-01";
@@ -1504,10 +1589,8 @@
                 let totalPokok = 0;
                 let totalJasa = 0;
 
-                // Baris pertama: Saldo Awal (Pencairan)
                 dataTable.push(['-', 'Pencairan Awal', '-', '-', formatR(runningSaldo)]);
 
-                // Looping data angsuran
                 arrAns.forEach((d, idx) => {
                     const pokok = Number(d.jumlah) || 0;
                     const jasa = Number(d.bunga) || 0;
@@ -1524,11 +1607,10 @@
                     ]);
                 });
 
-                // Bersihkan nama dari format "No_Anggota - Nama"
                 let namaBersih = info_anggota;
                 if(namaBersih.includes(" - ")) namaBersih = namaBersih.split(" - ")[1].trim();
 
-                Swal.close(); // Tutup loading
+                Swal.close();
 
                 doc.setFontSize(14);
                 doc.text("RINCIAN RIWAYAT ANGSURAN PINJAMAN", 105, 15, { align: "center" });
@@ -1557,6 +1639,16 @@
                 Swal.fire('Error', error.message, 'error');
             }
         };
+        
+        document.getElementById('formPinjaman').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sel = document.getElementById('dropPinjaman'); const opt = sel.options[sel.selectedIndex]; const idA = sel.value; const ket = document.getElementById('ketPinjam').value;
+            try {
+                if(ket === "Top Up") { const sL = await getDocs(query(collection(db, "pinjaman"), where("id_anggota", "==", idA), where("status", "==", "Aktif"))); const prm=[]; sL.forEach(dl => prm.push(updateDoc(doc(db, "pinjaman", dl.id), {status: "Lunas (Top Up)"}))); await Promise.all(prm); }
+                await addDoc(collection(db, "pinjaman"), { id_anggota: idA, info_anggota: `${opt.dataset.no} - ${opt.dataset.nama}`, jumlah: Number(document.getElementById('plafonPinjam').value), tanggal: document.getElementById('tglPinjam').value, keterangan: ket, status: "Aktif", waktu_input: new Date().toISOString() });
+                Swal.fire('Sukses', 'Pinjaman Dicairkan', 'success'); document.getElementById('formPinjaman').reset(); muatPinjaman();
+            } catch (err) { Swal.fire('Error', err.message, 'error'); }
+        });
 
         // --- PAGE: ANGSURAN (UPDATE TERBARU) ---
         async function muatDropAns() {

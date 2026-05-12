@@ -118,7 +118,7 @@
             <li><a onclick="showPage('setormassal')" id="link-setormassal"><i class="fa fa-layer-group"></i> Setor Massal</a></li>
             <li><a onclick="showPage('pinjaman')" id="link-pinjaman"><i class="fa fa-hand-holding-dollar"></i> Pinjaman</a></li>
             <li><a onclick="showPage('angsuran')" id="link-angsuran"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
-            <li><a onclick="showPage('waserda')" id="link-waserda"><i class="fa fa-store"></i> Kas Waserda</a></li>
+            <li><a onclick="showPage('waserda')" id="link-waserda"><i class="fa fa-store"></i> Operasional & Waserda</a></li>
             <li><a onclick="showPage('bukukas')" id="link-bukukas"><i class="fa fa-book"></i> Buku Kas Utama</a></li>
             <li><a onclick="showPage('neraca')" id="link-neraca"><i class="fa fa-balance-scale"></i> Neraca Keuangan</a></li>
             <li><a onclick="showPage('laporan')" id="link-laporan"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
@@ -371,7 +371,10 @@
 
         <div id="waserda" class="page-section">
             <div class="card">
-                <h3>Input Transaksi Waserda</h3>
+                <h3>Operasional & Waserda</h3>
+                <p style="color: gray; font-size: 13px; margin-bottom: 15px;">
+                <i>*Menu ini digunakan untuk mencatat Transaksi Toko Waserda, Biaya Operasional (Baju, ATK, Rapat), Pendapatan Bunga Bank, dan Pajak.</i>
+                </p>
                 <form id="formWaserda">
                     <div class="form-grid">
                         <div class="form-group"><label>Tanggal Transaksi</label><input type="date" id="tglWaserda" required></div>
@@ -390,8 +393,8 @@
             </div>
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>Riwayat Kas Waserda</h3>
-                    <h3 id="saldoWaserda" style="color:var(--success);">Laba Bersih Waserda: Rp 0</h3>
+                    <h3>Riwayat Operasional & Waserda</h3>
+                    <h3 id="saldoWaserda" style="color:var(--success);">Saldo Bersih: Rp 0</h3>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -452,8 +455,8 @@
                             <option value="Simpanan">Khusus Simpanan</option>
                             <option value="Angsuran">Angsuran Pokok + Jasa</option>
                             <option value="Pinjaman">Pencairan Pinjaman</option>
-                            <option value="Waserda">Waserda</option>
-                            <option value="Penyesuaian Kas">Penyesuaian / Operasional</option>
+                            <option value="Waserda">Operasional & Waserda</option>
+                            <option value="Penyesuaian Kas">Penyesuaian Saldo Manual</option>
                         </select>
                     </div>
                     <div>

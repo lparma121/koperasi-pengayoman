@@ -120,6 +120,7 @@
             <li><a onclick="showPage('angsuran')" id="link-angsuran"><i class="fa fa-money-bill-wave"></i> Angsuran</a></li>
             <li><a onclick="showPage('waserda')" id="link-waserda"><i class="fa fa-store"></i> Kas Waserda</a></li>
             <li><a onclick="showPage('bukukas')" id="link-bukukas"><i class="fa fa-book"></i> Buku Kas Utama</a></li>
+            <li><a onclick="showPage('neraca')" id="link-neraca"><i class="fa fa-balance-scale"></i> Neraca Keuangan</a></li>
             <li><a onclick="showPage('laporan')" id="link-laporan"><i class="fa fa-file-invoice-dollar"></i> Laporan & SHU</a></li>
         </ul>
     </div>
@@ -474,6 +475,67 @@
             </div>
         </div>
 
+        <div id="neraca" class="page-section">
+            <div class="card" style="border-top: 5px solid var(--primary);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid #eee; padding-bottom: 15px;">
+                    <div>
+                        <h3><i class="fa fa-balance-scale"></i> Laporan Neraca Keuangan</h3>
+                        <p style="font-size:0.85rem; color:#7f8c8d;">Ringkasan Posisi Harta, Kewajiban, & Modal Koperasi Berjalan.</p>
+                    </div>
+                    <button onclick="cetakNeracaPDF()" style="background:var(--dark); color:white; border:none; padding:10px 20px; border-radius:6px; font-size:0.9rem; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fa fa-print"></i> Cetak Laporan Neraca PDF</button>
+                </div>
+
+                <div class="form-grid" style="gap: 30px;">
+                    <div>
+                        <h4 style="background: #e3f2fd; padding: 12px; border-radius: 6px; text-align: center; color: #1565c0; border: 1px solid #bbdefb; margin-bottom: 15px;">AKTIVA (HARTA)</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">Kas & Saldo Bank</td>
+                                    <td class="txt-right" id="neracaKas" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">Piutang Anggota (Pinjaman Beredar)</td>
+                                    <td class="txt-right" id="neracaPiutang" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td style="padding: 15px 10px; font-weight: bold; font-size: 1.1rem; border-top: 2px solid #1565c0;">TOTAL AKTIVA</td>
+                                    <td class="txt-right" id="neracaTotalAktiva" style="padding: 15px 10px; font-weight: bold; font-size: 1.2rem; border-top: 2px solid #1565c0; color: #1565c0;">Rp 0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div>
+                        <h4 style="background: #e8f5e9; padding: 12px; border-radius: 6px; text-align: center; color: #2e7d32; border: 1px solid #c8e6c9; margin-bottom: 15px;">PASIVA (MODAL & KEWAJIBAN)</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">Simpanan Anggota (Pokok, Wajib, Sukarela)</td>
+                                    <td class="txt-right" id="neracaSimpanan" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">SHU / Laba Ditahan Tahun Berjalan</td>
+                                    <td class="txt-right" id="neracaSHU" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td style="padding: 15px 10px; font-weight: bold; font-size: 1.1rem; border-top: 2px solid #2e7d32;">TOTAL PASIVA</td>
+                                    <td class="txt-right" id="neracaTotalPasiva" style="padding: 15px 10px; font-weight: bold; font-size: 1.2rem; border-top: 2px solid #2e7d32; color: #2e7d32;">Rp 0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="neracaStatus" style="margin-top: 30px; text-align: center; font-weight: bold; padding: 15px; border-radius: 8px;">
+                    </div>
+            </div>
+        </div>
+
         <div id="laporan" class="page-section">
             <div class="card" style="border-top: 5px solid var(--primary);">
                 <h3><i class="fa fa-chart-pie"></i> Parameter Pembagian SHU Tahunan</h3>
@@ -601,7 +663,20 @@
             document.getElementById(pageId).classList.add('active');
             if(document.getElementById('link-' + pageId)) document.getElementById('link-' + pageId).classList.add('active');
             
-            const titles = { dashboard: "Ringkasan Operasional", anggota: "Manajemen Anggota", 'tambah-anggota': "Input Anggota Baru", 'detail-anggota': "Profil Anggota", simpanan: "Kelola Simpanan", setormassal: "Setoran Massal", pinjaman: "Kelola Pinjaman", angsuran: "Penerimaan Angsuran", waserda: "Keuangan Waserda", bukukas: "Buku Kas Utama", laporan: "Simulasi Laporan Akhir Tahun" };
+            const titles = { 
+                dashboard: "Ringkasan Operasional", 
+                anggota: "Manajemen Anggota", 
+                'tambah-anggota': "Input Anggota Baru", 
+                'detail-anggota': "Profil Anggota", 
+                simpanan: "Kelola Simpanan", 
+                setormassal: "Setoran Massal", 
+                pinjaman: "Kelola Pinjaman", 
+                angsuran: "Penerimaan Angsuran", 
+                waserda: "Keuangan Waserda", 
+                bukukas: "Buku Kas Utama", 
+                neraca: "Neraca Keuangan",
+                laporan: "Simulasi Laporan Akhir Tahun" 
+            };
             document.getElementById('page-title').innerText = titles[pageId];
 
             if(pageId === 'dashboard') muatDash();
@@ -612,6 +687,7 @@
             if(pageId === 'setormassal') muatAnggotaMassal();
             if(pageId === 'waserda') muatWaserda();
             if(pageId === 'bukukas') muatBukuKas();
+            if(pageId === 'neraca') muatNeraca();
             if(pageId === 'laporan') muatLabaFormal();
         }
 
@@ -865,7 +941,6 @@
         document.getElementById('filterKategoriKas').addEventListener('change', saringBukuKas);
         document.getElementById('cariKas').addEventListener('keyup', saringBukuKas);
 
-        // PENAMBAHAN FUNGSI: Cetak Buku Kas PDF (Tabel Terpisah Kas Utama & Waserda)
         window.cetakBukuKasPDF = function() {
             if (!window.jspdf || !window.jspdf.jsPDF) {
                 return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
@@ -928,7 +1003,6 @@
             let countUtama = 0;
             let countWaserda = 0;
 
-            // ===== LOGIKA PENGGABUNGAN SIMPANAN WAJIB SETOR MASSAL =====
             let tempUtama = [];
             let tempWaserda = [];
 
@@ -944,40 +1018,28 @@
                     if (kat === 'waserda') {
                         tempWaserda.push({tgl, kat, ketRaw, ketType, nomVal, tipe});
                     } else {
-                        // Deteksi Setor Massal (mencari pola "Wajib Bulan Tahun" di Keterangan)
-                        // Contoh string target: Wajib Maret 2026
                         let matchBulan = ketRaw.match(/wajib\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+\d{4}/i);
-                        
                         let isMassal = kat && kat.toLowerCase().includes('wajib') && tipe === 'Masuk' && matchBulan;
 
                         if (isMassal) {
-                            let labelBulan = matchBulan[0]; // cth: "Wajib Januari 2026"
+                            let labelBulan = matchBulan[0];
                             let existIdx = tempUtama.findIndex(item => item.tgl === tgl && item.labelBulan === labelBulan && item.isMassal === true);
                             
                             if (existIdx !== -1) {
-                                tempUtama[existIdx].nomVal += nomVal; // Tambah total uangnya
+                                tempUtama[existIdx].nomVal += nomVal;
                             } else {
-                                // Jika belum ada di tanggal tsb, push data baru dengan format akumulasi
                                 tempUtama.push({
-                                    tgl, 
-                                    kat, 
-                                    ketRaw: `Total Setoran Simpanan Wajib Anggota (Akumulasi ${labelBulan})`, 
-                                    ketType, 
-                                    nomVal, 
-                                    tipe, 
-                                    isMassal: true,
-                                    labelBulan: labelBulan
+                                    tgl, kat, ketRaw: `Total Setoran Simpanan Wajib Anggota (Akumulasi ${labelBulan})`, 
+                                    ketType, nomVal, tipe, isMassal: true, labelBulan: labelBulan
                                 });
                             }
                         } else {
-                            // Data manual / bukan dari Setor Massal akan dipush satu persatu sesuai request Anda
                             tempUtama.push({tgl, kat, ketRaw, ketType, nomVal, tipe, isMassal: false});
                         }
                     }
                 }
             });
 
-            // Menyusun ke Data Utama PDF
             tempUtama.forEach(item => {
                 countUtama++;
                 let strDebit = "-";
@@ -992,7 +1054,6 @@
                 dataUtama.push([item.tgl, countUtama, ket, strDebit, strKredit, formatR(runningUtama)]);
             });
 
-            // Menyusun ke Data Waserda PDF
             tempWaserda.forEach(item => {
                 countWaserda++;
                 let strDebit = "-";
@@ -1006,7 +1067,6 @@
                 }
                 dataWaserda.push([item.tgl, countWaserda, ket, strDebit, strKredit, formatR(runningWaserda)]);
             });
-            // ===============================================
 
             if (countUtama === 0 && countWaserda === 0) {
                 return Swal.fire('Oops', 'Tidak ada transaksi pada periode/filter ini.', 'warning');
@@ -1078,6 +1138,143 @@
 
             const tglSekarang = new Date().toISOString().split('T')[0];
             doc.save(`Mutasi_Buku_Kas_Lengkap_${tglSekarang}.pdf`);
+        };
+
+        // --- MENU BARU: FITUR NERACA KEUANGAN ---
+        async function muatNeraca() {
+            // Ambil data stats
+            const { stats } = await ambilDataTransaksi();
+            
+            // Perhitungan Aktiva (Harta)
+            const kas = stats.saldo_akhir;
+            const piutang = stats.plafon - stats.pokok_ans;
+            const piutangBersih = piutang < 0 ? 0 : piutang; // Mencegah piutang minus
+            const totalAktiva = kas + piutangBersih;
+
+            // Perhitungan Pasiva (Kewajiban + Modal)
+            const simpanan = stats.simpanan;
+            const shuBerjalan = stats.jasa + stats.laba_waserda;
+            const totalPasiva = simpanan + shuBerjalan;
+
+            // Render ke Layar
+            document.getElementById('neracaKas').innerText = formatR(kas);
+            document.getElementById('neracaPiutang').innerText = formatR(piutangBersih);
+            document.getElementById('neracaTotalAktiva').innerText = formatR(totalAktiva);
+
+            document.getElementById('neracaSimpanan').innerText = formatR(simpanan);
+            document.getElementById('neracaSHU').innerText = formatR(shuBerjalan);
+            document.getElementById('neracaTotalPasiva').innerText = formatR(totalPasiva);
+
+            // Cek Status Balance (Toleransi selisih karena pembulatan / hal lain)
+            const statusBox = document.getElementById('neracaStatus');
+            const selisih = Math.abs(totalAktiva - totalPasiva);
+
+            if (selisih < 1) { 
+                statusBox.innerHTML = '<i class="fa fa-check-circle"></i> NERACA BALANCE (SEIMBANG)';
+                statusBox.style.backgroundColor = '#d4edda';
+                statusBox.style.color = '#155724';
+                statusBox.style.border = '1px solid #c3e6cb';
+            } else {
+                statusBox.innerHTML = '<i class="fa fa-exclamation-triangle"></i> NERACA TIDAK BALANCE (SELISIH: ' + formatR(selisih) + ')<br><small style="font-weight:normal; margin-top:5px; display:block;">Silakan cek kembali input jurnal penyesuaian Anda.</small>';
+                statusBox.style.backgroundColor = '#f8d7da';
+                statusBox.style.color = '#721c24';
+                statusBox.style.border = '1px solid #f5c6cb';
+            }
+        }
+
+        window.cetakNeracaPDF = async function() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                return Swal.fire('Error', 'Library PDF belum termuat.', 'error');
+            }
+            
+            Swal.fire({ title: 'Menyiapkan Data...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+            const { stats } = await ambilDataTransaksi();
+            const kas = stats.saldo_akhir;
+            const piutang = stats.plafon - stats.pokok_ans;
+            const piutangBersih = piutang < 0 ? 0 : piutang;
+            const totalAktiva = kas + piutangBersih;
+            
+            const simpanan = stats.simpanan;
+            const shu = stats.jasa + stats.laba_waserda;
+            const totalPasiva = simpanan + shu;
+
+            Swal.close();
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const tglSekarang = new Date();
+            const namaBulan = tglSekarang.toLocaleString('id-ID', { month: 'long' });
+            const tahun = tglSekarang.getFullYear();
+            const tanggalLengkap = `${tglSekarang.getDate()} ${namaBulan} ${tahun}`;
+
+            // KOP Surat Neraca
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text("LAPORAN NERACA KEUANGAN", 105, 20, { align: "center" });
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text("KOPERASI KONSUMEN PENGAYOMAN", 105, 26, { align: "center" });
+            doc.setFontSize(10);
+            doc.text(`Posisi Keuangan Per Tanggal: ${tanggalLengkap}`, 105, 32, { align: "center" });
+
+            // Garis Pembatas
+            doc.setLineWidth(0.5);
+            doc.line(15, 36, 195, 36);
+
+            // Tabel Aktiva (Kiri)
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("AKTIVA (HARTA)", 15, 45);
+            
+            doc.autoTable({
+                startY: 48,
+                margin: { left: 15, right: 108 }, 
+                head: [['Keterangan', 'Nominal']],
+                body: [
+                    ['Kas & Saldo Bank', formatR(kas)],
+                    ['Piutang Anggota', formatR(piutangBersih)]
+                ],
+                foot: [['TOTAL AKTIVA', formatR(totalAktiva)]],
+                theme: 'grid',
+                headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+                footStyles: { fillColor: [236, 240, 241], textColor: [41, 128, 185], fontStyle: 'bold' },
+                columnStyles: { 1: { halign: 'right' } }
+            });
+
+            // Tabel Pasiva (Kanan)
+            doc.text("PASIVA (MODAL)", 108, 45);
+
+            doc.autoTable({
+                startY: 48,
+                margin: { left: 108, right: 15 },
+                head: [['Keterangan', 'Nominal']],
+                body: [
+                    ['Simpanan Anggota', formatR(simpanan)],
+                    ['SHU Tahun Berjalan', formatR(shu)]
+                ],
+                foot: [['TOTAL PASIVA', formatR(totalPasiva)]],
+                theme: 'grid',
+                headStyles: { fillColor: [39, 174, 96], halign: 'center' },
+                footStyles: { fillColor: [236, 240, 241], textColor: [39, 174, 96], fontStyle: 'bold' },
+                columnStyles: { 1: { halign: 'right' } }
+            });
+
+            let finalY = Math.max(doc.lastAutoTable.finalY, 90) + 30;
+
+            // Tanda tangan
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            doc.text("Mengetahui,", 50, finalY, { align: "center" });
+            doc.text("Ketua Koperasi", 50, finalY + 6, { align: "center" });
+            doc.text("( .......................................... )", 50, finalY + 30, { align: "center" });
+
+            doc.text(`Arga Makmur, ${tanggalLengkap}`, 160, finalY, { align: "center" });
+            doc.text("Bendahara Koperasi", 160, finalY + 6, { align: "center" });
+            doc.text("( .......................................... )", 160, finalY + 30, { align: "center" });
+
+            doc.save(`Laporan_Neraca_${tglSekarang.toISOString().split('T')[0]}.pdf`);
         };
 
         // --- PAGE: ANGGOTA ---
@@ -1260,7 +1457,7 @@
             });
         });
 
-        // Fungsi Cetak PDF Tagihan Simpanan (Untuk Bendahara Lapas)
+        // Fungsi Cetak PDF Tagihan Simpanan
         window.cetakTagihanSimpananPDF = function() {
             if (!window.jspdf || !window.jspdf.jsPDF) {
                 return Swal.fire('Error', 'Library PDF belum termuat sempurna. Pastikan Anda terkoneksi internet.', 'error');
@@ -1464,7 +1661,6 @@
             doc.save(namaFile);
         };
 
-        // --- FITUR BARU: CETAK REKAP JASA PINJAMAN KESELURUHAN ---
         window.cetakRekapJasaPDF = async function() {
             try {
                 if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -1520,9 +1716,7 @@
                     ]);
                 }
 
-                // Urutkan tabel berdasarkan nama
                 dataTable.sort((a, b) => a[1].localeCompare(b[1]));
-                // Reset nomor urut setelah di-sort
                 dataTable.forEach((row, i) => row[0] = i + 1);
 
                 Swal.close(); // Tutup loading
@@ -1559,7 +1753,6 @@
             }
         };
 
-        // --- FITUR BARU: CETAK DETIL ANGSURAN (PER ANGGOTA) ---
         window.cetakRiwayatAngsuranPDF = async function(id_pinjaman, info_anggota, plafon) {
             try {
                 if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -1650,18 +1843,16 @@
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: ANGSURAN (UPDATE TERBARU) ---
+        // --- PAGE: ANGSURAN ---
         async function muatDropAns() {
             const dr = document.getElementById('dropAngsuran'); 
             dr.innerHTML = '<option value="">-- Memuat data pinjaman aktif... --</option>';
             
-            // 1. Ambil data pinjaman aktif dan seluruh rekap angsuran
             const [sP, sAns] = await Promise.all([
                 getDocs(query(collection(db,"pinjaman"), where("status", "==", "Aktif"))),
                 getDocs(collection(db, "angsuran"))
             ]);
             
-            // 2. Hitung total pokok yang sudah dibayar per ID Pinjaman
             const rekPokok = {}; 
             sAns.forEach(d => { 
                 const id = d.data().id_pinjaman; 
@@ -1670,14 +1861,12 @@
 
             dr.innerHTML = '<option value="">-- Pilih Anggota --</option>';
             
-            // 3. Looping pinjaman untuk mengecek saldo
             sP.forEach(d => { 
                 const id = d.id;
                 const plafon = Number(d.data().jumlah) || 0;
                 const terbayar = rekPokok[id] || 0;
                 const sisa = plafon - terbayar;
                 
-                // 4. HANYA tampilkan anggota jika sisa hutangnya masih ada (> 0)
                 if (sisa > 0) {
                     dr.innerHTML += `<option value="${id}" data-nama="${d.data().info_anggota}" data-plafon="${plafon}">${d.data().info_anggota} (Sisa Hutang: ${formatR(sisa)})</option>`;
                 }
@@ -1948,7 +2137,7 @@
             
             jendelaCetak.document.write('<div class="catatan-print"><strong>*Catatan Pembulatan:</strong> Terdapat selisih nominal antara <em>Dana Bersih Untuk Anggota</em> (A.7) dengan <em>Total Keseluruhan</em> yang dibagikan pada tabel di atas. Selisih ini terjadi karena sistem menerapkan <strong>pembulatan nilai ke bawah (ke ribuan terdekat)</strong> pada nominal penerimaan tiap anggota untuk memudahkan pencairan tunai. Sisa uang dari selisih pembulatan tersebut tidak hilang, melainkan tetap tersimpan aman dan masuk kembali sebagai Saldo Kas Koperasi.</div>');
             
-            jendelaCetak.document.write('<div class="ttd-box"><div><p>Ketua,</p><br><br><br><br><p><strong>( Iwan Aprilianto )</strong></p></div><div><p>Bendahara,</p><br><br><br><br><p><strong>( M. Andika Riansyah )</strong></p></div></div>');
+            jendelaCetak.document.write('<div class="ttd-box"><div><p>Ketua Koperasi,</p><br><br><br><br><p><strong>( ..................................... )</strong></p></div><div><p>Bendahara,</p><br><br><br><br><p><strong>( ..................................... )</strong></p></div></div>');
             
             jendelaCetak.document.write('</body></html>');
             jendelaCetak.document.close();

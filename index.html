@@ -1185,100 +1185,156 @@
             }
         }
 
-        window.cetakNeracaPDF = async function() {
-            if (!window.jspdf || !window.jspdf.jsPDF) {
-                return Swal.fire('Error', 'Library PDF belum termuat.', 'error');
-            }
-            
-            Swal.fire({ title: 'Menyiapkan Data...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        window.window.cetakNeracaPDF = async function() {
+    // 1. Ambil Data dari Tampilan Neraca
+    const kas = document.getElementById('neracaKas').innerText;
+    const piutang = document.getElementById('neracaPiutang').innerText;
+    const totalAktiva = document.getElementById('neracaTotalAktiva').innerText;
+    
+    const simpanan = document.getElementById('neracaSimpanan').innerText;
+    const shu = document.getElementById('neracaSHU').innerText;
+    const totalPasiva = document.getElementById('neracaTotalPasiva').innerText;
+    const statusNeraca = document.getElementById('neracaStatus').innerText;
 
-            const { stats } = await ambilDataTransaksi();
-            const kas = stats.saldo_akhir;
-            const piutang = stats.plafon - stats.pokok_ans;
-            const piutangBersih = piutang < 0 ? 0 : piutang;
-            const totalAktiva = kas + piutangBersih;
-            
-            const simpanan = stats.simpanan;
-            const shu = stats.jasa + stats.laba_waserda;
-            const totalPasiva = simpanan + shu;
+    const tglSekarang = new Date();
+    const namaBulan = tglSekarang.toLocaleString('id-ID', { month: 'long' });
+    const tanggalLengkap = `${tglSekarang.getDate()} ${namaBulan} ${tglSekarang.getFullYear()}`;
 
-            Swal.close();
+    // 2. Buka Jendela Cetak Baru
+    const jendelaCetak = window.open('', '', 'height=800,width=1000');
+    
+    // 3. Tulis HTML & CSS (Meniru gaya Laporan SHU)
+    jendelaCetak.document.write(`
+        <html>
+        <head>
+            <title>Laporan Neraca - Koperasi Konsumen</title>
+            <style>
+                body { font-family: "Times New Roman", Times, serif; padding: 40px; color: black; line-height: 1.5; }
+                .kop-surat { text-align: center; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 30px; }
+                .kop-surat h1 { margin: 0; font-size: 22px; text-transform: uppercase; }
+                .kop-surat p { margin: 5px 0 0 0; font-size: 14px; }
+                
+                .judul-laporan { text-align: center; text-decoration: underline; font-weight: bold; font-size: 18px; margin-bottom: 20px; }
+                
+                .kontainer-neraca { display: flex; justify-content: space-between; gap: 40px; margin-top: 20px; }
+                .blok-neraca { flex: 1; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+                th, td { border: 1px solid black; padding: 10px; }
+                th { background-color: #f2f2f2; text-align: center; }
+                .txt-right { text-align: right; }
+                .total-row { font-weight: bold; background-color: #f9f9f9; }
+                
+                .status-box { margin-top: 30px; padding: 10px; border: 1px dashed black; text-align: center; font-weight: bold; font-style: italic; }
+                
+                .ttd-box { margin-top: 60px; width: 100%; display: flex; justify-content: space-between; text-align: center; }
+                .ttd-kolom { width: 200px; }
+                
+                @media print {
+                    body { padding: 0; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="kop-surat">
+                <h1>KOPERASI KONSUMEN</h1>
+                <p>Arga Makmur, Bengkulu, Indonesia</p>
+                <p>Badan Hukum No: [Isi Nomor BH Koperasi Bapak]</p>
+            </div>
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            <div class="judul-laporan">LAPORAN NERACA KEUANGAN</div>
+            <p style="text-align:center; margin-top:-15px; font-size:12px;">Posisi Keuangan Per Tanggal: ${tanggalLengkap}</p>
 
-            const tglSekarang = new Date();
-            const namaBulan = tglSekarang.toLocaleString('id-ID', { month: 'long' });
-            const tahun = tglSekarang.getFullYear();
-            const tanggalLengkap = `${tglSekarang.getDate()} ${namaBulan} ${tahun}`;
+            <div class="kontainer-neraca">
+                <div class="blok-neraca">
+                    <h3 style="font-size:14px; margin-bottom:5px;">A. AKTIVA (HARTA)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Uraian Akun</th>
+                                <th>Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Kas & Saldo Bank</td>
+                                <td class="txt-right">${kas}</td>
+                            </tr>
+                            <tr>
+                                <td>Piutang Anggota (Pinjaman Beredar)</td>
+                                <td class="txt-right">${piutang}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td>TOTAL AKTIVA</td>
+                                <td class="txt-right">${totalAktiva}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
 
-            // KOP Surat Neraca
-            doc.setFontSize(16);
-            doc.setFont("helvetica", "bold");
-            doc.text("LAPORAN NERACA KEUANGAN", 105, 20, { align: "center" });
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "normal");
-            doc.text("KOPERASI KONSUMEN PENGAYOMAN", 105, 26, { align: "center" });
-            doc.setFontSize(10);
-            doc.text(`Posisi Keuangan Per Tanggal: ${tanggalLengkap}`, 105, 32, { align: "center" });
+                <div class="blok-neraca">
+                    <h3 style="font-size:14px; margin-bottom:5px;">B. PASIVA (MODAL & KEWAJIBAN)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Uraian Akun</th>
+                                <th>Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Simpanan Anggota (P, W, S)</td>
+                                <td class="txt-right">${simpanan}</td>
+                            </tr>
+                            <tr>
+                                <td>SHU / Laba Tahun Berjalan</td>
+                                <td class="txt-right">${shu}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td>TOTAL PASIVA</td>
+                                <td class="txt-right">${totalPasiva}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
 
-            // Garis Pembatas
-            doc.setLineWidth(0.5);
-            doc.line(15, 36, 195, 36);
+            <div class="status-box">
+                KETERANGAN: ${statusNeraca}
+            </div>
 
-            // Tabel Aktiva (Kiri)
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.text("AKTIVA (HARTA)", 15, 45);
-            
-            doc.autoTable({
-                startY: 48,
-                margin: { left: 15, right: 108 }, 
-                head: [['Keterangan', 'Nominal']],
-                body: [
-                    ['Kas & Saldo Bank', formatR(kas)],
-                    ['Piutang Anggota', formatR(piutangBersih)]
-                ],
-                foot: [['TOTAL AKTIVA', formatR(totalAktiva)]],
-                theme: 'grid',
-                headStyles: { fillColor: [41, 128, 185], halign: 'center' },
-                footStyles: { fillColor: [236, 240, 241], textColor: [41, 128, 185], fontStyle: 'bold' },
-                columnStyles: { 1: { halign: 'right' } }
-            });
+            <div class="ttd-box">
+                <div class="ttd-kolom">
+                    <p>Mengetahui,</p>
+                    <p>Ketua Koperasi</p>
+                    <br><br><br>
+                    <p><strong>( ..................................... )</strong></p>
+                </div>
+                <div class="ttd-kolom">
+                    <p>Arga Makmur, ${tanggalLengkap}</p>
+                    <p>Bendahara,</p>
+                    <br><br><br>
+                    <p><strong>( ..................................... )</strong></p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
 
-            // Tabel Pasiva (Kanan)
-            doc.text("PASIVA (MODAL)", 108, 45);
-
-            doc.autoTable({
-                startY: 48,
-                margin: { left: 108, right: 15 },
-                head: [['Keterangan', 'Nominal']],
-                body: [
-                    ['Simpanan Anggota', formatR(simpanan)],
-                    ['SHU Tahun Berjalan', formatR(shu)]
-                ],
-                foot: [['TOTAL PASIVA', formatR(totalPasiva)]],
-                theme: 'grid',
-                headStyles: { fillColor: [39, 174, 96], halign: 'center' },
-                footStyles: { fillColor: [236, 240, 241], textColor: [39, 174, 96], fontStyle: 'bold' },
-                columnStyles: { 1: { halign: 'right' } }
-            });
-
-            let finalY = Math.max(doc.lastAutoTable.finalY, 90) + 30;
-
-            // Tanda tangan
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "normal");
-            doc.text("Mengetahui,", 50, finalY, { align: "center" });
-            doc.text("Ketua Koperasi", 50, finalY + 6, { align: "center" });
-            doc.text("( .......................................... )", 50, finalY + 30, { align: "center" });
-
-            doc.text(`Arga Makmur, ${tanggalLengkap}`, 160, finalY, { align: "center" });
-            doc.text("Bendahara Koperasi", 160, finalY + 6, { align: "center" });
-            doc.text("( .......................................... )", 160, finalY + 30, { align: "center" });
-
-            doc.save(`Laporan_Neraca_${tglSekarang.toISOString().split('T')[0]}.pdf`);
-        };
+    jendelaCetak.document.close();
+    jendelaCetak.focus();
+    
+    // Memberi waktu sedikit untuk memuat CSS sebelum print dialog muncul
+    setTimeout(() => {
+        jendelaCetak.print();
+        jendelaCetak.close();
+    }, 500);
+};
 
         // --- PAGE: ANGGOTA ---
         async function muatAnggota() {

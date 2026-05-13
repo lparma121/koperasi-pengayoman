@@ -2193,7 +2193,9 @@
 
             jendelaCetak.document.write('<strong>B. Rincian Pembagian per Anggota:</strong>' + isiTabel);
             
-            jendelaCetak.document.write('<div class="catatan-print"><strong>*Catatan Pembulatan:</strong> Terdapat selisih nominal antara <em>Dana Bersih Untuk Anggota</em> (A.7) dengan <em>Total Keseluruhan</em> yang dibagikan pada tabel di atas. Selisih ini terjadi karena sistem menerapkan <strong>pembulatan nilai ke bawah (ke ribuan terdekat)</strong> pada nominal penerimaan tiap anggota untuk memudahkan pencairan tunai. Sisa uang dari selisih pembulatan tersebut tidak hilang, melainkan tetap tersimpan aman dan masuk kembali sebagai Saldo Kas Koperasi.</div>');
+            // Mengambil isi catatan selisih (beserta nominal Rupiah-nya) langsung dari layar aplikasi
+            const catatanLayar = document.getElementById('catatanSelisih').innerHTML;
+            jendelaCetak.document.write('<div class="catatan-print">' + catatanLayar + '</div>');
             
             jendelaCetak.document.write('<div class="ttd-box"><div><p>Ketua Koperasi,</p><br><br><br><br><p><strong>( ..................................... )</strong></p></div><div><p>Bendahara,</p><br><br><br><br><p><strong>( ..................................... )</strong></p></div></div>');
             

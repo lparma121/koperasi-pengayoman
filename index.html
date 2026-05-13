@@ -2195,7 +2195,14 @@
             
             // Mengambil isi catatan selisih (beserta nominal Rupiah-nya) langsung dari layar aplikasi
             const catatanLayar = document.getElementById('catatanSelisih').innerHTML;
-            jendelaCetak.document.write('<div class="catatan-print">' + catatanLayar + '</div>');
+            // Mengambil catatan dari layar dan merampingkan ukurannya untuk PDF
+            const catatanLayar = document.getElementById('catatanSelisih').innerText; 
+
+            jendelaCetak.document.write(`
+                <div style="margin-top: 20px; padding: 10px; border: 0.5px solid #ccc; font-style: italic; font-size: 10px; color: #444; line-height: 1.3;">
+                    <strong>Catatan Transparansi:</strong> ${catatanLayar}
+                </div>
+            `);
             
             jendelaCetak.document.write('<div class="ttd-box"><div><p>Ketua Koperasi,</p><br><br><br><br><p><strong>( ..................................... )</strong></p></div><div><p>Bendahara,</p><br><br><br><br><p><strong>( ..................................... )</strong></p></div></div>');
             

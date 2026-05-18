@@ -1197,7 +1197,8 @@
     const totalAktiva = document.getElementById('neracaTotalAktiva').innerText;
     
     const simpanan = document.getElementById('neracaSimpanan').innerText;
-    const shu = document.getElementById('neracaSHU').innerText;
+    const shuPinjaman = document.getElementById('neracaSHUPinjaman').innerText;
+    const shuWaserda = document.getElementById('neracaSHUWaserda').innerText;
     const totalPasiva = document.getElementById('neracaTotalPasiva').innerText;
     const statusNeraca = document.getElementById('neracaStatus').innerText;
 
@@ -1294,8 +1295,12 @@
                                 <td class="txt-right">${simpanan}</td>
                             </tr>
                             <tr>
-                                <td>SHU / Laba Tahun Berjalan</td>
-                                <td class="txt-right">${shu}</td>
+                                <td>SHU / Laba Jasa Pinjaman</td>
+                                <td class="txt-right">${shuPinjaman}</td>
+                            </tr>
+                            <tr>
+                                <td>SHU / Laba Operasional Waserda</td>
+                                <td class="txt-right">${shuWaserda}</td>
                             </tr>
                         </tbody>
                         <tfoot>

@@ -1159,8 +1159,9 @@
 
             // Perhitungan Pasiva (Kewajiban + Modal)
             const simpanan = stats.simpanan;
-            const shuBerjalan = stats.jasa + stats.laba_waserda;
-            const totalPasiva = simpanan + shuBerjalan;
+            const shuPinjaman = stats.jasa;
+            const shuWaserda = stats.laba_waserda;
+            const totalPasiva = simpanan + shuPinjaman + shuWaserda;
 
             // Render ke Layar
             document.getElementById('neracaKas').innerText = formatR(kas);
@@ -1168,7 +1169,8 @@
             document.getElementById('neracaTotalAktiva').innerText = formatR(totalAktiva);
 
             document.getElementById('neracaSimpanan').innerText = formatR(simpanan);
-            document.getElementById('neracaSHU').innerText = formatR(shuBerjalan);
+            document.getElementById('neracaSHUPinjaman').innerText = formatR(shuPinjaman);
+            document.getElementById('neracaSHUWaserda').innerText = formatR(shuWaserda);
             document.getElementById('neracaTotalPasiva').innerText = formatR(totalPasiva);
 
             // Cek Status Balance (Toleransi selisih karena pembulatan / hal lain)

@@ -2121,8 +2121,8 @@
                 let dapatPinjamanAsli = calcJasaTotal > 0 ? (data.jasa / calcJasaTotal) * danaBagiPinjaman : 0;
                 if(dapatSimpananAsli < 0) dapatSimpananAsli = 0; 
                 
-                let dapatSimpanan = Math.floor(dapatSimpananAsli / 1000) * 1000;
-                let dapatPinjaman = Math.floor(dapatPinjamanAsli / 1000) * 1000;
+                let dapatSimpanan = Math.floor(dapatSimpananAsli / 5000) * 5000;
+                let dapatPinjaman = Math.floor(dapatPinjamanAsli / 5000) * 5000;
                 const dapatTotal = dapatSimpanan + dapatPinjaman;
 
                 if (data.simpanan > 0 || data.jasa > 0) {

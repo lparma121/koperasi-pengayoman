@@ -379,42 +379,26 @@
                     <div class="form-grid">
                         <div class="form-group"><label>Tanggal Transaksi</label><input type="date" id="tglWaserda" required></div>
                         <div class="form-group">
-                            <label>Kategori Transaksi</label>
-                            <select id="katWaserda">
-                                <option value="Waserda">Toko Waserda (Usaha)</option>
-                                <option value="Operasional">Operasional Koperasi (Biaya/Beban)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Arus Kas (Jenis)</label>
+                            <label>Jenis Transaksi</label>
                             <select id="jenisWaserda">
-                                <option value="Pemasukan">Pemasukan (Uang Masuk / Laba)</option>
-                                <option value="Pengeluaran">Pengeluaran (Belanja / Bayar Biaya)</option>
+                                <option value="Pemasukan">Pemasukan (Laba Penjualan Harian/Mingguan)</option>
+                                <option value="Pengeluaran">Pengeluaran (Belanja Stok / Operasional)</option>
                             </select>
                         </div>
                         <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="nomWaserda" required></div>
-                        <div class="form-group" style="grid-column: span 2;"><label>Keterangan Detail</label><input type="text" id="ketWaserda" placeholder="Contoh: Laba kotor minggu 1 / Beli ATK" required></div>
+                        <div class="form-group"><label>Keterangan</label><input type="text" id="ketWaserda" placeholder="Contoh: Laba kotor minggu 1" required></div>
                     </div>
-                    <button type="submit" class="btn-submit" style="background:var(--blue)"><i class="fa fa-save"></i> SIMPAN TRANSAKSI</button>
+                    <button type="submit" class="btn-submit" style="background:var(--blue)"><i class="fa fa-save"></i> SIMPAN TRANSAKSI WASERDA</button>
                 </form>
             </div>
-            
-            <div class="summary-container" style="margin-bottom: 20px;">
-                <div class="summary-box" style="border-top: 4px solid var(--success); padding: 15px 25px;">
-                    <h4 style="color: var(--success); margin-bottom: 5px;">Laba Bersih Waserda</h4>
-                    <p id="saldoWaserdaOnly" style="font-size: 1.5rem; color: var(--success); font-weight: bold;">Rp 0</p>
-                </div>
-                <div class="summary-box" style="border-top: 4px solid var(--danger); padding: 15px 25px;">
-                    <h4 style="color: var(--danger); margin-bottom: 5px;">Total Biaya Operasional</h4>
-                    <p id="saldoOperasionalOnly" style="font-size: 1.5rem; color: var(--danger); font-weight: bold;">Rp 0</p>
-                </div>
-            </div>
-
             <div class="card">
-                <h3>Riwayat Operasional & Waserda</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Riwayat Operasional & Waserda</h3>
+                    <h3 id="saldoWaserda" style="color:var(--success);">Saldo Bersih: Rp 0</h3>
+                </div>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th style="text-align:center;">Jenis</th><th class="txt-right">Nominal (Rp)</th></tr></thead>
+                        <thead><tr><th>Tanggal</th><th>Keterangan</th><th style="text-align:center;">Jenis</th><th class="txt-right">Nominal (Rp)</th></tr></thead>
                         <tbody id="bodyWaserda"></tbody>
                     </table>
                 </div>
@@ -759,15 +743,7 @@
                     if(tipeData === "waserda") stats.laba_waserda -= nom; 
                 }
 
-                // Tambahan pemisah label di Buku Kas untuk Pilihan 1
-                let ketPrefix = "";
-                if(tipeData === "penyesuaian") {
-                    ketPrefix = "Penyesuaian:";
-                } else {
-                    ketPrefix = (d.data().kategori === "Operasional") ? "Operasional:" : "Waserda:";
-                }
-                
-                // Kategori tetap "Waserda" agar filter & PDF tetap mengenali keduanya di satu tempat
+                let ketPrefix = tipeData === "waserda" ? "Waserda:" : "Penyesuaian:";
                 let kategoriTx = tipeData === "waserda" ? "Waserda" : "Penyesuaian Kas";
 
                 arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `${ketPrefix} ${d.data().keterangan}`, tipe: isMasuk ? 'Masuk' : 'Keluar', nominal: nom, kategori: kategoriTx });
@@ -1143,7 +1119,7 @@
             }
 
             doc.setFontSize(12);
-            doc.text("B. Tabel Mutasi Waserda & Operasional", 14, finalY);
+            doc.text("B. Tabel Mutasi Waserda", 14, finalY);
 
             doc.autoTable({
                 head: [['Tanggal Transaksi', 'No', 'Keterangan', 'Debit (Masuk)', 'Kredit (Keluar)', 'Saldo']],
@@ -1978,7 +1954,7 @@
         // --- PAGE: WASERDA ---
         async function muatWaserda() {
             const tb = document.getElementById('bodyWaserda');
-            tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+            tb.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>';
             const snap = await getDocs(collection(db, "waserda"));
             
             let arrW = [];
@@ -1992,38 +1968,26 @@
             });
 
             tb.innerHTML = '';
-            let labaWaserda = 0;
-            let biayaOperasional = 0;
+            let saldoBersih = 0;
 
-            if(arrW.length === 0) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada transaksi</td></tr>'; }
+            if(arrW.length === 0) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada transaksi Waserda</td></tr>'; }
             
             arrW.forEach(d => {
                 if(d.tipe_data === "penyesuaian") return;
 
                 const nom = Number(d.nominal) || 0;
                 const isMasuk = d.jenis === "Pemasukan";
-                const kat = d.kategori || "Waserda";
                 
-                if (kat === "Waserda") {
-                    if(isMasuk) labaWaserda += nom; else labaWaserda -= nom;
-                } else if (kat === "Operasional") {
-                    // Operasional defaultnya pengeluaran/beban (mengurangi kas).
-                    // Jika tercatat Pengeluaran, artinya biaya bertambah.
-                    if(!isMasuk) biayaOperasional += nom; else biayaOperasional -= nom;
-                }
-
-                const badgeKat = kat === "Waserda" ? `<span class="status-badge" style="background:#e3f2fd; color:#1565c0;">Waserda</span>` : `<span class="status-badge" style="background:#fff3e0; color:#e67e22;">Operasional</span>`;
+                if(isMasuk) saldoBersih += nom; else saldoBersih -= nom;
 
                 tb.innerHTML += `<tr>
                     <td>${d.tanggal}</td>
-                    <td>${badgeKat}</td>
                     <td>${d.keterangan}</td>
                     <td style="text-align:center;"><span class="status-badge" style="background:${isMasuk?'#e8f5e9':'#ffebee'}; color:${isMasuk?'var(--success)':'var(--danger)'}">${d.jenis}</span></td>
                     <td class="txt-right" style="color:${isMasuk?'var(--success)':'var(--danger)'}">${isMasuk?'+':'-'} ${formatR(nom)}</td>
                 </tr>`;
             });
-            document.getElementById('saldoWaserdaOnly').innerText = formatR(labaWaserda);
-            document.getElementById('saldoOperasionalOnly').innerText = formatR(biayaOperasional);
+            document.getElementById('saldoWaserda').innerText = `Laba Bersih Waserda: ${formatR(saldoBersih)}`;
         }
 
         document.getElementById('formWaserda').addEventListener('submit', async (e) => {
@@ -2031,13 +1995,12 @@
             try {
                 await addDoc(collection(db, "waserda"), {
                     tanggal: document.getElementById('tglWaserda').value,
-                    kategori: document.getElementById('katWaserda').value,
                     jenis: document.getElementById('jenisWaserda').value,
                     nominal: Number(document.getElementById('nomWaserda').value),
                     keterangan: document.getElementById('ketWaserda').value,
                     waktu_input: new Date().toISOString()
                 });
-                Swal.fire('Sukses', 'Transaksi tersimpan', 'success');
+                Swal.fire('Sukses', 'Transaksi Waserda tersimpan', 'success');
                 document.getElementById('formWaserda').reset();
                 document.getElementById('tglWaserda').valueAsDate = new Date();
                 muatWaserda();

@@ -520,12 +520,12 @@
                                     <td class="txt-right" id="neracaSimpanan" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">SHU / Laba Operasional Waserda (Kotor)</td>
-                                    <td class="txt-right" id="neracaSHUWaserda" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
+                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">SHU / Laba Jasa Pinjaman</td>
+                                    <td class="txt-right" id="neracaSHUPinjaman" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee; color: var(--danger);">Biaya Operasional / Pengeluaran (-)</td>
-                                    <td class="txt-right" id="neracaBiayaOps" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee; color: var(--danger);">Rp 0</td>
+                                    <td style="padding: 12px 10px; border-bottom: 1px solid #eee;">SHU / Laba Waserda</td>
+                                    <td class="txt-right" id="neracaSHUWaserda" style="font-weight: bold; padding: 12px 10px; border-bottom: 1px solid #eee;">Rp 0</td>
                                 </tr>
                             </tbody>
                             <tfoot>
@@ -708,7 +708,7 @@
             ]);
             
             let arrTx = [];
-            let stats = { simpanan: 0, jasa: 0, pokok_ans: 0, plafon: 0, laba_waserda: 0, saldo_akhir: 0, masuk_waserda: 0, keluar_waserda: 0 };
+            let stats = { simpanan: 0, jasa: 0, pokok_ans: 0, plafon: 0, laba_waserda: 0, saldo_akhir: 0 };
             
             sS.forEach(d => {
                 const val = Number(d.data().jumlah) || 0;
@@ -741,12 +741,10 @@
 
                 if(isMasuk) { 
                     stats.saldo_akhir += nom; 
-                    stats.laba_waserda += nom; 
-                    stats.masuk_waserda += nom; // Menyimpan Pemasukan Kotor
+                    stats.laba_waserda += nom; // <-- Biarkan penyesuaian ikut menambah laba/pasiva
                 } else { 
                     stats.saldo_akhir -= nom; 
-                    stats.laba_waserda -= nom; 
-                    stats.keluar_waserda += nom; // Menyimpan Total Operasional
+                    stats.laba_waserda -= nom; // <-- Biarkan penyesuaian ikut memotong laba/pasiva
                 }
                 let ketPrefix = tipeData === "waserda" ? "Waserda:" : "Penyesuaian:";
                 let kategoriTx = tipeData === "waserda" ? "Waserda" : "Penyesuaian Kas";
@@ -1162,17 +1160,17 @@
             // Perhitungan Pasiva (Kewajiban + Modal)
             const simpanan = stats.simpanan;
             const shuPinjaman = stats.jasa;
-            const shuWaserda = stats.masuk_waserda; // Ambil nilai kotor (17.310.370)
-            const biayaOps = stats.keluar_waserda;  // Ambil nilai operasional (1.584.800)
-
-            // Karena biayaOps itu pengeluaran, maka sifatnya MENGURANGI total Pasiva
-            const totalPasiva = simpanan + shuPinjaman + shuWaserda - biayaOps;
+            const shuWaserda = stats.laba_waserda;
+            const totalPasiva = simpanan + shuPinjaman + shuWaserda;
 
             // Render ke Layar
+            document.getElementById('neracaKas').innerText = formatR(kas);
+            document.getElementById('neracaPiutang').innerText = formatR(piutangBersih);
+            document.getElementById('neracaTotalAktiva').innerText = formatR(totalAktiva);
+
             document.getElementById('neracaSimpanan').innerText = formatR(simpanan);
             document.getElementById('neracaSHUPinjaman').innerText = formatR(shuPinjaman);
             document.getElementById('neracaSHUWaserda').innerText = formatR(shuWaserda);
-            document.getElementById('neracaBiayaOps').innerText = "- " + formatR(biayaOps); // Diberi tanda minus di layarnya
             document.getElementById('neracaTotalPasiva').innerText = formatR(totalPasiva);
 
             // Cek Status Balance (Toleransi selisih karena pembulatan / hal lain)
@@ -1192,7 +1190,7 @@
             }
         }
 
-        window.cetakNeracaPDF = async function() {
+        window.window.cetakNeracaPDF = async function() {
     // 1. Ambil Data dari Tampilan Neraca
     const kas = document.getElementById('neracaKas').innerText;
     const piutang = document.getElementById('neracaPiutang').innerText;
@@ -1201,7 +1199,6 @@
     const simpanan = document.getElementById('neracaSimpanan').innerText;
     const shuPinjaman = document.getElementById('neracaSHUPinjaman').innerText;
     const shuWaserda = document.getElementById('neracaSHUWaserda').innerText;
-    const biayaOps = document.getElementById('neracaBiayaOps').innerText;
     const totalPasiva = document.getElementById('neracaTotalPasiva').innerText;
     const statusNeraca = document.getElementById('neracaStatus').innerText;
 
@@ -1302,12 +1299,8 @@
                                 <td class="txt-right">${shuPinjaman}</td>
                             </tr>
                             <tr>
-                                <td>SHU / Laba Operasional Waserda (Kotor)</td>
+                                <td>SHU / Laba Operasional Waserda</td>
                                 <td class="txt-right">${shuWaserda}</td>
-                            </tr>
-                            <tr>
-                                <td style="color: red;">Biaya Operasional / Pengeluaran (-)</td>
-                                <td class="txt-right" style="color: red;">${biayaOps}</td>
                             </tr>
                         </tbody>
                         <tfoot>

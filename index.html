@@ -483,9 +483,17 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid #eee; padding-bottom: 15px;">
                     <div>
                         <h3><i class="fa fa-balance-scale"></i> Laporan Neraca Keuangan</h3>
-                        <p style="font-size:0.85rem; color:#7f8c8d;">Ringkasan Posisi Harta, Kewajiban, & Modal Koperasi Berjalan.</p>
+                        <p style="font-size:0.85rem; color:#7f8c8d;">Ringkasan Posisi Harta, Kewajiban, & Modal Koperasi.</p>
                     </div>
                     <button onclick="cetakNeracaPDF()" style="background:var(--dark); color:white; border:none; padding:10px 20px; border-radius:6px; font-size:0.9rem; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fa fa-print"></i> Cetak Laporan Neraca PDF</button>
+                </div>
+
+                <div style="background: #e0f7fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #00bcd4; display: flex; align-items: flex-end; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label style="font-weight:bold; font-size:0.85rem; display:block; margin-bottom:5px; color:#006064;"><i class="fa fa-calendar-alt"></i> Filter Neraca Per Tanggal (Tutup Buku):</label>
+                        <input type="date" id="neracaTglAkhir" value="2026-05-23" style="width: 100%; padding: 10px; border: 1px solid #b2ebf2; border-radius: 6px;">
+                    </div>
+                    <button onclick="muatNeraca()" style="background: #00838f; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; height: 42px;"><i class="fa fa-filter"></i> Load Data</button>
                 </div>
 
                 <div class="form-grid" style="gap: 30px;">
@@ -542,11 +550,27 @@
         <div id="laporan" class="page-section">
             <div class="card" style="border-top: 5px solid var(--primary);">
                 <h3><i class="fa fa-chart-pie"></i> Parameter Pembagian SHU Tahunan</h3>
-                <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom:15px;">Tentukan persentase dari Total Laba Koperasi. <strong>Total alokasi wajib 100%</strong>.</p>
+                <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom:15px;">Tentukan persentase dan periode laba untuk pembagian SHU.</p>
                 
+                <div style="background: #fff9c4; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #fbc02d;">
+                    <h4 style="margin-bottom: 10px; color: #f57f17;"><i class="fa fa-calendar-check"></i> Filter Periode Buku (Tutup Buku)</h4>
+                    <div class="form-grid">
+                        <div>
+                            <label style="color:#f57f17;">Mulai Tanggal (Awal Tahun Buku)</label>
+                            <input type="date" id="shuTglMulai" value="2025-05-24" style="border:1px solid #fff59d;">
+                        </div>
+                        <div>
+                            <label style="color:#f57f17;">Sampai Tanggal (Tutup Buku)</label>
+                            <input type="date" id="shuTglAkhir" value="2026-05-23" style="border:1px solid #fff59d;">
+                        </div>
+                    </div>
+                    <button onclick="muatLabaFormal()" style="background: #f57f17; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 15px; width: 100%; transition: 0.3s;"><i class="fa fa-sync"></i> TERAPKAN PERIODE TUTUP BUKU</button>
+                    <p style="font-size: 0.8rem; margin-top: 10px; color: #e65100;"><i>* Transaksi pemasukan setelah batas tutup buku akan otomatis diabaikan (masuk ke buku tahun depan).</i></p>
+                </div>
+
                 <div class="form-grid">
                     <div class="form-group" style="grid-column: span 2;">
-                        <label>Total Laba Jasa Pinjaman Murni (Rp)</label>
+                        <label>Total Laba Bersih Periode Ini (Jasa Pinjaman + Waserda) (Rp)</label>
                         <input type="text" id="shuTotal" readonly style="background:#f8f9fa; color:var(--dark); font-weight:bold; font-size: 1.1rem;">
                     </div>
                     
@@ -733,7 +757,6 @@
                 arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Waserda: ${d.data().keterangan}`, tipe: d.data().jenis === "Pemasukan" ? 'Masuk' : 'Keluar', nominal: nom, kategori: 'Waserda' });
             });
 
-            // Hitung Saldo Kas Akhir
             let totalMasuk = 0; let totalKeluar = 0;
             arrTx.forEach(t => { if(t.tipe === 'Masuk') totalMasuk += t.nominal; else totalKeluar += t.nominal; });
             stats.saldo_akhir = totalMasuk - totalKeluar;
@@ -747,7 +770,6 @@
         }
 
         // --- PAGE: DASHBOARD ---
-        // ==== BAGIAN INI YANG DIPERBAIKI ====
         async function muatDash() {
             const sA = await getDocs(collection(db, "anggota"));
             let aktif = 0; sA.forEach(d => { if(d.data().status !== "Keluar" && d.data().status !== "Nonaktif") aktif++; });
@@ -755,11 +777,7 @@
 
             const { arrTx, stats } = await ambilDataTransaksi();
             let uangBeredar = stats.plafon - stats.pokok_ans;
-            
-            // Laba Bersih Waserda
             let netWaserda = stats.laba_waserda - stats.pengeluaran_waserda;
-            
-            // Total Laba (Jasa Pinjaman + Bersih Waserda)
             let labaBersih = stats.jasa + netWaserda;
 
             document.getElementById('dash-simpanan').innerText = formatR(stats.simpanan);
@@ -770,7 +788,6 @@
             currentChart = new Chart(document.getElementById('chartUtama'), { 
                 type:'bar', 
                 data: { 
-                    // Mengubah label dan data agar menampilkan Net/Bersih
                     labels:['Jasa Pinjaman','Laba Bersih Waserda'], 
                     datasets:[{
                         label:'Keuntungan Bersih (Rp)', 
@@ -778,9 +795,7 @@
                         backgroundColor:['#e67e22', '#3498db']
                         }] 
                 },
-                options: {
-                    scales: { y: { beginAtZero: true } }
-                }
+                options: { scales: { y: { beginAtZero: true } } }
             });
             const top10 = arrTx.slice(0, 10);
             const tbDash = document.getElementById('dashBodyTransaksi');
@@ -798,7 +813,6 @@
                 </tr>`;
             });
         }
-        // ===================================
 
         // --- PAGE: BUKU KAS & PENYESUAIAN ---
         async function muatBukuKas() {
@@ -1145,13 +1159,65 @@
             doc.save(`Mutasi_Buku_Kas_Lengkap_${tglSekarang}.pdf`);
         };
 
-        // --- MENU BARU: FITUR NERACA KEUANGAN ---
+        // --- MENU BARU: FITUR NERACA KEUANGAN (DENGAN TUTUP BUKU) ---
         async function muatNeraca() {
-            // Ambil data stats
-            const { stats } = await ambilDataTransaksi();
+            const tglAkhir = document.getElementById('neracaTglAkhir').value || '2099-12-31';
+
+            const [sS, sAns, sWas, sPinj] = await Promise.all([
+                getDocs(collection(db, "simpanan")), 
+                getDocs(collection(db, "angsuran")), 
+                getDocs(collection(db, "waserda")),
+                getDocs(collection(db, "pinjaman"))
+            ]);
+
+            let stats = { simpanan: 0, jasa: 0, pokok_ans: 0, plafon: 0, laba_waserda: 0, pengeluaran_waserda: 0 };
+            let totalMasuk = 0; let totalKeluar = 0;
+
+            // FILTER SIMPANAN HINGGA TANGGAL TUTUP BUKU
+            sS.forEach(d => {
+                const tgl = d.data().tanggal_transaksi || "1970-01-01";
+                if(tgl > tglAkhir) return; // Abaikan transaksi setelah tutup buku
+                const val = Number(d.data().jumlah) || 0;
+                stats.simpanan += val;
+                if(val > 0) totalMasuk += val; else totalKeluar += Math.abs(val);
+            });
+
+            // FILTER ANGSURAN HINGGA TANGGAL TUTUP BUKU
+            sAns.forEach(d => {
+                const tgl = d.data().tanggal || "1970-01-01";
+                if(tgl > tglAkhir) return;
+                const pk = Number(d.data().jumlah) || 0;
+                const bg = Number(d.data().bunga) || 0;
+                stats.jasa += bg;
+                stats.pokok_ans += pk;
+                totalMasuk += (pk + bg);
+            });
+
+            // FILTER PINJAMAN HINGGA TANGGAL TUTUP BUKU
+            sPinj.forEach(d => {
+                const tgl = d.data().tanggal || "1970-01-01";
+                if(tgl > tglAkhir) return;
+                const val = Number(d.data().jumlah) || 0;
+                stats.plafon += val;
+                totalKeluar += val;
+            });
+
+            // FILTER WASERDA HINGGA TANGGAL TUTUP BUKU
+            sWas.forEach(d => {
+                const tgl = d.data().tanggal || "1970-01-01";
+                if(tgl > tglAkhir) return;
+                const nom = Number(d.data().nominal) || 0;
+                if(d.data().jenis === "Pemasukan") {
+                    stats.laba_waserda += nom;
+                    totalMasuk += nom;
+                } else {
+                    stats.pengeluaran_waserda += nom;
+                    totalKeluar += nom;
+                }
+            });
             
             // Perhitungan Aktiva (Harta)
-            const kas = stats.saldo_akhir;
+            const kas = totalMasuk - totalKeluar;
             const piutang = stats.plafon - stats.pokok_ans;
             const piutangBersih = piutang < 0 ? 0 : piutang; // Mencegah piutang minus
             const totalAktiva = kas + piutangBersih;
@@ -1160,7 +1226,7 @@
             const simpanan = stats.simpanan;
             
             // GABUNG SHU JASA DAN WASERDA
-            const shuTotalKoperasi = stats.jasa + stats.laba_waserda;
+            const shuTotalKoperasi = stats.jasa + (stats.laba_waserda - stats.pengeluaran_waserda);
             const totalPasiva = simpanan + shuTotalKoperasi;
 
             // Render ke Layar
@@ -1169,13 +1235,11 @@
             document.getElementById('neracaTotalAktiva').innerText = formatR(totalAktiva);
 
             document.getElementById('neracaSimpanan').innerText = formatR(simpanan);
-            
-            // RENDER SHU GABUNGAN KE ID BARU
             document.getElementById('neracaSHUTotal').innerText = formatR(shuTotalKoperasi);
             
             document.getElementById('neracaTotalPasiva').innerText = formatR(totalPasiva);
 
-            // Cek Status Balance (Toleransi selisih karena pembulatan / hal lain)
+            // Cek Status Balance
             const statusBox = document.getElementById('neracaStatus');
             const selisih = Math.abs(totalAktiva - totalPasiva);
 
@@ -1199,14 +1263,14 @@
             const totalAktiva = document.getElementById('neracaTotalAktiva').innerText;
             
             const simpanan = document.getElementById('neracaSimpanan').innerText;
-            // AMBIL DATA SHU GABUNGAN
             const shuTotalKoperasi = document.getElementById('neracaSHUTotal').innerText;
             const totalPasiva = document.getElementById('neracaTotalPasiva').innerText;
             const statusNeraca = document.getElementById('neracaStatus').innerText;
 
-            const tglSekarang = new Date();
-            const namaBulan = tglSekarang.toLocaleString('id-ID', { month: 'long' });
-            const tanggalLengkap = `${tglSekarang.getDate()} ${namaBulan} ${tglSekarang.getFullYear()}`;
+            const tglBatas = document.getElementById('neracaTglAkhir').value;
+            const [tahun, bulan, hari] = tglBatas.split('-');
+            const namaBulan = new Date(tahun, bulan - 1, hari).toLocaleString('id-ID', { month: 'long' });
+            const tanggalLengkap = `${hari} ${namaBulan} ${tahun}`;
 
             // 2. Buka Jendela Cetak Baru
             const jendelaCetak = window.open('', '', 'height=800,width=1000');
@@ -1251,7 +1315,7 @@
                     </div>
 
                     <div class="judul-laporan">LAPORAN NERACA KEUANGAN</div>
-                    <p style="text-align:center; margin-top:-15px; font-size:12px;">Posisi Keuangan Per Tanggal: ${tanggalLengkap}</p>
+                    <p style="text-align:center; margin-top:-15px; font-size:12px;">Posisi Keuangan Per Tanggal (Tutup Buku): ${tanggalLengkap}</p>
 
                     <div class="kontainer-neraca">
                         <div class="blok-neraca">
@@ -1312,7 +1376,7 @@
                     </div>
 
                     <div class="status-box">
-                        KETERANGAN: ${statusNeraca}
+                        KETERANGAN: ${statusNeraca.replace(/<[^>]*>?/gm, '')}
                     </div>
 
                     <div class="ttd-box">
@@ -1336,7 +1400,6 @@
             jendelaCetak.document.close();
             jendelaCetak.focus();
             
-            // Memberi waktu sedikit untuk memuat CSS sebelum print dialog muncul
             setTimeout(() => {
                 jendelaCetak.print();
                 jendelaCetak.close();
@@ -2015,7 +2078,7 @@
             } catch (err) { Swal.fire('Error', err.message, 'error'); }
         });
 
-        // --- PAGE: LAPORAN SHU ---
+        // --- PAGE: LAPORAN SHU DENGAN TUTUP BUKU ---
         let dbDataSHU = {}; 
         let calcSimpananTotal = 0;
         let calcJasaTotal = 0;
@@ -2026,18 +2089,26 @@
 
         async function muatLabaFormal() {
             try {
+                const tglMulai = document.getElementById('shuTglMulai').value || '1970-01-01';
+                const tglAkhir = document.getElementById('shuTglAkhir').value || '2099-12-31';
+
                 const sAngg = await getDocs(collection(db, "anggota"));
                 let mapIdKeNamaReal = {};
                 sAngg.forEach(d => { mapIdKeNamaReal[d.id] = d.data().nama.trim(); });
 
-                const [sSimp, sAns] = await Promise.all([
+                const [sSimp, sAns, sWas] = await Promise.all([
                     getDocs(collection(db, "simpanan")),
-                    getDocs(collection(db, "angsuran"))
+                    getDocs(collection(db, "angsuran")),
+                    getDocs(collection(db, "waserda"))
                 ]);
 
                 dbDataSHU = {}; calcSimpananTotal = 0; calcJasaTotal = 0; calcLabaPinjaman = 0;
 
+                // FILTER SIMPANAN HINGGA BATAS TUTUP BUKU (akumulasi modal per tgl tersebut)
                 sSimp.forEach(d => {
+                    const tgl = d.data().tanggal_transaksi || "1970-01-01";
+                    if(tgl > tglAkhir) return; 
+
                     const val = Number(d.data().jumlah) || 0;
                     const idAnggotaSimpanan = d.data().id_anggota;
                     let namaFixed = mapIdKeNamaReal[idAnggotaSimpanan] || d.data().info_anggota || "Tanpa Nama";
@@ -2046,7 +2117,11 @@
                     dbDataSHU[namaFixed].simpanan += val; calcSimpananTotal += val;
                 });
 
+                // FILTER JASA ANGSURAN HANYA DI DALAM PERIODE
                 sAns.forEach(d => {
+                    const tgl = d.data().tanggal || "1970-01-01";
+                    if(tgl < tglMulai || tgl > tglAkhir) return;
+
                     const val = Number(d.data().bunga) || 0;
                     let namaRaw = d.data().info_anggota || "Tanpa Nama";
                     let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1].trim() : namaRaw.trim();
@@ -2054,7 +2129,19 @@
                     dbDataSHU[namaFixed].jasa += val; calcJasaTotal += val;
                 });
 
-                calcLabaPinjaman = calcJasaTotal; 
+                // FILTER LABA WASERDA HANYA DI DALAM PERIODE
+                let labaWaserdaPeriode = 0;
+                sWas.forEach(d => {
+                    const tgl = d.data().tanggal || "1970-01-01";
+                    if(tgl < tglMulai || tgl > tglAkhir) return;
+
+                    const nom = Number(d.data().nominal) || 0;
+                    if(d.data().jenis === "Pemasukan") labaWaserdaPeriode += nom;
+                    else labaWaserdaPeriode -= nom;
+                });
+
+                // TOTAL LABA BERSATU UNTUK DIBAGIKAN
+                calcLabaPinjaman = calcJasaTotal + labaWaserdaPeriode; 
                 document.getElementById('shuTotal').value = formatR(calcLabaPinjaman);
                 
                 updateSisaAnggota();
@@ -2176,17 +2263,19 @@
             const p_rew = Number(document.getElementById('p_reward').value) || 0;
             const p_ang = Number(document.getElementById('p_anggota').value) || 0;
 
+            const tglMulai = document.getElementById('shuTglMulai').value;
+            const tglAkhir = document.getElementById('shuTglAkhir').value;
             const danaAnggotaStr = document.getElementById('shuAnggotaTotal').value;
 
             const jendelaCetak = window.open('', '', 'height=800,width=1000');
             jendelaCetak.document.write('<html><head><title>Laporan SHU - Koperasi Konsumen</title><style>body { font-family: "Times New Roman", Times, serif; padding: 30px; color: black; } .kop-surat { text-align: center; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 25px; } .kop-surat h1 { margin: 0; font-size: 22px; text-transform: uppercase; } .kop-surat p { margin: 5px 0 0 0; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; } th, td { border: 1px solid black; padding: 8px; } th { background-color: #f2f2f2; text-align: center; font-weight: bold; } .txt-right { text-align: right; } .rincian-dana { margin-bottom: 20px; font-size: 13px; } .rincian-dana table { width: 60%; border: none; margin-top: 10px; } .rincian-dana td { border: none; padding: 5px; } .ttd-box { margin-top: 50px; width: 100%; display: flex; justify-content: space-between; text-align: center; } .catatan-print { margin-top: 20px; font-size: 11px; border: 1px dashed black; padding: 10px; text-align: justify; line-height: 1.4; }</style></head><body>');
             
-            jendelaCetak.document.write('<div class="kop-surat"><h1>KOPERASI KONSUMEN</h1><p>Laporan Alokasi Sisa Hasil Usaha (SHU) Anggota</p><p>Tahun Buku: ' + new Date().getFullYear() + '</p></div>');
+            jendelaCetak.document.write('<div class="kop-surat"><h1>KOPERASI KONSUMEN</h1><p>Laporan Alokasi Sisa Hasil Usaha (SHU) Anggota</p><p>Periode Buku: ' + tglMulai + ' s/d ' + tglAkhir + '</p></div>');
             
             jendelaCetak.document.write('<div class="rincian-dana"><strong>A. Rincian Alokasi Dana SHU:</strong>');
             jendelaCetak.document.write(`
                 <table>
-                    <tr><td>Total Laba Jasa Pinjaman</td><td>:</td><td class="txt-right" style="font-weight:bold;">${totalLabaStr}</td></tr>
+                    <tr><td>Total Laba Bersih (Jasa + Waserda)</td><td>:</td><td class="txt-right" style="font-weight:bold;">${totalLabaStr}</td></tr>
                     <tr><td colspan="3"><hr style="border:0; border-top:1px dashed #ccc;"></td></tr>
                     <tr><td>1. Cadangan Koperasi (${p_cad}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_cad/100))}</td></tr>
                     <tr><td>2. Honor Pengurus (${p_png}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_png/100))}</td></tr>
@@ -2201,7 +2290,6 @@
 
             jendelaCetak.document.write('<strong>B. Rincian Pembagian per Anggota:</strong>' + isiTabel);
             
-            // Mengambil isi catatan selisih (beserta nominal Rupiah-nya) langsung dari layar aplikasi
             const catatanLayar = document.getElementById('catatanSelisih').innerHTML;
             jendelaCetak.document.write('<div class="catatan-print">' + catatanLayar + '</div>');
             

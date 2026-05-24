@@ -702,62 +702,39 @@
                 getDocs(collection(db, "waserda")),
                 getDocs(collection(db, "pinjaman"))
             ]);
-            
+    
             let arrTx = [];
-            let stats = { simpanan: 0, jasa: 0, pokok_ans: 0, plafon: 0, laba_waserda: 0, saldo_akhir: 0 };
-            
+            let stats = { simpanan: 0, jasa: 0, pokok_ans: 0, plafon: 0, laba_waserda: 0, pengeluaran_waserda: 0 };
+    
             sS.forEach(d => {
                 const val = Number(d.data().jumlah) || 0;
                 stats.simpanan += val;
-                stats.saldo_akhir += val;
-                const ketSimpanan = d.data().keterangan ? ` - ${d.data().keterangan}` : "";
-                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal_transaksi || "1970-01-01", tanggal: d.data().tanggal_transaksi || "-", keterangan: `Simpanan: ${d.data().info_anggota}${ketSimpanan}`, tipe: val < 0 ? 'Keluar' : 'Masuk', nominal: Math.abs(val), kategori: d.data().jenis_simpanan || 'Simpanan' });
+                arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal_transaksi || "-", keterangan: `Simpanan: ${d.data().info_anggota}`, tipe: val < 0 ? 'Keluar' : 'Masuk', nominal: Math.abs(val), kategori: 'Simpanan' });
             });
-            
+    
             sAns.forEach(d => {
                 const pk = Number(d.data().jumlah) || 0;
                 const bg = Number(d.data().bunga) || 0;
                 stats.jasa += bg;
                 stats.pokok_ans += pk;
-                stats.saldo_akhir += (pk + bg);
-                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Angsuran: ${d.data().info_anggota}`, tipe: 'Masuk', nominal: pk+bg, kategori: 'Angsuran' });
+                arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Angsuran: ${d.data().info_anggota}`, tipe: 'Masuk', nominal: pk+bg, kategori: 'Angsuran' });
             });
 
             sPinj.forEach(d => {
                 const val = Number(d.data().jumlah) || 0;
                 stats.plafon += val;
-                stats.saldo_akhir -= val;
-                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pencairan: ${d.data().info_anggota}`, tipe: 'Keluar', nominal: val, kategori: 'Pinjaman' });
+                arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pencairan: ${d.data().info_anggota}`, tipe: 'Keluar', nominal: val, kategori: 'Pinjaman' });
             });
-            
+    
             sWas.forEach(d => {
                 const nom = Number(d.data().nominal) || 0;
-                const isMasuk = d.data().jenis === "Pemasukan";
-                const tipeData = d.data().tipe_data || "waserda"; 
-
-                if(isMasuk) { 
-                    stats.saldo_akhir += nom; 
-                    stats.laba_waserda += nom; // <-- Biarkan penyesuaian ikut menambah laba/pasiva
-                } else { 
-                    stats.saldo_akhir -= nom; 
-                    stats.laba_waserda -= nom; // <-- Biarkan penyesuaian ikut memotong laba/pasiva
-                }
-                let ketPrefix = tipeData === "waserda" ? "Waserda:" : "Penyesuaian:";
-                let kategoriTx = tipeData === "waserda" ? "Waserda" : "Penyesuaian Kas";
-
-                arrTx.push({ waktu_asli: d.data().waktu_input || d.data().tanggal || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `${ketPrefix} ${d.data().keterangan}`, tipe: isMasuk ? 'Masuk' : 'Keluar', nominal: nom, kategori: kategoriTx });
-            });
-
-            arrTx.sort((a, b) => {
-                const tglA = a.tanggal !== "-" ? a.tanggal : "1970-01-01";
-                const tglB = b.tanggal !== "-" ? b.tanggal : "1970-01-01";
-                if (tglB !== tglA) return tglB.localeCompare(tglA);
-                return new Date(b.waktu_asli) - new Date(a.waktu_asli);
+                if(d.data().jenis === "Pemasukan") stats.laba_waserda += nom;
+                else stats.pengeluaran_waserda += nom;
+                arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Waserda: ${d.data().keterangan}`, tipe: d.data().jenis === "Pemasukan" ? 'Masuk' : 'Keluar', nominal: nom, kategori: 'Waserda' });
             });
 
             return { arrTx, stats };
         }
-
         // --- PAGE: DASHBOARD ---
         async function muatDash() {
             const sA = await getDocs(collection(db, "anggota"));
@@ -766,20 +743,27 @@
 
             const { arrTx, stats } = await ambilDataTransaksi();
             let uangBeredar = stats.plafon - stats.pokok_ans;
+            let labaBersih = stats.jasa + (stats.laba_waserda - stats.pengeluaran_waserda);
 
             document.getElementById('dash-simpanan').innerText = formatR(stats.simpanan);
             document.getElementById('dash-beredar').innerText = formatR(uangBeredar > 0 ? uangBeredar : 0);
-            document.getElementById('dash-laba').innerText = formatR(stats.jasa + stats.laba_waserda); 
+            document.getElementById('dash-laba').innerText = formatR(labaBersih > 0 ? labaBersih : 0); 
             
             if(currentChart) currentChart.destroy();
             currentChart = new Chart(document.getElementById('chartUtama'), { 
                 type:'bar', 
                 data: { 
                     labels:['Jasa Pinjaman','Laba Waserda'], 
-                    datasets:[{label:'Keuntungan (Rp)', data:[stats.jasa, stats.laba_waserda], backgroundColor:['#e67e22', '#3498db']}] 
-                } 
+                    datasets:[{
+                        label:'Keuntungan (Rp)', 
+                        data:[Math.max(0, stats.jasa), Math.max(0, stats.laba_waserda)], 
+                        backgroundColor:['#e67e22', '#3498db']
+                        }] 
+                },
+                options: {
+                    scales: { y: { beginAtZero: true } }
+                }
             });
-
             const top10 = arrTx.slice(0, 10);
             const tbDash = document.getElementById('dashBodyTransaksi');
             tbDash.innerHTML = '';

@@ -570,7 +570,7 @@
 
                 <div class="form-grid">
                     <div class="form-group" style="grid-column: span 2;">
-                        <label>Total Laba Bersih Periode Ini (Jasa Pinjaman + Waserda) (Rp)</label>
+                        <label>Total Laba Bersih Periode Ini (Khusus Jasa Pinjaman) (Rp)</label>
                         <input type="text" id="shuTotal" readonly style="background:#f8f9fa; color:var(--dark); font-weight:bold; font-size: 1.1rem;">
                     </div>
                     
@@ -1225,7 +1225,7 @@
             // Perhitungan Pasiva (Kewajiban + Modal)
             const simpanan = stats.simpanan;
             
-            // GABUNG SHU JASA DAN WASERDA
+            // GABUNG SHU JASA DAN WASERDA UNTUK NERACA (Agar Balance)
             const shuTotalKoperasi = stats.jasa + (stats.laba_waserda - stats.pengeluaran_waserda);
             const totalPasiva = simpanan + shuTotalKoperasi;
 
@@ -2096,10 +2096,9 @@
                 let mapIdKeNamaReal = {};
                 sAngg.forEach(d => { mapIdKeNamaReal[d.id] = d.data().nama.trim(); });
 
-                const [sSimp, sAns, sWas] = await Promise.all([
+                const [sSimp, sAns] = await Promise.all([
                     getDocs(collection(db, "simpanan")),
-                    getDocs(collection(db, "angsuran")),
-                    getDocs(collection(db, "waserda"))
+                    getDocs(collection(db, "angsuran"))
                 ]);
 
                 dbDataSHU = {}; calcSimpananTotal = 0; calcJasaTotal = 0; calcLabaPinjaman = 0;
@@ -2129,19 +2128,8 @@
                     dbDataSHU[namaFixed].jasa += val; calcJasaTotal += val;
                 });
 
-                // FILTER LABA WASERDA HANYA DI DALAM PERIODE
-                let labaWaserdaPeriode = 0;
-                sWas.forEach(d => {
-                    const tgl = d.data().tanggal || "1970-01-01";
-                    if(tgl < tglMulai || tgl > tglAkhir) return;
-
-                    const nom = Number(d.data().nominal) || 0;
-                    if(d.data().jenis === "Pemasukan") labaWaserdaPeriode += nom;
-                    else labaWaserdaPeriode -= nom;
-                });
-
-                // TOTAL LABA BERSATU UNTUK DIBAGIKAN
-                calcLabaPinjaman = calcJasaTotal + labaWaserdaPeriode; 
+                // TOTAL LABA BERSATU UNTUK DIBAGIKAN (KHUSUS JASA PINJAMAN SAJA)
+                calcLabaPinjaman = calcJasaTotal; 
                 document.getElementById('shuTotal').value = formatR(calcLabaPinjaman);
                 
                 updateSisaAnggota();
@@ -2275,7 +2263,7 @@
             jendelaCetak.document.write('<div class="rincian-dana"><strong>A. Rincian Alokasi Dana SHU:</strong>');
             jendelaCetak.document.write(`
                 <table>
-                    <tr><td>Total Laba Bersih (Jasa + Waserda)</td><td>:</td><td class="txt-right" style="font-weight:bold;">${totalLabaStr}</td></tr>
+                    <tr><td>Total Laba Bersih (Khusus Jasa Pinjaman)</td><td>:</td><td class="txt-right" style="font-weight:bold;">${totalLabaStr}</td></tr>
                     <tr><td colspan="3"><hr style="border:0; border-top:1px dashed #ccc;"></td></tr>
                     <tr><td>1. Cadangan Koperasi (${p_cad}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_cad/100))}</td></tr>
                     <tr><td>2. Honor Pengurus (${p_png}%)</td><td>:</td><td class="txt-right">${formatR(labaMurni * (p_png/100))}</td></tr>

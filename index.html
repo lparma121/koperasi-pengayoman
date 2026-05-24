@@ -733,9 +733,21 @@
                 arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Waserda: ${d.data().keterangan}`, tipe: d.data().jenis === "Pemasukan" ? 'Masuk' : 'Keluar', nominal: nom, kategori: 'Waserda' });
             });
 
+            // Hitung Saldo Kas Akhir
+            let totalMasuk = 0; let totalKeluar = 0;
+            arrTx.forEach(t => { if(t.tipe === 'Masuk') totalMasuk += t.nominal; else totalKeluar += t.nominal; });
+            stats.saldo_akhir = totalMasuk - totalKeluar;
+
+            arrTx.sort((a, b) => {
+                if(a.tanggal !== b.tanggal) return b.tanggal.localeCompare(a.tanggal);
+                return new Date(b.waktu_asli) - new Date(a.waktu_asli);
+            });
+
             return { arrTx, stats };
         }
+
         // --- PAGE: DASHBOARD ---
+        // ==== BAGIAN INI YANG DIPERBAIKI ====
         async function muatDash() {
             const sA = await getDocs(collection(db, "anggota"));
             let aktif = 0; sA.forEach(d => { if(d.data().status !== "Keluar" && d.data().status !== "Nonaktif") aktif++; });
@@ -743,7 +755,12 @@
 
             const { arrTx, stats } = await ambilDataTransaksi();
             let uangBeredar = stats.plafon - stats.pokok_ans;
-            let labaBersih = stats.jasa + (stats.laba_waserda - stats.pengeluaran_waserda);
+            
+            // Laba Bersih Waserda
+            let netWaserda = stats.laba_waserda - stats.pengeluaran_waserda;
+            
+            // Total Laba (Jasa Pinjaman + Bersih Waserda)
+            let labaBersih = stats.jasa + netWaserda;
 
             document.getElementById('dash-simpanan').innerText = formatR(stats.simpanan);
             document.getElementById('dash-beredar').innerText = formatR(uangBeredar > 0 ? uangBeredar : 0);
@@ -753,10 +770,11 @@
             currentChart = new Chart(document.getElementById('chartUtama'), { 
                 type:'bar', 
                 data: { 
-                    labels:['Jasa Pinjaman','Laba Waserda'], 
+                    // Mengubah label dan data agar menampilkan Net/Bersih
+                    labels:['Jasa Pinjaman','Laba Bersih Waserda'], 
                     datasets:[{
-                        label:'Keuntungan (Rp)', 
-                        data:[Math.max(0, stats.jasa), Math.max(0, stats.laba_waserda)], 
+                        label:'Keuntungan Bersih (Rp)', 
+                        data:[stats.jasa, netWaserda], 
                         backgroundColor:['#e67e22', '#3498db']
                         }] 
                 },
@@ -780,6 +798,7 @@
                 </tr>`;
             });
         }
+        // ===================================
 
         // --- PAGE: BUKU KAS & PENYESUAIAN ---
         async function muatBukuKas() {

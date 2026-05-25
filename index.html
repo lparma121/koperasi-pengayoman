@@ -575,7 +575,7 @@
                         </div>
                     </div>
 
-                    <button onclick="muatLabaFormal()" style="background: #f57f17; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s;"><i class="fa fa-sync"></i> HITUNG LABA PADA TAHUN BUKU INI</button>
+                    <button onclick="muatLabaFormal()" style="background: #f57f17; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s;"><i class="fa fa-sync"></i> REFRESH DATA TAHUN BUKU INI</button>
                     <p style="font-size: 0.8rem; margin-top: 10px; color: #e65100;"><i>* Laba Jasa akan dihitung mulai dari Rp 0 setiap berganti siklus tahun buku yang baru. Simpanan tetap diakumulasi.</i></p>
                 </div>
 
@@ -1180,7 +1180,7 @@
         // Inisialisasi Tgl Tahun Buku
         function setupTahunBuku() {
             const drop = document.getElementById('pilihanTahunBuku');
-            drop.addEventListener('change', function() {
+            drop.addEventListener('change', async function() {
                 const box = document.getElementById('boxCustomTgl');
                 const tglM = document.getElementById('shuTglMulai');
                 const tglA = document.getElementById('shuTglAkhir');
@@ -1191,7 +1191,7 @@
                     tglA.value = '2026-05-23';
                 } else if (this.value === '2026-2027') {
                     box.style.display = 'none';
-                    tglM.value = '2026-05-24'; // Hitungan fresh start
+                    tglM.value = '2026-05-24'; // Hitungan fresh start tahun buku baru
                     tglA.value = '2027-05-23';
                 } else if (this.value === '2027-2028') {
                     box.style.display = 'none';
@@ -1200,8 +1200,11 @@
                 } else {
                     box.style.display = 'grid'; // Munculkan field custom
                 }
+                
+                await muatLabaFormal();
+                hitungSHUFormal(); 
             });
-            // trigger awal
+            // trigger awal saat web dimuat
             drop.dispatchEvent(new Event('change'));
         }
 
@@ -1235,21 +1238,24 @@
                     const idAnggotaSimpanan = d.data().id_anggota;
                     let namaFixed = mapIdKeNamaReal[idAnggotaSimpanan] || d.data().info_anggota || "Tanpa Nama";
                     if(namaFixed.includes(" - ")) namaFixed = namaFixed.split(" - ")[1].trim();
+                    
                     if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
-                    dbDataSHU[namaFixed].simpanan += val; calcSimpananTotal += val;
+                    dbDataSHU[namaFixed].simpanan += val; 
+                    calcSimpananTotal += val;
                 });
 
-                // FILTER JASA ANGSURAN (HANYA DIHITUNG DI DALAM RENTANG TANGGAL, misal: 24 Mei 26 s/d 23 Mei 27)
+                // FILTER JASA ANGSURAN (HANYA DIHITUNG DI DALAM RENTANG TANGGAL)
                 sAns.forEach(d => {
                     const tgl = d.data().tanggal || "1970-01-01";
-                    // Jika di luar rentang, abaikan labanya (karena masuk tahun buku lain)
                     if(tgl < tglMulai || tgl > tglAkhir) return; 
 
                     const val = Number(d.data().bunga) || 0;
                     let namaRaw = d.data().info_anggota || "Tanpa Nama";
                     let namaFixed = namaRaw.includes(" - ") ? namaRaw.split(" - ")[1].trim() : namaRaw.trim();
+                    
                     if(!dbDataSHU[namaFixed]) dbDataSHU[namaFixed] = { simpanan: 0, jasa: 0 };
-                    dbDataSHU[namaFixed].jasa += val; calcJasaTotal += val;
+                    dbDataSHU[namaFixed].jasa += val; 
+                    calcJasaTotal += val;
                 });
 
                 // TOTAL LABA KHUSUS JASA PINJAMAN DALAM PERIODE TERSEBUT
@@ -1259,7 +1265,8 @@
                 updateSisaAnggota();
                 Swal.close();
             } catch (error) { 
-                Swal.fire('Error', error.message, 'error'); 
+                console.error(error);
+                Swal.fire('Error', 'Gagal memuat data SHU', 'error'); 
             }
         }
 
@@ -1311,7 +1318,11 @@
             if (pSimpanan + pPinjaman !== 100) return Swal.fire('Peringatan!', 'Total Porsi Jasa Modal dan Jasa Usaha harus 100%.', 'warning');
 
             const danaAnggota = calcLabaPinjaman * (p_ang / 100);
-            if (danaAnggota <= 0) return Swal.fire('Oops', 'Tidak ada dana SHU yang bisa dibagikan pada periode ini (Laba 0).', 'warning');
+            if (danaAnggota <= 0) {
+                document.getElementById('bodySHU').innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada laba jasa pada periode ini.</td></tr>';
+                document.getElementById('areaSHU').style.display = 'block';
+                return;
+            }
 
             const danaBagiSimpanan = danaAnggota * (pSimpanan / 100);
             const danaBagiPinjaman = danaAnggota * (pPinjaman / 100);

@@ -116,10 +116,7 @@
             <li><a onclick="showPage('waserda')" id="link-waserda"><i class="fa fa-store"></i> Operasional & Waserda</a></li>
             
             <div class="menu-title">Manajemen Kas</div>
-            <li><a onclick="bukaKasKhusus('sp')" id="link-kas-sp"><i class="fa fa-wallet" style="color:var(--success)"></i> Kas Simpan Pinjam</a></li>
-            <li><a onclick="bukaKasKhusus('jp')" id="link-kas-jp"><i class="fa fa-coins" style="color:var(--orange)"></i> Kas Jasa Pinjaman</a></li>
-            <li><a onclick="bukaKasKhusus('ws')" id="link-kas-ws"><i class="fa fa-store" style="color:var(--blue)"></i> Kas Waserda</a></li>
-            <li><a onclick="bukaKasKhusus('ut')" id="link-kas-ut"><i class="fa fa-university" style="color:var(--purple)"></i> Kas Utama (Global)</a></li>
+            <li><a onclick="bukaKasKhusus()" id="link-kas-ut"><i class="fa fa-book" style="color:var(--purple)"></i> Buku Kas Utama</a></li>
             
             <div class="menu-title">Pelaporan</div>
             <li><a onclick="showPage('neraca')" id="link-neraca"><i class="fa fa-balance-scale"></i> Neraca Keuangan</a></li>
@@ -409,11 +406,11 @@
         </div>
 
         <div id="bukukas" class="page-section">
-            <div class="card" id="borderKas" style="border-top: 5px solid var(--primary);">
+            <div class="card" id="borderKas" style="border-top: 5px solid var(--purple);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #eee; padding-bottom: 15px;">
                     <div>
-                        <h3 id="judulBukuKas"><i class="fa fa-book"></i> Buku Kas</h3>
-                        <p id="subJudulBukuKas" style="font-size:0.85rem; color:#7f8c8d;">Merekap perputaran uang koperasi.</p>
+                        <h3 id="judulBukuKas"><i class="fa fa-book"></i> Buku Kas Utama</h3>
+                        <p id="subJudulBukuKas" style="font-size:0.85rem; color:#7f8c8d;">Merekap KESELURUHAN arus uang koperasi secara komprehensif.</p>
                     </div>
                     <div style="text-align:right;">
                         <p style="font-size:0.8rem; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">Total Uang Kas Ini</p>
@@ -675,9 +672,6 @@
         let currentChart = null;
         let globalIdAnggotaDetail = null;
 
-        // Variabel global untuk menentukan jenis kas yang sedang dibuka
-        let currentTipeKas = 'ut'; // 'sp', 'jp', 'ws', 'ut'
-
         onAuthStateChanged(auth, (user) => {
             if (!user) window.location.href = "login.html";
             else {
@@ -732,53 +726,22 @@
             if(pageId === 'neraca') muatNeraca();
         }
 
-        // --- SISTEM 4 BUKU KAS ---
-        window.bukaKasKhusus = function(tipe) {
-            currentTipeKas = tipe;
+        // --- SISTEM 1 BUKU KAS (UTAMA) ---
+        window.bukaKasKhusus = function() {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu li a').forEach(a => a.classList.remove('active'));
             
             document.getElementById('bukukas').classList.add('active');
-            document.getElementById('link-kas-' + tipe).classList.add('active');
+            document.getElementById('link-kas-ut').classList.add('active');
             
-            const judul = document.getElementById('judulBukuKas');
-            const sub = document.getElementById('subJudulBukuKas');
-            const pageTitle = document.getElementById('page-title');
-            const border = document.getElementById('borderKas');
             const filterKat = document.getElementById('filterKategoriKas');
-            
             filterKat.innerHTML = '<option value="Semua">Tampilkan Semua</option>'; // Reset filter
-            
-            if(tipe === 'sp') {
-                pageTitle.innerText = "Kas Simpan Pinjam";
-                judul.innerHTML = '<i class="fa fa-piggy-bank"></i> Buku Kas Simpan Pinjam';
-                sub.innerText = "Merekap perputaran uang modal (Simpanan & Pencairan/Angsuran Pokok).";
-                border.style.borderTopColor = 'var(--success)';
-                filterKat.innerHTML += '<option value="Simpanan">Simpanan Anggota</option><option value="Angsuran Pokok">Angsuran Pokok</option><option value="Pinjaman">Pencairan Pinjaman</option>';
-            } else if (tipe === 'jp') {
-                pageTitle.innerText = "Kas Jasa Pinjaman";
-                judul.innerHTML = '<i class="fa fa-coins"></i> Buku Kas Jasa Pinjaman';
-                sub.innerText = "Merekap pendapatan khusus dari Bunga/Jasa pinjaman serta pengeluaran SHU.";
-                border.style.borderTopColor = 'var(--orange)';
-                filterKat.innerHTML += '<option value="Jasa Pinjaman">Jasa Pinjaman</option>';
-            } else if (tipe === 'ws') {
-                pageTitle.innerText = "Kas Waserda";
-                judul.innerHTML = '<i class="fa fa-store"></i> Buku Kas Waserda';
-                sub.innerText = "Merekap transaksi operasional pertokoan & administrasi.";
-                border.style.borderTopColor = 'var(--blue)';
-                filterKat.innerHTML += '<option value="Waserda">Operasional & Waserda</option>';
-            } else {
-                pageTitle.innerText = "Kas Utama (Global)";
-                judul.innerHTML = '<i class="fa fa-university"></i> Buku Kas Utama (Global)';
-                sub.innerText = "Merekap KESELURUHAN arus uang koperasi secara komprehensif.";
-                border.style.borderTopColor = 'var(--purple)';
-                filterKat.innerHTML += '<option value="Simpanan">Simpanan Anggota</option><option value="Angsuran Pokok">Angsuran Pokok</option><option value="Jasa Pinjaman">Jasa Pinjaman</option><option value="Pinjaman">Pencairan Pinjaman</option><option value="Waserda">Operasional & Waserda</option>';
-            }
+            filterKat.innerHTML += '<option value="Simpanan">Simpanan Anggota</option><option value="Angsuran Pokok">Angsuran Pokok</option><option value="Jasa Pinjaman">Jasa Pinjaman</option><option value="Pinjaman">Pencairan Pinjaman</option><option value="Waserda">Operasional & Waserda</option>';
 
             muatBukuKas();
         }
 
-        async function ambilDataTransaksiKas(tipe) {
+        async function ambilDataTransaksiKas() {
             const [sS, sAns, sWas, sPinj] = await Promise.all([
                 getDocs(collection(db, "simpanan")), 
                 getDocs(collection(db, "angsuran")), 
@@ -789,57 +752,47 @@
             let arrTx = [];
             let saldo = 0;
             
-            // KAS SIMPAN PINJAM / KAS UTAMA
-            if(tipe === 'sp' || tipe === 'ut') {
-                sS.forEach(d => {
-                    const val = Number(d.data().jumlah) || 0;
-                    saldo += val;
-                    arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal_transaksi || "-", keterangan: `Simpanan: ${d.data().info_anggota} (${d.data().jenis_simpanan})`, tipe: val < 0 ? 'Keluar' : 'Masuk', nominal: Math.abs(val), kategori: 'Simpanan' });
-                });
-                sPinj.forEach(d => {
-                    const val = Number(d.data().jumlah) || 0;
-                    saldo -= val;
-                    arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pencairan: ${d.data().info_anggota}`, tipe: 'Keluar', nominal: val, kategori: 'Pinjaman' });
-                });
-                sAns.forEach(d => {
-                    const pk = Number(d.data().jumlah) || 0;
-                    if(pk > 0) {
-                        saldo += pk;
-                        arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Angsuran POKOK: ${d.data().info_anggota}`, tipe: 'Masuk', nominal: pk, kategori: 'Angsuran Pokok' });
-                    }
-                });
-            }
+            // Simpanan / Pencairan / Angsuran Pokok
+            sS.forEach(d => {
+                const val = Number(d.data().jumlah) || 0;
+                saldo += val;
+                arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal_transaksi || "-", keterangan: `Simpanan: ${d.data().info_anggota} (${d.data().jenis_simpanan})`, tipe: val < 0 ? 'Keluar' : 'Masuk', nominal: Math.abs(val), kategori: 'Simpanan' });
+            });
+            sPinj.forEach(d => {
+                const val = Number(d.data().jumlah) || 0;
+                saldo -= val;
+                arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pencairan: ${d.data().info_anggota}`, tipe: 'Keluar', nominal: val, kategori: 'Pinjaman' });
+            });
+            sAns.forEach(d => {
+                const pk = Number(d.data().jumlah) || 0;
+                if(pk > 0) {
+                    saldo += pk;
+                    arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Angsuran POKOK: ${d.data().info_anggota}`, tipe: 'Masuk', nominal: pk, kategori: 'Angsuran Pokok' });
+                }
+            });
 
-            // KAS JASA PINJAMAN / KAS UTAMA
-            if (tipe === 'jp' || tipe === 'ut') {
-                sAns.forEach(d => {
-                    const bg = Number(d.data().bunga) || 0;
-                    if(bg > 0) {
-                        saldo += bg;
-                        arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pendapatan JASA: ${d.data().info_anggota}`, tipe: 'Masuk', nominal: bg, kategori: 'Jasa Pinjaman' });
-                    }
-                });
-                // Memotong Kas Jasa jika ada transaksi "Bagi SHU" di tabel waserda
-                sWas.forEach(d => {
-                    if (d.data().jenis === "Bagi SHU") {
-                        const nom = Number(d.data().nominal) || 0;
-                        saldo -= nom;
-                        arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pembagian SHU: ${d.data().keterangan}`, tipe: 'Keluar', nominal: nom, kategori: 'Jasa Pinjaman' });
-                    }
-                });
-            }
-
-            // KAS WASERDA / KAS UTAMA
-            if (tipe === 'ws' || tipe === 'ut') {
-                sWas.forEach(d => {
-                    if (d.data().jenis !== "Bagi SHU") { // Filter agar "Bagi SHU" tidak masuk rekap Laba Waserda
-                        const nom = Number(d.data().nominal) || 0;
-                        const isMasuk = d.data().jenis === "Pemasukan";
-                        if (isMasuk) saldo += nom; else saldo -= nom;
-                        arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Waserda: ${d.data().keterangan}`, tipe: isMasuk ? 'Masuk' : 'Keluar', nominal: nom, kategori: 'Waserda' });
-                    }
-                });
-            }
+            // Jasa Pinjaman
+            sAns.forEach(d => {
+                const bg = Number(d.data().bunga) || 0;
+                if(bg > 0) {
+                    saldo += bg;
+                    arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pendapatan JASA: ${d.data().info_anggota}`, tipe: 'Masuk', nominal: bg, kategori: 'Jasa Pinjaman' });
+                }
+            });
+            
+            // Waserda dan Pembagian SHU
+            sWas.forEach(d => {
+                if (d.data().jenis === "Bagi SHU") {
+                    const nom = Number(d.data().nominal) || 0;
+                    saldo -= nom;
+                    arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Pembagian SHU: ${d.data().keterangan}`, tipe: 'Keluar', nominal: nom, kategori: 'Jasa Pinjaman' });
+                } else {
+                    const nom = Number(d.data().nominal) || 0;
+                    const isMasuk = d.data().jenis === "Pemasukan";
+                    if (isMasuk) saldo += nom; else saldo -= nom;
+                    arrTx.push({ waktu_asli: d.data().waktu_input || "1970-01-01", tanggal: d.data().tanggal || "-", keterangan: `Waserda: ${d.data().keterangan}`, tipe: isMasuk ? 'Masuk' : 'Keluar', nominal: nom, kategori: 'Waserda' });
+                }
+            });
 
             arrTx.sort((a, b) => {
                 if(a.tanggal !== b.tanggal) return b.tanggal.localeCompare(a.tanggal);
@@ -853,7 +806,7 @@
             const tb = document.getElementById('bodyBukuKas');
             tb.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data kas...</td></tr>';
             
-            const { arrTx, saldo } = await ambilDataTransaksiKas(currentTipeKas);
+            const { arrTx, saldo } = await ambilDataTransaksiKas();
             document.getElementById('saldoBukuKas').innerText = formatR(saldo);
             
             tb.innerHTML = '';

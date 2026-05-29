@@ -556,9 +556,9 @@
                     <h4 style="margin-bottom: 10px; color: #f57f17;"><i class="fa fa-calendar-check"></i> Pilih Siklus Tahun Buku</h4>
                     
                     <select id="pilihanTahunBuku" style="width:100%; padding:12px; margin-bottom:15px; font-weight:bold; font-size:1.05rem; border:2px solid #fbc02d; color:#e65100; border-radius:8px;">
-                        <option value="2025-2026">Tahun Buku 2025-2026 (s/d 22 Mei 2026)</option>
-                        <option value="2026-2027">Tahun Buku 2026-2027 (23 Mei 2026 - 22 Mei 2027)</option>
-                        <option value="2027-2028">Tahun Buku 2027-2028 (23 Mei 2027 - 22 Mei 2028)</option>
+                        <option value="2025-2026">Tahun Buku 2025-2026 (s/d 23 Mei 2026)</option>
+                        <option value="2026-2027">Tahun Buku 2026-2027 (23 Mei 2026 - 23 Mei 2027)</option>
+                        <option value="2027-2028">Tahun Buku 2027-2028 (23 Mei 2027 - 23 Mei 2028)</option>
                         <option value="custom">-- Tentukan Tanggal Kustom --</option>
                     </select>
 
@@ -1159,15 +1159,15 @@
 
                 if (this.value === '2025-2026') {
                     box.style.display = 'none';
-                    tglM.value = '1970-01-01'; // Mengambil semua transaksi jasa s/d 22 Mei 26
-                    tglA.value = '2026-05-22';
+                    tglM.value = '1970-01-01'; // Mengambil semua transaksi jasa s/d 23 Mei 26
+                    tglA.value = '2026-05-23';
                 } else if (this.value === '2026-2027') {
                     box.style.display = 'none';
-                    tglM.value = '2026-05-23'; // Mulai tahun buku baru
+                    tglM.value = '2026-05-24'; // Mulai tahun buku baru
                     tglA.value = '2027-05-22';
                 } else if (this.value === '2027-2028') {
                     box.style.display = 'none';
-                    tglM.value = '2027-05-23';
+                    tglM.value = '2027-05-24';
                     tglA.value = '2028-05-22';
                 } else {
                     box.style.display = 'grid'; // Munculkan field custom

@@ -323,7 +323,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th style="text-align:center; width:50px;"><input type="checkbox" id="checkAllTagihan" onclick="toggleAllCheck(this)" class="cb-tagihan"></th>
+                                <th style="text-align:center; width:50px;"><input type="checkbox" id="checkAllTagihan" onclick="toggleAllCheck(this)"></th>
                                 <th>Tanggal</th>
                                 <th>Anggota</th>
                                 <th class="txt-right">Plafon</th>
@@ -1396,9 +1396,6 @@
             setTimeout(() => { jendelaCetak.print(); jendelaCetak.close(); }, 500);
         }
 
-        // FUNGSI LAINNYA (ANGGOTA, SIMPANAN, PINJAMAN, ANGSURAN, DLL) TETAP DIBAWAH
-        // Murni logika eksisting dari versi sebelumnya
-        
         async function muatAnggota() {
             const [sAng, sSim] = await Promise.all([getDocs(query(collection(db, "anggota"), orderBy("no_anggota", "asc"))), getDocs(collection(db, "simpanan"))]);
             const rekS = {}; sSim.forEach(d => rekS[d.data().id_anggota] = (rekS[d.data().id_anggota]||0) + (Number(d.data().jumlah)||0));
@@ -1610,7 +1607,11 @@
             terpilih.forEach((cb, idx) => {
                 const p = Number(cb.dataset.plafon) || 0; const pokok = p / 10; const jasa = p * 0.01; const total = pokok + jasa;
                 grandTotalPokok += pokok; grandTotalJasa += jasa; grandTotalSemua += total;
-                let namaBersih = cb.dataset.nama; if(namaBersih.includes(" - ")) namaBersih = namaBersih.split(" - ")[1].trim();
+                
+                // Tambahan filter mencegah undefined
+                let namaBersih = cb.dataset.nama || "Tanpa Nama"; 
+                if(namaBersih.includes(" - ")) namaBersih = namaBersih.split(" - ")[1].trim();
+                
                 data.push([idx + 1, namaBersih, formatR(pokok), formatR(jasa), formatR(total)]);
             });
             doc.setFontSize(14); doc.text("DAFTAR TAGIHAN ANGSURAN KOPERASI", 105, 15, { align: "center" });
@@ -1688,7 +1689,8 @@
             dr.innerHTML = '<option value="">-- Pilih Anggota --</option>';
             sP.forEach(d => { 
                 const id = d.id; const plafon = Number(d.data().jumlah) || 0; const terbayar = rekPokok[id] || 0; const sisa = plafon - terbayar;
-                if (sisa > 0) dr.innerHTML += `<option value="${id}" data-nama="${d.data().info_anggota}" data-plafon="${plafon}">${d.data().info_anggota} (Sisa Hutang: ${formatR(sisa)})</option>`;
+                // Tambahan Atribut data-sisa
+                if (sisa > 0) dr.innerHTML += `<option value="${id}" data-nama="${d.data().info_anggota}" data-plafon="${plafon}" data-sisa="${sisa}">${d.data().info_anggota} (Sisa Hutang: ${formatR(sisa)})</option>`;
             });
         }
         
@@ -1706,9 +1708,19 @@
         
         document.getElementById('formAngsuran').addEventListener('submit', async (e) => {
             e.preventDefault(); const sel = document.getElementById('dropAngsuran');
+            const opt = sel.options[sel.selectedIndex];
             try {
-                await addDoc(collection(db, "angsuran"), { id_pinjaman: sel.value, info_anggota: sel.options[sel.selectedIndex].dataset.nama, jumlah: Number(inPok.value), bunga: Number(inBng.value), tanggal: document.getElementById('tglAns').value, waktu_input: new Date().toISOString() });
+                await addDoc(collection(db, "angsuran"), { id_pinjaman: sel.value, info_anggota: opt.dataset.nama, jumlah: Number(inPok.value), bunga: Number(inBng.value), tanggal: document.getElementById('tglAns').value, waktu_input: new Date().toISOString() });
+                
+                // Tambahan Logika Lunas Otomatis
+                const sisaHutang = Number(opt.dataset.sisa) || 0;
+                const bayarPokok = Number(inPok.value) || 0;
+                if ((sisaHutang - bayarPokok) <= 0) {
+                    await updateDoc(doc(db, "pinjaman", sel.value), { status: "Lunas" });
+                }
+
                 Swal.fire('Sukses', 'Angsuran berhasil dicatat', 'success'); document.getElementById('formAngsuran').reset(); document.getElementById('boxInfoAns').style.display = 'none'; updTotAns();
+                muatDropAns(); // Refresh Dropdown otomatis
             } catch(err) { Swal.fire('Error', err.message, 'error'); }
         });
 

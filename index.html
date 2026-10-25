@@ -83,7 +83,7 @@
         .summary-box p { font-size: 1.8rem; font-weight: bold; color: var(--dark); }
         .summary-box i { position: absolute; right: 20px; bottom: 20px; font-size: 3rem; color: rgba(0,0,0,0.03); }
 
-        .cb-tagihan, .cb-massal { transform: scale(1.5); cursor: pointer; }
+        .cb-tagihan, .cb-massal, .cb-kas, .cb-kas-all { transform: scale(1.3); cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -422,7 +422,10 @@
                     <div style="text-align:right;">
                         <p style="font-size:0.8rem; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">Total Uang Kas Ini</p>
                         <h2 id="saldoBukuKas" style="color:var(--success); margin-bottom: 8px;">Rp 0</h2>
-                        <button onclick="cetakBukuKasPDF()" style="background:var(--dark); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer; font-weight:bold; margin-right: 5px;"><i class="fa fa-file-pdf"></i> Cetak Kas PDF</button>
+                        <div>
+                            <button onclick="hapusBanyakKas()" id="btnHapusMassalKas" style="background:var(--danger); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer; font-weight:bold; margin-right: 5px; display:none;"><i class="fa fa-trash"></i> Hapus Terpilih (<span id="countHapusKas">0</span>)</button>
+                            <button onclick="cetakBukuKasPDF()" style="background:var(--dark); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer; font-weight:bold;"><i class="fa fa-file-pdf"></i> Cetak Kas PDF</button>
+                        </div>
                     </div>
                 </div>
 
@@ -478,7 +481,17 @@
 
                 <div class="table-responsive" style="max-height: 500px;">
                     <table>
-                        <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th style="text-align:center;">Jenis</th><th class="txt-right">Nominal (Rp)</th><th style="text-align:center;">Aksi</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th style="text-align:center; width:40px;"><input type="checkbox" id="checkAllKas" class="cb-kas-all"></th>
+                                <th>Tanggal</th>
+                                <th>Keterangan</th>
+                                <th>Kategori</th>
+                                <th style="text-align:center;">Jenis</th>
+                                <th class="txt-right">Nominal (Rp)</th>
+                                <th style="text-align:center;">Aksi</th>
+                            </tr>
+                        </thead>
                         <tbody id="bodyBukuKas"></tbody>
                     </table>
                 </div>
@@ -734,7 +747,7 @@
             if(pageId === 'neraca') muatNeraca();
         }
 
-        // --- SISTEM 1 BUKU KAS (UTAMA) ---
+        // --- SISTEM BUKU KAS UTAMA (FITUR CENTANG BANYAK / MASS DELETE) ---
         window.bukaKasKhusus = function() {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu li a').forEach(a => a.classList.remove('active'));
@@ -809,14 +822,17 @@
 
         async function muatBukuKas() {
             const tb = document.getElementById('bodyBukuKas');
-            tb.innerHTML = '<tr><td colspan="6" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data kas...</td></tr>';
+            tb.innerHTML = '<tr><td colspan="7" style="text-align:center;"><i class="fa fa-spinner fa-spin"></i> Memuat data kas...</td></tr>';
             
             const { arrTx, saldo } = await ambilDataTransaksiKas();
             document.getElementById('saldoBukuKas').innerText = formatR(saldo);
             
             tb.innerHTML = '';
-            if(arrTx.length === 0) tb.innerHTML = '<tr><td colspan="6" style="text-align:center;">Belum ada transaksi di kas ini.</td></tr>';
+            if(arrTx.length === 0) tb.innerHTML = '<tr><td colspan="7" style="text-align:center;">Belum ada transaksi di kas ini.</td></tr>';
             
+            document.getElementById('checkAllKas').checked = false;
+            updateCountHapusKas();
+
             arrTx.forEach(t => {
                 const color = t.tipe === 'Masuk' ? 'var(--success)' : 'var(--danger)';
                 const cls = t.tipe === 'Masuk' ? 'status-masuk' : 'status-keluar';
@@ -824,6 +840,9 @@
                 const idDoc = t.idRef || t.id;
                 
                 tb.innerHTML += `<tr class="baris-kas" data-kategori="${t.kategori.toLowerCase()}" data-nominal="${t.nominal}" data-tipe="${t.tipe}">
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="cb-kas" data-id="${idDoc}" data-koleksi="${t.koleksi}" onchange="updateCountHapusKas()">
+                    </td>
                     <td>${t.tanggal}</td>
                     <td>${t.keterangan}</td>
                     <td><small style="color:#7f8c8d; font-weight:bold;">${t.kategori}</small></td>
@@ -838,6 +857,67 @@
 
             saringBukuKas();
         }
+
+        document.getElementById('checkAllKas').addEventListener('change', function() {
+            const isChecked = this.checked;
+            document.querySelectorAll('.baris-kas').forEach(tr => {
+                if (tr.style.display !== 'none') {
+                    const cb = tr.querySelector('.cb-kas');
+                    if(cb) cb.checked = isChecked;
+                }
+            });
+            updateCountHapusKas();
+        });
+
+        window.updateCountHapusKas = function() {
+            const selected = document.querySelectorAll('.cb-kas:checked');
+            const btn = document.getElementById('btnHapusMassalKas');
+            const count = document.getElementById('countHapusKas');
+            
+            if (selected.length > 0) {
+                btn.style.display = 'inline-block';
+                count.innerText = selected.length;
+            } else {
+                btn.style.display = 'none';
+                count.innerText = '0';
+            }
+        };
+
+        window.hapusBanyakKas = async function() {
+            const selected = document.querySelectorAll('.cb-kas:checked');
+            if (selected.length === 0) return Swal.fire('Oops', 'Pilih minimal 1 transaksi yang akan dihapus.', 'warning');
+
+            const res = await Swal.fire({
+                title: 'Hapus Transaksi Terpilih?',
+                text: `Apakah Anda yakin ingin menghapus ${selected.length} transaksi kas yang dicentang secara permanen?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--danger)',
+                confirmButtonText: 'Ya, Hapus Semua'
+            });
+
+            if (res.isConfirmed) {
+                Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                try {
+                    let mapUnik = new Set();
+                    selected.forEach(cb => {
+                        mapUnik.add(cb.dataset.koleksi + '___' + cb.dataset.id);
+                    });
+
+                    let promises = [];
+                    mapUnik.forEach(item => {
+                        const [koleksi, id] = item.split('___');
+                        promises.push(deleteDoc(doc(db, koleksi, id)));
+                    });
+
+                    await Promise.all(promises);
+                    Swal.fire('Terhapus!', `${mapUnik.size} transaksi kas berhasil dihapus.`, 'success');
+                    muatBukuKas();
+                } catch (e) {
+                    Swal.fire('Error', e.message, 'error');
+                }
+            }
+        };
 
         window.editTransaksiKas = async function(id, koleksi, tglLama, ketLama) {
             const { value: formValues } = await Swal.fire({
@@ -912,7 +992,7 @@
             let isFiltered = filterKat !== 'semua' || filterTeks !== '' || filterThn !== 'Semua' || filterBln !== 'Semua';
 
             barisKas.forEach(tr => {
-                const selTgl = tr.cells[0].innerText; 
+                const selTgl = tr.cells[1].innerText; 
                 const txThn = selTgl.substring(0, 4);
                 const txBln = selTgl.substring(5, 7);
                 
@@ -937,8 +1017,12 @@
                     else totalKeluar += nom;
                 } else {
                     tr.style.display = 'none';
+                    const cb = tr.querySelector('.cb-kas');
+                    if(cb) cb.checked = false;
                 }
             });
+
+            updateCountHapusKas();
 
             if(isFiltered) {
                 boxTotal.style.display = 'flex';
@@ -987,8 +1071,8 @@
 
             allRows.forEach(tr => {
                 if(tr.style.display !== 'none') {
-                    let tgl = tr.cells[0].innerText;
-                    let ket = tr.cells[1].innerText + "\n(" + tr.cells[2].innerText + ")";
+                    let tgl = tr.cells[1].innerText;
+                    let ket = tr.cells[2].innerText + "\n(" + tr.cells[3].innerText + ")";
                     let nomVal = Number(tr.getAttribute('data-nominal')) || 0;
                     let tipe = tr.getAttribute('data-tipe');
 
